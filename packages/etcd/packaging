@@ -7,4 +7,4 @@ pushd etcd
 ./build
 popd
 
-cp ./etcd/bin/etcd ${BOSH_INSTALL_TARGET}
+cp ./etcd/bin/{etcd,etcdctl} ${BOSH_INSTALL_TARGET}
