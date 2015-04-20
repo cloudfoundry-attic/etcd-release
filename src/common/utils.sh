@@ -1,11 +1,11 @@
 
-SCRIPT=$(basename $0)
-mkdir -p /var/vcap/sys/log/monit
+mkdir -p /var/vcap/sys/log
 
-exec 1>> /var/vcap/sys/log/monit/$SCRIPT.log
-exec 2>> /var/vcap/sys/log/monit/$SCRIPT.err.log
+exec > >(tee -a >(logger -p user.info -t vcap.$(basename $0).stdout) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >>/var/vcap/sys/log/$(basename $0).log)
+exec 2> >(tee -a >(logger -p user.error -t vcap.$(basename $0).stderr) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >>/var/vcap/sys/log/$(basename $0).err.log)
 
 pid_guard() {
+  echo "------------ STARTING `basename $0` at `date` --------------" | tee /dev/stderr
   pidfile=$1
   name=$2
 

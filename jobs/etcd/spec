@@ -9,7 +9,7 @@ templates:
   drain: bin/drain
 
 packages:
-  - pid_utils
+  - common
   - etcd
 
 properties:

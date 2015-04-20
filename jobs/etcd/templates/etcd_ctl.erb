@@ -5,7 +5,7 @@ set -e -u -x
 RUN_DIR=/var/vcap/sys/run/etcd
 PIDFILE=${RUN_DIR}/etcd.pid
 
-source /var/vcap/packages/pid_utils/pid_utils.sh
+source /var/vcap/packages/common/utils.sh
 
 source /var/vcap/jobs/etcd/bin/etcd_bosh_utils.sh
 
