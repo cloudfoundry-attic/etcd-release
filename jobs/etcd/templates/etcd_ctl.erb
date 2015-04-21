@@ -78,7 +78,6 @@ case $1 in
         --advertise-client-urls       ${advertise_client_url}                                   \
         --initial-cluster             ${cluster}                                                \
         --initial-cluster-state       ${cluster_state}                                          \
-        --snapshot-count=10000                                                                  \
         2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -t vcap.etcd)                           \
         1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -t vcap.etcd) &
 
