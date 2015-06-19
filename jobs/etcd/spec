@@ -24,3 +24,6 @@ properties:
   etcd.log_sync_timeout_in_seconds:
     description: "Time to wait for a joining node to finish syncing logs with the existing cluster in seconds"
     default: 30
+  etcd.check_for_persistent_disk:
+    description: "Check if a persistent disk is mounted for etcd"
+    default: true
