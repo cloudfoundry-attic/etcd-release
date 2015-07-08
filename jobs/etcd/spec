@@ -4,12 +4,13 @@ name: etcd
 description: "The ETCD server provides a highly-available key value store that is used by the HM9000 and the Doppler server."
 
 templates:
+  dns_health_check.erb: bin/dns_health_check
   etcd_bosh_utils.sh.erb: bin/etcd_bosh_utils.sh
   etcd_ctl.erb: bin/etcd_ctl
   drain: bin/drain
 
 packages:
-  - common
+  - common-etcd
   - etcd
 
 properties:
