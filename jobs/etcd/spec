@@ -1,13 +1,10 @@
 ---
 name: etcd
-
-description: "The ETCD server provides a highly-available key value store that is used by the HM9000 and the Doppler server."
-
 templates:
   dns_health_check.erb: bin/dns_health_check
+  drain: bin/drain
   etcd_bosh_utils.sh.erb: bin/etcd_bosh_utils.sh
   etcd_ctl.erb: bin/etcd_ctl
-  drain: bin/drain
 
 packages:
   - common
@@ -15,13 +12,37 @@ packages:
 
 properties:
   etcd.heartbeat_interval_in_milliseconds:
-    description: "Interval between heartbeats. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
+    description: "Interval between heartbeats in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
     default: 50
   etcd.election_timeout_in_milliseconds:
-    description: "Time without recieving a heartbeat before peer should attempt to become leader. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
+    description: "Time without recieving a heartbeat before peer should attempt to become leader in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
     default: 1000
   etcd.machines:
-    description: "IPs of etcd machines"
+    description: "Addresses of etcd machines"
+  etcd.cluster:
+    description: "Information about etcd cluster"
   etcd.log_sync_timeout_in_seconds:
     description: "Time to wait for a joining node to finish syncing logs with the existing cluster in seconds"
     default: 30
+  etcd.require_ssl:
+    description: "enable ssl for all communication with etcd"
+    default: false
+  etcd.ca_cert:
+    description: "PEM-encoded CA certificate"
+  etcd.server_cert:
+    description: "PEM-encoded server certificate"
+  etcd.server_key:
+    description: "PEM-encoded server key"
+  etcd.client_cert:
+    description: "PEM-encoded client certificate"
+  etcd.client_key:
+    description: "PEM-encoded client key"
+  etcd.peer_require_ssl:
+    description: "enable ssl between etcd peers"
+    default: false
+  etcd.peer_ca_cert:
+    description: "PEM-encoded peer CA certificate"
+  etcd.peer_cert:
+    description: "PEM-encoded peer certificate"
+  etcd.peer_key:
+    description: "PEM-encoded peer key"
