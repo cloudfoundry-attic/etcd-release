@@ -10,7 +10,7 @@ templates:
   drain: bin/drain
 
 packages:
-  - common-etcd
+  - common
   - etcd
 
 properties:
