@@ -1,4 +1,6 @@
 LOG_DIR=/var/vcap/sys/log/etcd
+
+# /var/vcap/store will be persistent disk if one exists, but defaults to system disk if no persistent disk is configured.
 STORE_DIR=/var/vcap/store
 DATA_DIR=${STORE_DIR}/etcd
 

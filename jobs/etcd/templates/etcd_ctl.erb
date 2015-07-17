@@ -26,11 +26,6 @@ case $1 in
 
     pid_guard ${PIDFILE} "etcd"
 
-    if ! mountpoint -q ${STORE_DIR}; then
-      echo "$STORE_DIR must be a persistent disk"
-      exit 1
-    fi
-
     export GOMAXPROCS=$(nproc)
 
     mkdir -p ${RUN_DIR}
