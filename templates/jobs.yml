@@ -1,0 +1,113 @@
+stub: (( merge ))
+
+empty_hash: {}
+
+default_env: (( empty_hash ))
+
+
+name: (( stub.releases.etcd.name || "etcd" ))
+director_uuid: (( merge ))
+
+releases:
+  - name: (( stub.releases.etcd.name ))
+    version: (( stub.releases.etcd.version ))
+
+default_templates:
+  etcd:
+  - name: etcd
+    release: (( stub.releases.etcd.name ))
+
+default_jobs:
+  etcd_z1:
+    networks:
+    - name: etcd1
+      static_ips: static_ips(1)
+
+  etcd_z2:
+    networks:
+    - name: etcd2
+      static_ips: static_ips(1, 2)
+
+jobs:
+  - name: etcd_z1
+    templates: (( stub.jobs.etcd_z1.templates || default_templates.etcd ))
+    instances: (( stub.jobs.etcd_z1.instances || 1 ))
+    persistent_disk: 10024
+    resource_pool: medium_z1
+    networks:
+      - name: (( stubs.jobs.etcd_z1.networks.name || "etcd1" ))
+        static_ips: (( stub.jobs.etcd_z1.networks.static_ips || static_ips(0, 1) ))
+    properties:
+      networks:
+        - name: etcd1
+      metron_agent:
+        zone: z1
+    update:
+      max_in_flight: 1
+
+  - name: etcd_z2
+    templates: (( stub.jobs.etcd_z2.templates || default_templates.etcd ))
+    instances: (( stub.jobs.etcd_z2.instances || 2 ))
+    persistent_disk: 10024
+    resource_pool: medium_z2
+    networks:
+      - name: (( stubs.jobs.etcd_z2.networks.name || "etcd2" ))
+        static_ips: (( stub.jobs.etcd_z2.networks.static_ips || static_ips(0, 1) ))
+    properties:
+      networks:
+        - name: etcd2
+      metron_agent:
+        zone: z2
+    update:
+      max_in_flight: 1
+
+networks: (( merge ))
+
+properties:
+  etcd:
+    ca_cert: null
+    client_cert: null
+    client_key: null
+    cluster: null
+    peer_require_ssl: null
+    require_ssl: null
+    server_cert: null
+    server_key: null
+    machines: (( jobs.etcd_z1.networks.etcd1.static_ips jobs.etcd_z2.networks.etcd2.static_ips ))
+
+resource_pools:
+  - name: medium_z1
+    network: etcd1
+    stemcell: (( stub.stemcell ))
+    cloud_properties:
+      name: random
+    env: (( merge || default_env ))
+
+  - name: medium_z2
+    network: etcd2
+    stemcell: (( stub.stemcell ))
+    cloud_properties:
+      name: random
+    env: (( merge || default_env ))
+
+  - name: xlarge_errand
+    network: etcd1 
+    stemcell: (( stub.stemcell ))
+    cloud_properties:
+      name: random
+    env: (( merge || default_env ))
+
+compilation:
+  cloud_properties:
+    name: random
+  network: etcd1
+  reuse_compilation_vms: true
+  workers: 6
+
+update:
+  canaries: 0
+  canary_watch_time: 1000-180000
+  max_in_flight: 50
+  serial: true
+  update_watch_time: 1000-180000
+

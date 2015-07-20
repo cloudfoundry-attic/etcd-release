@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -ex
+
+root_dir=$(cd $(dirname $0)/.. && pwd)
+
+echo $root_dir
+
+export GOPATH=$root_dir:$GOPATH
+
+ginkgo -r src/acceptance-tests

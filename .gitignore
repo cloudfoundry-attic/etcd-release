@@ -10,6 +10,8 @@ blobs
 .DS_Store
 .final_builds/jobs/**/*.tgz
 .final_builds/packages/**/*.tgz
+pkg/
+tags
 *.swp
 *~
 *#

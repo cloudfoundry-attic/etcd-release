@@ -1,0 +1,7 @@
+#!/bin/sh
+
+templates=$(dirname $0)/templates
+
+spiff merge \
+  $templates/jobs.yml \
+  "$@"

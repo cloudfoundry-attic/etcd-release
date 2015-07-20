@@ -1,0 +1,51 @@
+---
+director_uuid: b02f8ab5-b63c-4f08-b144-89f96810a022
+
+stub:
+  stemcell:
+    name: bosh-warden-boshlite-ubuntu-trusty-go_agent
+    version: latest
+  releases:
+    etcd:
+      name: the-name-we-created
+      version: latest
+  jobs:
+    etcd_z1:
+      instances: 1
+    etcd_z2:
+      instances: 0
+
+networks:
+- name: etcd1
+  subnets:
+  - cloud_properties:
+      name: random
+    range: 10.244.0.0/30
+    reserved:
+    - 10.244.0.1
+    static:
+    - 10.244.0.2
+  - cloud_properties:
+      name: random
+    range: 10.244.0.4/30
+    reserved:
+    - 10.244.0.5
+    static:
+    - 10.244.0.6
+
+- name: etcd2 
+  subnets:
+  - cloud_properties:
+      name: random
+    range: 10.244.2.0/30
+    reserved:
+    - 10.244.2.1
+    static:
+    - 10.244.2.2
+  - cloud_properties:
+      name: random
+    range: 10.244.2.4/30
+    reserved:
+    - 10.244.2.5
+    static:
+    - 10.244.2.6
