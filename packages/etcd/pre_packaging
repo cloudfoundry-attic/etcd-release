@@ -1,3 +1,0 @@
-set -e -x
-
-rm ${BUILD_DIR}/etcd/Godeps/_workspace/src/github.com/prometheus/procfs/fixtures/26231/exe
