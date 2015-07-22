@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("SingleInstance", func() {
+var _ = Describe("Multiple Instances", func() {
 	var (
 		manifest helpers.Manifest
 		name     = fmt.Sprintf("etcd-%s", generator.RandomName())
@@ -36,6 +36,9 @@ stub:
     etcd:
       version: latest
       name: %s
+  jobs:
+    etcd_z2:
+      instances: 2
 `, name)
 
 		stubFile, err := ioutil.TempFile(os.TempDir(), "")
@@ -55,23 +58,35 @@ stub:
 		Expect(bosh.Command("-n", "delete", "release", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
-	It("deploys one etcd node", func() {
-		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Describe("Multiple node deployment", func() {
+		It("succesfully deploys multiple etcd node", func() {
+			By("deploying")
+			Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
-		Expect(len(manifest.Networks)).To(Equal(1))
-		for index, value := range manifest.Networks {
-			etcdClient := etcd.NewClient([]string{value})
-			eatsKey := "eats-key" + string(index)
-			eatsValue := "eats-value" + string(index)
+			Expect(len(manifest.Networks)).To(Equal(3))
+			for index, value := range manifest.Networks {
+				etcdClient := etcd.NewClient([]string{value})
 
-			response, err := etcdClient.Create(eatsKey, eatsValue, 60)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response).ToNot(BeNil())
+				eatsKey := fmt.Sprintf("eats-key%d", index)
+				eatsValue := fmt.Sprintf("eats-value%d", index)
 
-			response, err = etcdClient.Get(eatsKey, false, false)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Node.Value).To(Equal(eatsValue))
-		}
+				response, err := etcdClient.Create(eatsKey, eatsValue, 60)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(response).ToNot(BeNil())
+			}
+
+			for _, value := range manifest.Networks {
+				etcdClient := etcd.NewClient([]string{value})
+
+				for index, _ := range manifest.Networks {
+					eatsKey := fmt.Sprintf("eats-key%d", index)
+					eatsValue := fmt.Sprintf("eats-value%d", index)
+
+					response, err := etcdClient.Get(eatsKey, false, false)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(response.Node.Value).To(Equal(eatsValue))
+				}
+			}
+		})
 	})
 })

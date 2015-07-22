@@ -8,14 +8,35 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/cloudfoundry-incubator/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 )
 
+const (
+	etcdPort = "4001"
+)
+
 type Bosh struct {
 	gemfilePath string
 	goPath      string
+}
+
+type Manifest struct {
+	Networks []string
+}
+
+type manifest struct {
+	Properties Properties `yaml:"properties"`
+}
+
+type Properties struct {
+	Etcd Etcd `yaml:"etcd"`
+}
+
+type Etcd struct {
+	Machines []string `yaml:"machines"`
 }
 
 func NewBosh(gemfilePath string, goPath string, config Config) Bosh {
@@ -36,7 +57,7 @@ func (bosh Bosh) Command(boshArgs ...string) *gexec.Session {
 	return session
 }
 
-func (bosh Bosh) GenerateAndSetDeploymentManifest(config Config, customStub *os.File) {
+func (bosh Bosh) GenerateAndSetDeploymentManifest(config Config, customStub *os.File) Manifest {
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
 	Expect(err).ToNot(HaveOccurred())
 
@@ -47,7 +68,24 @@ func (bosh Bosh) GenerateAndSetDeploymentManifest(config Config, customStub *os.
 	Expect(err).ToNot(HaveOccurred())
 	Eventually(session, DEFAULT_TIMEOUT).Should(gexec.Exit(0))
 
-	tmpFile.Write(session.Out.Contents())
+	_, err = tmpFile.Write(session.Out.Contents())
+	Expect(err).ToNot(HaveOccurred())
 
 	Expect(bosh.Command("deployment", tmpFile.Name()).Wait(time.Second * 10)).To(gexec.Exit(0))
+
+	manifest := new(manifest)
+
+	tmpFile.Close()
+	tmpFile, err = os.Open(tmpFile.Name())
+	Expect(err).ToNot(HaveOccurred())
+
+	decoder := candiedyaml.NewDecoder(tmpFile)
+	err = decoder.Decode(manifest)
+	Expect(err).ToNot(HaveOccurred())
+
+	for index, elem := range manifest.Properties.Etcd.Machines {
+		manifest.Properties.Etcd.Machines[index] = "http://" + elem + ":" + etcdPort
+	}
+
+	return Manifest{Networks: manifest.Properties.Etcd.Machines}
 }
