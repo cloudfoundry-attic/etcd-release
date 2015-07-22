@@ -4,74 +4,28 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
-	"path/filepath"
-	"time"
-
-	"acceptance-tests/helpers"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
+	. "github.com/onsi/gomega/gexec"
 )
-
-var DEFAULT_TIMEOUT = 2 * time.Minute
-
-func boshCommand(boshArgs ...string) {
-	cmd := exec.Command("bundle", append([]string{"exec", "bosh"}, boshArgs...)...)
-	env := os.Environ()
-	cmd.Env = append(env, fmt.Sprintf("BUNDLE_GEMFILE=%s", gemfilePath))
-
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-
-	Eventually(session, DEFAULT_TIMEOUT).Should(gexec.Exit(0))
-}
-
-func changeRootDirectory() {
-	err := os.Chdir(suitePath)
-
-	Expect(err).ToNot(HaveOccurred())
-}
-
-func generateManifest(config helpers.Config, customStub *os.File) {
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
-	Expect(err).ToNot(HaveOccurred())
-
-	generateDeploymentManifest := filepath.Join(suitePath, "generate_deployment_manifest")
-	cmd := exec.Command(generateDeploymentManifest, config.Stub, customStub.Name())
-
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-	Eventually(session, DEFAULT_TIMEOUT).Should(gexec.Exit(0))
-
-	tmpFile.Write(session.Out.Contents())
-
-	boshCommand("deployment", tmpFile.Name())
-}
 
 var _ = Describe("SingleInstance", func() {
 	var (
-		name string
+		name = fmt.Sprintf("etcd-%s", generator.RandomName())
 	)
 
 	BeforeEach(func() {
-		name = generator.RandomName()
-
-		changeRootDirectory()
-		config := helpers.LoadConfig()
 
 		By("targeting the director")
-		boshCommand("target", config.Director)
+		Expect(bosh.Command("target", config.Director).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
 		By("creating the release")
-		boshCommand("create", "release", "--force", "--name", name)
+		Expect(bosh.Command("create", "release", "--force", "--name", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
 		By("uploading the release")
-		boshCommand("upload", "release")
-
-		// By("setting the deployment")
+		Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
 		customStub := fmt.Sprintf(`---
 stub:
@@ -84,24 +38,23 @@ stub:
 		stubFile, err := ioutil.TempFile(os.TempDir(), "")
 		Expect(err).ToNot(HaveOccurred())
 
-		stubFile.Write([]byte(customStub))
+		_, err = stubFile.Write([]byte(customStub))
+		Expect(err).ToNot(HaveOccurred())
 
-		generateManifest(config, stubFile)
+		bosh.GenerateAndSetDeploymentManifest(config, stubFile)
 	})
 
 	AfterEach(func() {
-		//delete deployment
 		By("delete deployment")
-		boshCommand("-n", "delete", "deployment", name)
+		Expect(bosh.Command("-n", "delete", "deployment", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
-		//delete release
 		By("delete release")
-		boshCommand("-n", "delete", "release", name)
+		Expect(bosh.Command("-n", "delete", "release", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	It("deploys one etcd node", func() {
 		By("deploying")
-		boshCommand("-n", "deploy")
+		Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 		//create etcd key
 		//list etcd key
 	})

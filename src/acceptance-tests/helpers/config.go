@@ -3,15 +3,18 @@ package helpers
 import (
 	"encoding/json"
 	"os"
+	"time"
+)
+
+const (
+	DEFAULT_TIMEOUT = time.Minute * 5
 )
 
 type Config struct {
 	Director string `json:"director"`
-	Stub     string `json:"stub"` // Location of stub to use for testing
-	/*
-	*		For fresh deploy, we write release and generate
-	*		For scale, we write job instance count and generate
-	 */
+	Stub     string `json:"stub"`
+
+	DEFAULT_TIMEOUT time.Duration
 }
 
 var loadedConfig *Config

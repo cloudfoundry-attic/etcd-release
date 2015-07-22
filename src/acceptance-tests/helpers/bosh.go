@@ -1,0 +1,53 @@
+package helpers
+
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
+)
+
+type Bosh struct {
+	gemfilePath string
+	goPath      string
+}
+
+func NewBosh(gemfilePath string, goPath string, config Config) Bosh {
+	return Bosh{
+		gemfilePath: gemfilePath,
+		goPath:      goPath,
+	}
+}
+
+func (bosh Bosh) Command(boshArgs ...string) *gexec.Session {
+	cmd := exec.Command("bundle", append([]string{"exec", "bosh"}, boshArgs...)...)
+	env := os.Environ()
+	cmd.Env = append(env, fmt.Sprintf("BUNDLE_GEMFILE=%s", bosh.gemfilePath))
+
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).ToNot(HaveOccurred())
+
+	return session
+}
+
+func (bosh Bosh) GenerateAndSetDeploymentManifest(config Config, customStub *os.File) {
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
+	Expect(err).ToNot(HaveOccurred())
+
+	generateDeploymentManifest := filepath.Join(bosh.goPath, "generate_deployment_manifest")
+	cmd := exec.Command(generateDeploymentManifest, config.Stub, customStub.Name())
+
+	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).ToNot(HaveOccurred())
+	Eventually(session, DEFAULT_TIMEOUT).Should(gexec.Exit(0))
+
+	tmpFile.Write(session.Out.Contents())
+
+	Expect(bosh.Command("deployment", tmpFile.Name()).Wait(time.Second * 10)).To(gexec.Exit(0))
+}
