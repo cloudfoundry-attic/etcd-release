@@ -20,32 +20,71 @@ networks:
   subnets:
   - cloud_properties:
       name: random
-    range: 10.244.0.0/30
+    range: 10.244.4.0/30
     reserved:
-    - 10.244.0.1
+    - 10.244.4.1
     static:
-    - 10.244.0.2
+    - 10.244.4.2
   - cloud_properties:
       name: random
-    range: 10.244.0.4/30
+    range: 10.244.4.4/30
     reserved:
-    - 10.244.0.5
+    - 10.244.4.5
     static:
-    - 10.244.0.6
+    - 10.244.4.6
+  - cloud_properties:
+      name: random
+    range: 10.244.4.8/30
+    reserved:
+    - 10.244.4.9
+    static:
+    - 10.244.4.10
+  - cloud_properties:
+      name: random
+    range: 10.244.4.12/30
+    reserved:
+    - 10.244.4.13
+    static:
+    - 10.244.4.14
+  - cloud_properties:
+      name: random
+    range: 10.244.4.16/30
+    reserved:
+    - 10.244.4.17
+    static:
+    - 10.244.4.18
+  - cloud_properties:
+      name: random
+    range: 10.244.4.20/30
+    reserved:
+    - 10.244.4.21
+    static: []
+  - cloud_properties:
+      name: random
+    range: 10.244.4.24/30
+    reserved:
+    - 10.244.4.25
+    static: []
+  - cloud_properties:
+      name: random
+    range: 10.244.4.28/30
+    reserved:
+    - 10.244.4.29
+    static: []
 
 - name: etcd2 
   subnets:
   - cloud_properties:
       name: random
-    range: 10.244.2.0/30
+    range: 10.244.5.0/30
     reserved:
-    - 10.244.2.1
+    - 10.244.5.1
     static:
-    - 10.244.2.2
+    - 10.244.5.2
   - cloud_properties:
       name: random
-    range: 10.244.2.4/30
+    range: 10.244.5.4/30
     reserved:
-    - 10.244.2.5
+    - 10.244.5.5
     static:
-    - 10.244.2.6
+    - 10.244.5.6

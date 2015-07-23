@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = FDescribe("Multiple Instances", func() {
+var _ = PDescribe("Multiple Instances", func() {
 	var (
 		manifest helpers.Manifest
 		name     = fmt.Sprintf("etcd-%s", generator.RandomName())

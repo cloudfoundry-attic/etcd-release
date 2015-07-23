@@ -103,7 +103,7 @@ compilation:
     name: random
   network: etcd1
   reuse_compilation_vms: true
-  workers: 6
+  workers: 3
 
 update:
   canaries: 0
