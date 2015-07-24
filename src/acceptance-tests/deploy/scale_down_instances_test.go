@@ -35,6 +35,9 @@ stub:
     etcd:
       version: latest
       name: %s
+  jobs:
+    etcd_z2:
+      instances: 2
 `, name)
 
 		stubFile, err := ioutil.TempFile(os.TempDir(), "")
@@ -54,8 +57,29 @@ stub:
 		Expect(bosh.Command("-n", "delete", "release", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
-	Describe("scaling from 1 node to 3", func() {
+	Describe("scaling from 3 node to 1", func() {
 		It("succesfully scales to multiple etcd nodes", func() {
+			By("deploying")
+			Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+
+			Expect(len(manifest.Networks)).To(Equal(3))
+
+			customStub := fmt.Sprintf(`---
+stub:
+  releases:
+    etcd:
+      version: latest
+      name: %s
+`, name)
+
+			stubFile, err := ioutil.TempFile(os.TempDir(), "")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = stubFile.Write([]byte(customStub))
+			Expect(err).ToNot(HaveOccurred())
+
+			manifest = bosh.GenerateAndSetDeploymentManifest(config, stubFile)
+
 			By("deploying")
 			Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
@@ -72,53 +96,6 @@ stub:
 				response, err = etcdClient.Get(eatsKey, false, false)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(response.Node.Value).To(Equal(eatsValue))
-			}
-
-			customStub := fmt.Sprintf(`---
-stub:
-  releases:
-    etcd:
-      version: latest
-      name: %s
-  jobs:
-    etcd_z2:
-      instances: 2
-`, name)
-
-			stubFile, err := ioutil.TempFile(os.TempDir(), "")
-			Expect(err).ToNot(HaveOccurred())
-
-			_, err = stubFile.Write([]byte(customStub))
-			Expect(err).ToNot(HaveOccurred())
-
-			manifest = bosh.GenerateAndSetDeploymentManifest(config, stubFile)
-
-			By("deploying")
-			Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-			Expect(len(manifest.Networks)).To(Equal(3))
-			for index, value := range manifest.Networks {
-				etcdClient := etcd.NewClient([]string{value})
-
-				eatsKey := fmt.Sprintf("eats-key%d", index)
-				eatsValue := fmt.Sprintf("eats-value%d", index)
-
-				response, err := etcdClient.Create(eatsKey, eatsValue, 60)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(response).ToNot(BeNil())
-			}
-
-			for _, value := range manifest.Networks {
-				etcdClient := etcd.NewClient([]string{value})
-
-				for index, _ := range manifest.Networks {
-					eatsKey := fmt.Sprintf("eats-key%d", index)
-					eatsValue := fmt.Sprintf("eats-value%d", index)
-
-					response, err := etcdClient.Get(eatsKey, false, false)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(response.Node.Value).To(Equal(eatsValue))
-				}
 			}
 		})
 	})
