@@ -18,17 +18,6 @@ default_templates:
   - name: etcd
     release: (( stub.releases.etcd.name ))
 
-default_jobs:
-  etcd_z1:
-    networks:
-    - name: etcd1
-      static_ips: static_ips(1)
-
-  etcd_z2:
-    networks:
-    - name: etcd2
-      static_ips: static_ips(1, 2)
-
 jobs:
   - name: etcd_z1
     templates: (( stub.jobs.etcd_z1.templates || default_templates.etcd ))

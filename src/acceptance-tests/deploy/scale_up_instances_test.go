@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,25 +15,20 @@ import (
 var _ = Describe("Multiple Instances", func() {
 	var (
 		manifest helpers.Manifest
-		name     = fmt.Sprintf("etcd-%s", generator.RandomName())
 	)
 
 	BeforeEach(func() {
-		By("targeting the director")
-		Expect(bosh.Command("target", config.Director).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-		By("creating the release")
-		Expect(bosh.Command("create", "release", "--force", "--name", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-		By("uploading the release")
-		Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
 		customStub := fmt.Sprintf(`---
 stub:
   releases:
     etcd:
       version: latest
       name: %s
+  jobs:
+    etcd_z1:
+      instances: 1
+    etcd_z2:
+      instances: 0
 `, name)
 
 		stubFile, err := ioutil.TempFile(os.TempDir(), "")
@@ -49,9 +43,6 @@ stub:
 	AfterEach(func() {
 		By("delete deployment")
 		Expect(bosh.Command("-n", "delete", "deployment", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-		By("delete release")
-		Expect(bosh.Command("-n", "delete", "release", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	Describe("scaling from 1 node to 3", func() {
@@ -81,6 +72,8 @@ stub:
       version: latest
       name: %s
   jobs:
+    etcd_z1:
+      instances: 1
     etcd_z2:
       instances: 2
 `, name)

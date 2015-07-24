@@ -1,19 +1,12 @@
 ---
-director_uuid: b02f8ab5-b63c-4f08-b144-89f96810a022
+director_uuid: 737bd8ee-f4f9-4aec-9b82-80f3d0be26f1
 
 stub:
   stemcell:
     name: bosh-warden-boshlite-ubuntu-trusty-go_agent
     version: latest
-  releases:
-    etcd:
-      name: the-name-we-created
-      version: latest
-  jobs:
-    etcd_z1:
-      instances: 1
-    etcd_z2:
-      instances: 0
+  releases: (( merge ))
+  jobs:  (( merge ))
 
 networks:
 - name: etcd1
