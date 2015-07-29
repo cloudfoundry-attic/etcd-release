@@ -22,3 +22,6 @@
 [submodule "src/github.com/cppforlife/turbulence-release"]
 	path = src/github.com/cppforlife/turbulence-release
 	url = https://github.com/cppforlife/turbulence-release.git
+[submodule "src/github.com/cloudfoundry-incubator/candiedyaml"]
+	path = src/github.com/cloudfoundry-incubator/candiedyaml
+	url = https://github.com/cloudfoundry-incubator/candiedyaml.git
