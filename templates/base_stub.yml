@@ -3,6 +3,8 @@ director_uuid: 737bd8ee-f4f9-4aec-9b82-80f3d0be26f1
 
 stub:
   <<: (( merge ))
+
+  name: (( merge || "etcd" ))
   stemcell:
     name: bosh-warden-boshlite-ubuntu-trusty-go_agent
     version: latest

@@ -3,7 +3,7 @@ director_uuid: (( merge ))
 
 stub: (( merge ))
 
-name: (( stub.releases.etcd.name )) 
+name: (( stub.name ))
 
 etcd_releases: (( merge || [] ))
 turbulence_releases: (( merge || [] ))

@@ -1,10 +1,12 @@
 ---
+default_name: etcd
+
 director_uuid: (( merge ))
 
 stub: (( merge ))
 
 etcd_releases:
-  - name: (( stub.releases.etcd.name || "etcd" ))
+  - name: (( stub.releases.etcd.name || default_name ))
     version: (( stub.releases.etcd.version || "latest" ))
 
 networks: (( merge ))
@@ -12,7 +14,7 @@ networks: (( merge ))
 default_templates:
   etcd:
     - name: etcd
-      release: (( stub.releases.etcd.name ))
+      release: (( stub.releases.etcd.name || default_name ))
 
 etcd_jobs:
 - name: etcd_z1

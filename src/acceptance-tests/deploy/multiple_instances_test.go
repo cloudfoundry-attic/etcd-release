@@ -20,6 +20,7 @@ var _ = Describe("Multiple Instances", func() {
 	BeforeEach(func() {
 		customStub := fmt.Sprintf(`---
 stub:
+  name: %s
   releases:
     etcd:
       version: latest
@@ -29,7 +30,7 @@ stub:
       instances: 1
     etcd_z2:
       instances: 2
-`, etcdName)
+`, etcdName, etcdName)
 
 		stubFile, err := ioutil.TempFile(os.TempDir(), "")
 		Expect(err).ToNot(HaveOccurred())
