@@ -1,0 +1,76 @@
+---
+director_uuid: 737bd8ee-f4f9-4aec-9b82-80f3d0be26f1
+
+stub:
+  <<: (( merge ))
+  stemcell:
+    name: bosh-warden-boshlite-ubuntu-trusty-go_agent
+    version: latest
+
+networks:
+- name: etcd1
+  subnets:
+  - cloud_properties:
+      name: random
+    range: 10.244.4.0/30
+    reserved:
+    - 10.244.4.1
+    static:
+    - 10.244.4.2
+  - cloud_properties:
+      name: random
+    range: 10.244.4.4/30
+    reserved:
+    - 10.244.4.5
+    static:
+    - 10.244.4.6
+  - cloud_properties:
+      name: random
+    range: 10.244.4.20/30
+    reserved:
+    - 10.244.4.21
+    static: []
+  - cloud_properties:
+      name: random
+    range: 10.244.4.24/30
+    reserved:
+    - 10.244.4.25
+    static: []
+  - cloud_properties:
+      name: random
+    range: 10.244.4.28/30
+    reserved:
+    - 10.244.4.29
+    static: []
+- name: etcd2 
+  subnets:
+  - cloud_properties:
+      name: random
+    range: 10.244.5.0/30
+    reserved:
+    - 10.244.5.1
+    static:
+    - 10.244.5.2
+  - cloud_properties:
+      name: random
+    range: 10.244.5.4/30
+    reserved:
+    - 10.244.5.5
+    static:
+    - 10.244.5.6
+- name: turbulence1
+  subnets:
+  - cloud_properties:
+      name: random
+    range: 10.244.6.0/30
+    reserved:
+    - 10.244.6.1
+    static:
+    - 10.244.6.2
+  - cloud_properties:
+      name: random
+    range: 10.244.6.4/30
+    reserved:
+    - 10.244.6.5
+    static:
+    - 10.244.6.6

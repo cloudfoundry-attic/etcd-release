@@ -1,83 +1,62 @@
 ---
-director_uuid: 737bd8ee-f4f9-4aec-9b82-80f3d0be26f1
+director_uuid: (( merge ))
 
-stub:
-  stemcell:
-    name: bosh-warden-boshlite-ubuntu-trusty-go_agent
-    version: latest
-  releases: (( merge ))
-  jobs:  (( merge ))
+stub: (( merge ))
 
-networks:
-- name: etcd1
-  subnets:
-  - cloud_properties:
-      name: random
-    range: 10.244.4.0/30
-    reserved:
-    - 10.244.4.1
-    static:
-    - 10.244.4.2
-  - cloud_properties:
-      name: random
-    range: 10.244.4.4/30
-    reserved:
-    - 10.244.4.5
-    static:
-    - 10.244.4.6
-  - cloud_properties:
-      name: random
-    range: 10.244.4.8/30
-    reserved:
-    - 10.244.4.9
-    static:
-    - 10.244.4.10
-  - cloud_properties:
-      name: random
-    range: 10.244.4.12/30
-    reserved:
-    - 10.244.4.13
-    static:
-    - 10.244.4.14
-  - cloud_properties:
-      name: random
-    range: 10.244.4.16/30
-    reserved:
-    - 10.244.4.17
-    static:
-    - 10.244.4.18
-  - cloud_properties:
-      name: random
-    range: 10.244.4.20/30
-    reserved:
-    - 10.244.4.21
-    static: []
-  - cloud_properties:
-      name: random
-    range: 10.244.4.24/30
-    reserved:
-    - 10.244.4.25
-    static: []
-  - cloud_properties:
-      name: random
-    range: 10.244.4.28/30
-    reserved:
-    - 10.244.4.29
-    static: []
+etcd_releases:
+  - name: (( stub.releases.etcd.name || "etcd" ))
+    version: (( stub.releases.etcd.version || "latest" ))
 
-- name: etcd2 
-  subnets:
-  - cloud_properties:
-      name: random
-    range: 10.244.5.0/30
-    reserved:
-    - 10.244.5.1
-    static:
-    - 10.244.5.2
-  - cloud_properties:
-      name: random
-    range: 10.244.5.4/30
-    reserved:
-    - 10.244.5.5
-    static:
-    - 10.244.5.6
+networks: (( merge ))
+
+default_templates:
+  etcd:
+    - name: etcd
+      release: (( stub.releases.etcd.name ))
+
+etcd_jobs:
+- name: etcd_z1
+  templates: (( stub.jobs.etcd_z1.templates || default_templates.etcd ))
+  instances: (( stub.jobs.etcd_z1.instances || 1 ))
+  persistent_disk: 10240
+  resource_pool: medium_z1
+  networks:
+    - name: (( stubs.jobs.etcd_z1.networks.name || "etcd1" ))
+      static_ips: (( stub.jobs.etcd_z1.networks.static_ips || static_ips(0, 1) ))
+  properties:
+    networks:
+      - name: etcd1
+    metron_agent:
+      zone: z1
+  update:
+    max_in_flight: 1
+
+- name: etcd_z2
+  templates: (( stub.jobs.etcd_z2.templates || default_templates.etcd ))
+  instances: (( stub.jobs.etcd_z2.instances || 2 ))
+  persistent_disk: 10240
+  resource_pool: medium_z2
+  networks:
+    - name: (( stubs.jobs.etcd_z2.networks.name || "etcd2" ))
+      static_ips: (( stub.jobs.etcd_z2.networks.static_ips || static_ips(0, 1) ))
+  properties:
+    networks:
+      - name: etcd2
+    metron_agent:
+      zone: z2
+  update:
+    max_in_flight: 1
+
+properties:
+  <<: (( merge ))
+
+  etcd:
+    ca_cert: null
+    client_cert: null
+    client_key: null
+    cluster: null
+    peer_require_ssl: null
+    require_ssl: null
+    server_cert: null
+    server_key: null
+    machines: (( etcd_jobs.etcd_z1.networks.etcd1.static_ips etcd_jobs.etcd_z2.networks.etcd2.static_ips ))

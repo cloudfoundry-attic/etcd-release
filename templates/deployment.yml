@@ -1,0 +1,48 @@
+---
+director_uuid: (( merge ))
+
+stub: (( merge ))
+
+name: (( stub.releases.etcd.name )) 
+
+etcd_releases: (( merge || [] ))
+turbulence_releases: (( merge || [] ))
+releases: (( etcd_releases turbulence_releases ))
+
+etcd_jobs: (( merge || [] ))
+turbulence_jobs: (( merge || [] ))
+jobs: (( etcd_jobs turbulence_jobs ))
+
+empty_hash: {}
+default_env: (( empty_hash ))
+
+networks: (( merge ))
+
+properties:
+  <<: (( merge ))
+
+  etcd:
+    <<: (( merge ))
+    machines: (( jobs.etcd_z1.networks.etcd1.static_ips jobs.etcd_z2.networks.etcd2.static_ips ))
+
+resource_pools:
+  - name: medium_z1
+    network: etcd1
+    stemcell: (( stub.stemcell ))
+    cloud_properties:
+      name: random
+    env: (( merge || default_env ))
+
+  - name: medium_z2
+    network: etcd2
+    stemcell: (( stub.stemcell ))
+    cloud_properties:
+      name: random
+    env: (( merge || default_env ))
+
+  - name: xlarge_errand
+    network: etcd1 
+    stemcell: (( stub.stemcell ))
+    cloud_properties:
+      name: random
+    env: (( merge || default_env ))

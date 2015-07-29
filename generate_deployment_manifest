@@ -3,5 +3,7 @@
 templates=$(dirname $0)/templates
 
 spiff merge \
-  $templates/jobs.yml \
+  $templates/cleanup.yml \
+  $templates/deployment.yml \
+  $templates/etcd_stub.yml \
   "$@"

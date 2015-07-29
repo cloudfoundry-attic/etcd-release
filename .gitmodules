@@ -19,3 +19,6 @@
 [submodule "src/github.com/ugorji/go"]
 	path = src/github.com/ugorji/go
 	url = http://github.com/ugorji/go.git
+[submodule "src/github.com/cppforlife/turbulence-release"]
+	path = src/github.com/cppforlife/turbulence-release
+	url = https://github.com/cppforlife/turbulence-release.git

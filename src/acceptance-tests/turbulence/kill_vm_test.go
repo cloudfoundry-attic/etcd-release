@@ -1,7 +1,7 @@
-package deploy_test
+package turbulence_test
 
 import (
-	"acceptance-tests/helpers"
+	. "acceptance-tests/turbulence"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,10 +9,9 @@ import (
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("SingleInstance", func() {
+var _ = Describe("KillVm", func() {
 	var (
 		manifest helpers.Manifest
 	)
@@ -24,12 +23,17 @@ stub:
     etcd:
       version: latest
       name: %s
+    turbulence:
+      version: latest
+      name: %s
   jobs:
     etcd_z1:
       instances: 1
     etcd_z2:
       instances: 0
-`, etcdName)
+    turbulence:
+      instances: 1
+`, etcdName, turbulenceName)
 
 		stubFile, err := ioutil.TempFile(os.TempDir(), "")
 		Expect(err).ToNot(HaveOccurred())
@@ -42,7 +46,7 @@ stub:
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+		// Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	It("deploys one etcd node", func() {
@@ -64,4 +68,5 @@ stub:
 			Expect(response.Node.Value).To(Equal(eatsValue))
 		}
 	})
+
 })

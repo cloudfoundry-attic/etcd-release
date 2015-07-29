@@ -29,7 +29,7 @@ stub:
       instances: 1
     etcd_z2:
       instances: 2
-`, name)
+`, etcdName)
 
 		stubFile, err := ioutil.TempFile(os.TempDir(), "")
 		Expect(err).ToNot(HaveOccurred())
@@ -42,7 +42,7 @@ stub:
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", name).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	Describe("Multiple node deployment", func() {
