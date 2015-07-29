@@ -1,7 +1,7 @@
 package turbulence_test
 
 import (
-	. "acceptance-tests/turbulence"
+	"acceptance-tests/helpers"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -9,9 +9,10 @@ import (
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("KillVm", func() {
+var _ = PDescribe("KillVm", func() {
 	var (
 		manifest helpers.Manifest
 	)

@@ -1,6 +1,7 @@
 package turbulence_test
 
 import (
+	"acceptance-tests/helpers"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,7 +28,7 @@ var (
 	bosh           helpers.Bosh
 	config         helpers.Config
 	etcdName       = fmt.Sprintf("etcd-%s", generator.RandomName())
-	turbulenceName = "turbulence"
+	turbulenceName = fmt.Sprintf("turb-%s", generator.RandomName())
 )
 
 var _ = BeforeSuite(func() {
@@ -67,9 +68,18 @@ var _ = BeforeSuite(func() {
 	By("uploading the etcd release")
 	Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
-	// upload the turbulence release
+	// change to root directory of turbulence and upload the turbulence release
+	err = os.Chdir(filepath.Join(goPath, "src", "github.com", "cppforlife", "turbulence-release"))
+	Expect(err).ToNot(HaveOccurred())
+
+	By("creating the turbulence release")
+	Expect(bosh.Command("create", "release", "--name", turbulenceName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+
 	By("uploading the turbulence release")
-	Expect(bosh.Command("upload", "release", filepath.Join("src", "github.com", "cppforlife", "turbulence-release", "releases", "turbulence", "turbulence-0.1.yml"), "--force", "--name", turbulenceName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+
+	err = os.Chdir(goPath)
+	Expect(err).ToNot(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {

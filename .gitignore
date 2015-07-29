@@ -11,7 +11,7 @@ blobs
 .final_builds/jobs/**/*.tgz
 .final_builds/packages/**/*.tgz
 pkg/
-bin/ginkgo
+bin/
 tags
 *.swp
 *~

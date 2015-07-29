@@ -61,7 +61,7 @@ func (bosh Bosh) GenerateAndSetDeploymentManifest(config Config, customStub *os.
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
 	Expect(err).ToNot(HaveOccurred())
 
-	generateDeploymentManifest := filepath.Join(bosh.goPath, "generate_deployment_manifest")
+	generateDeploymentManifest := filepath.Join(bosh.goPath, "src", "acceptance-tests", "scripts", "generate_deployment_manifest")
 	cmd := exec.Command(generateDeploymentManifest, config.Stub, customStub.Name())
 
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)

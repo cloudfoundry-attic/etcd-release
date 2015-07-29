@@ -1,6 +1,6 @@
 #!/bin/sh
 
-templates=$(dirname $0)/templates
+templates=$(cd $(dirname $0)/.. && pwd)/templates
 
 spiff merge \
   $templates/cleanup.yml \
