@@ -4,6 +4,6 @@ name: etcd
 dependencies:
   - golang1.4
 files:
-  - etcd/**/*
+  - github.com/coreos/etcd/**/*
 excluded_files:
   - etcd/Godeps/_workspace/src/github.com/prometheus/procfs/fixtures/26231/exe
