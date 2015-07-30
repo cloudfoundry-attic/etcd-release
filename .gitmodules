@@ -1,5 +1,5 @@
 [submodule "src/etcd"]
-	path = src/etcd
+	path = src/github.com/coreos/etcd
 	url = https://github.com/coreos/etcd.git
 [submodule "src/github.com/onsi/ginkgo"]
 	path = src/github.com/onsi/ginkgo
