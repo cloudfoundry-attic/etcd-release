@@ -2,9 +2,6 @@ package deploy_test
 
 import (
 	"acceptance-tests/helpers"
-	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
@@ -14,44 +11,31 @@ import (
 
 var _ = Describe("SingleInstance", func() {
 	var (
-		manifest helpers.Manifest
+		etcdClientURLs []string
 	)
 
 	BeforeEach(func() {
-		customStub := fmt.Sprintf(`---
-stub:
-  name: %s
-  releases:
-    etcd:
-      version: latest
-      name: %s
-  jobs:
-    etcd_z1:
-      instances: 1
-    etcd_z2:
-      instances: 0
-`, etcdName, etcdName)
 
-		stubFile, err := ioutil.TempFile(os.TempDir(), "")
-		Expect(err).ToNot(HaveOccurred())
+		etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
+			directorUUIDStub.Name(),
+			helpers.InstanceCount1NodeStubPath,
+			helpers.PersistentDiskStubPath,
+			config.IAASSettingsStubPath,
+			nameOverridesStub.Name(),
+		)
 
-		_, err = stubFile.Write([]byte(customStub))
-		Expect(err).ToNot(HaveOccurred())
-
-		manifest = bosh.GenerateAndSetDeploymentManifest(config, stubFile)
+		By("deploying")
+		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	It("deploys one etcd node", func() {
-		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-		Expect(len(manifest.Networks)).To(Equal(1))
-		for index, value := range manifest.Networks {
+		Expect(len(etcdClientURLs)).To(Equal(1))
+		for index, value := range etcdClientURLs {
 			etcdClient := etcd.NewClient([]string{value})
 			eatsKey := "eats-key" + string(index)
 			eatsValue := "eats-value" + string(index)

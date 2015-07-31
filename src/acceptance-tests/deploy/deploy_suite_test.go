@@ -2,6 +2,7 @@ package deploy_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -28,6 +29,8 @@ var (
 	bosh     helpers.Bosh
 	config   helpers.Config
 	etcdName = fmt.Sprintf("etcd-%s", generator.RandomName())
+
+	directorUUIDStub, nameOverridesStub *os.File
 )
 
 var _ = BeforeSuite(func() {
@@ -54,15 +57,39 @@ var _ = BeforeSuite(func() {
 	config = helpers.LoadConfig()
 	bosh = helpers.NewBosh(gemfilePath, goPath, config)
 
-	if config.DEFAULT_TIMEOUT != 0 {
-		DEFAULT_TIMEOUT = config.DEFAULT_TIMEOUT
-	}
-
 	By("targeting the director")
-	Expect(bosh.Command("target", config.Director).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("target", config.BoshTarget).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+
+	By("creating the director stub")
+	session = bosh.Command("status", "--uuid").Wait(DEFAULT_TIMEOUT)
+	Expect(session).To(Exit(0))
+	uuid := session.Out.Contents()
+
+	uuidStub := fmt.Sprintf(`---
+director_uuid: %s
+`, uuid)
+
+	directorUUIDStub, err = ioutil.TempFile(os.TempDir(), "")
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = directorUUIDStub.Write([]byte(uuidStub))
+	Expect(err).ToNot(HaveOccurred())
 
 	By("creating the release")
 	Expect(bosh.Command("create", "release", "--force", "--name", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+
+	By("creating the name overrides stub")
+	nameStub := fmt.Sprintf(`---
+name_overrides:
+  release_name: %s
+  deployment_name: %s
+`, etcdName, etcdName)
+
+	nameOverridesStub, err = ioutil.TempFile(os.TempDir(), "")
+	Expect(err).ToNot(HaveOccurred())
+
+	_, err = nameOverridesStub.Write([]byte(nameStub))
+	Expect(err).ToNot(HaveOccurred())
 
 	By("uploading the release")
 	Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))

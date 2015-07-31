@@ -3,8 +3,6 @@ package deploy_test
 import (
 	"acceptance-tests/helpers"
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
@@ -14,31 +12,20 @@ import (
 
 var _ = Describe("Multiple Instances", func() {
 	var (
-		manifest helpers.Manifest
+		etcdClientURLs []string
 	)
 
 	BeforeEach(func() {
-		customStub := fmt.Sprintf(`---
-stub:
-  name: %s
-  releases:
-    etcd:
-      version: latest
-      name: %s
-  jobs:
-    etcd_z1:
-      instances: 1
-    etcd_z2:
-      instances: 0
-`, etcdName, etcdName)
+		etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
+			directorUUIDStub.Name(),
+			helpers.InstanceCount1NodeStubPath,
+			helpers.PersistentDiskStubPath,
+			config.IAASSettingsStubPath,
+			nameOverridesStub.Name(),
+		)
 
-		stubFile, err := ioutil.TempFile(os.TempDir(), "")
-		Expect(err).ToNot(HaveOccurred())
-
-		_, err = stubFile.Write([]byte(customStub))
-		Expect(err).ToNot(HaveOccurred())
-
-		manifest = bosh.GenerateAndSetDeploymentManifest(config, stubFile)
+		By("deploying")
+		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	AfterEach(func() {
@@ -51,8 +38,8 @@ stub:
 			By("deploying")
 			Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 
-			Expect(len(manifest.Networks)).To(Equal(1))
-			for index, value := range manifest.Networks {
+			Expect(len(etcdClientURLs)).To(Equal(1))
+			for index, value := range etcdClientURLs {
 				etcdClient := etcd.NewClient([]string{value})
 				eatsKey := "eats-key" + string(index)
 				eatsValue := "eats-value" + string(index)
@@ -66,33 +53,19 @@ stub:
 				Expect(response.Node.Value).To(Equal(eatsValue))
 			}
 
-			customStub := fmt.Sprintf(`---
-stub:
-  name: %s
-  releases:
-    etcd:
-      version: latest
-      name: %s
-  jobs:
-    etcd_z1:
-      instances: 1
-    etcd_z2:
-      instances: 2
-`, etcdName, etcdName)
-
-			stubFile, err := ioutil.TempFile(os.TempDir(), "")
-			Expect(err).ToNot(HaveOccurred())
-
-			_, err = stubFile.Write([]byte(customStub))
-			Expect(err).ToNot(HaveOccurred())
-
-			manifest = bosh.GenerateAndSetDeploymentManifest(config, stubFile)
+			etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
+				directorUUIDStub.Name(),
+				helpers.InstanceCount3NodesStubPath,
+				helpers.PersistentDiskStubPath,
+				config.IAASSettingsStubPath,
+				nameOverridesStub.Name(),
+			)
 
 			By("deploying")
-			Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+			Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 
-			Expect(len(manifest.Networks)).To(Equal(3))
-			for index, value := range manifest.Networks {
+			Expect(len(etcdClientURLs)).To(Equal(3))
+			for index, value := range etcdClientURLs {
 				etcdClient := etcd.NewClient([]string{value})
 
 				eatsKey := fmt.Sprintf("eats-key%d", index)
@@ -103,10 +76,10 @@ stub:
 				Expect(response).ToNot(BeNil())
 			}
 
-			for _, value := range manifest.Networks {
+			for _, value := range etcdClientURLs {
 				etcdClient := etcd.NewClient([]string{value})
 
-				for index, _ := range manifest.Networks {
+				for index, _ := range etcdClientURLs {
 					eatsKey := fmt.Sprintf("eats-key%d", index)
 					eatsValue := fmt.Sprintf("eats-value%d", index)
 

@@ -23,10 +23,6 @@ type Bosh struct {
 	goPath      string
 }
 
-type Manifest struct {
-	Networks []string
-}
-
 type manifest struct {
 	Properties Properties `yaml:"properties"`
 }
@@ -57,12 +53,25 @@ func (bosh Bosh) Command(boshArgs ...string) *gexec.Session {
 	return session
 }
 
-func (bosh Bosh) GenerateAndSetDeploymentManifest(config Config, customStub *os.File) Manifest {
+func (bosh Bosh) GenerateAndSetDeploymentManifest(
+	directorUUIDStub,
+	instanceCountOverridesStub,
+	persistentDiskOverridesStub,
+	iaasSettingsStub,
+	nameOverridesStub string,
+) []string {
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
 	Expect(err).ToNot(HaveOccurred())
 
 	generateDeploymentManifest := filepath.Join(bosh.goPath, "src", "acceptance-tests", "scripts", "generate_deployment_manifest")
-	cmd := exec.Command(generateDeploymentManifest, config.Stub, customStub.Name())
+	cmd := exec.Command(
+		generateDeploymentManifest,
+		directorUUIDStub,
+		instanceCountOverridesStub,
+		persistentDiskOverridesStub,
+		iaasSettingsStub,
+		nameOverridesStub,
+	)
 
 	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
@@ -83,9 +92,10 @@ func (bosh Bosh) GenerateAndSetDeploymentManifest(config Config, customStub *os.
 	err = decoder.Decode(manifest)
 	Expect(err).ToNot(HaveOccurred())
 
+	etcdClientURLs := make([]string, len(manifest.Properties.Etcd.Machines))
 	for index, elem := range manifest.Properties.Etcd.Machines {
-		manifest.Properties.Etcd.Machines[index] = "http://" + elem + ":" + etcdPort
+		etcdClientURLs[index] = "http://" + elem + ":" + etcdPort
 	}
 
-	return Manifest{Networks: manifest.Properties.Etcd.Machines}
+	return etcdClientURLs
 }

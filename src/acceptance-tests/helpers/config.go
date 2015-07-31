@@ -11,10 +11,8 @@ const (
 )
 
 type Config struct {
-	Director string `json:"director"`
-	Stub     string `json:"stub"`
-
-	DEFAULT_TIMEOUT time.Duration
+	BoshTarget           string `json:"bosh_target"`
+	IAASSettingsStubPath string `json:"iaas_settings_stub_path"`
 }
 
 var loadedConfig *Config
@@ -24,12 +22,12 @@ func LoadConfig() Config {
 		loadedConfig = loadConfigJsonFromPath()
 	}
 
-	if loadedConfig.Director == "" {
-		panic("missing director endpoint")
+	if loadedConfig.BoshTarget == "" {
+		panic("missing BOSH target (e.g. 'lite' or '192.168.50.4'")
 	}
 
-	if loadedConfig.Stub == "" {
-		panic("missing stub path")
+	if loadedConfig.IAASSettingsStubPath == "" {
+		panic("missing IaaS settings stub path")
 	}
 
 	return *loadedConfig
@@ -55,9 +53,9 @@ func loadConfigJsonFromPath() *Config {
 }
 
 func configPath() string {
-	path := os.Getenv("CONFIG")
+	path := os.Getenv("EATS_CONFIG")
 	if path == "" {
-		panic("Must set $CONFIG to point to an integration config .json file.")
+		panic("Must set $EATS_CONFIG to point to an etcd acceptance tests config file.")
 	}
 
 	return path
