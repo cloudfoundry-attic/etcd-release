@@ -1,7 +1,7 @@
 # etcd-release
 ---
 
-###About
+#About
 
 This is a [bosh](http://bosh.io) release for [etcd](https://github.com/coreos/etcd).
 
@@ -15,6 +15,97 @@ etcd should only be updated one instance at a time to avoid problems joining the
 
 * Currently this release is not consumed by Cloud Foundry as a stand-alone bosh release. This is expected to change in the near future
 * At no point should you deploy exactly two (2) instances of etcd. Please see [CoreOS's recommendations](https://coreos.com/docs/cluster-management/scaling/etcd-optimal-cluster-size/) for cluster sizes.
+
+---
+#Deploying
+In order to deploy etcd-release you must follow the standard steps for deploying software with bosh.
+
+We assume you have already deployed and targeted a bosh director. For more instructions on how to do that please see the [bosh documentation](http://bosh.io/docs).
+
+###1. Creating a release
+From within the etcd-release director run `bosh create release --force` to create a development release.
+
+###2. Uploading a release
+Once you've created a development release run `bosh upload release` to upload your development release to the director.
+
+###3. Generating a deployment manifest
+We provide a set of scripts and templates to generate a simple deployment manifest. You should use these as a starting point for creating your own manifest, but they should not be considered comprehensive or production-ready.
+
+In order to automatically generate a manifest you must have installed the following dependencies:
+
+1. [Go](https://golang.org/)
+2. [Spiff](https://github.com/cloudfoundry-incubator/spiff)
+
+Once installed, manifests can be generated using `./scripts/generate_deployment_manifest [STUB LIST]` with the provided stubs:
+
+1. uuid_stub
+	
+	The uuid_stub provides the uuid for the currently targeted bosh director.
+	```yaml
+	---
+	director_uuid: DIRECTOR_UUID
+	```
+2. instance_count_stub
+
+	The instance count stub provides the ability to overwrite the number of instances of etcd to deploy. The minimal deploymant of etcd is shown below:
+	```yaml
+	---
+	instance_count_overrides:
+	  etcd_z1:
+	    instances: 1
+	  etcd_z2:
+	    instances: 0
+	```
+
+	Remember, at no time should you deploy only 2 instances of etcd.
+3. persistent_disk_stub
+
+	The persistent disk stub allows you to override the size of the persistent disk used in each instance of the etcd job. If you wish to use the default settings provide a stub with only an empty hash:
+	```yaml
+	---
+	persistent_disk_overrides: {}
+	```
+	
+	To override disk sizes the format is as follows
+	```yaml
+	---
+	persistent_disk_overrides:
+	  etcd_z1: 1234
+	  etcd_z2: 1234	
+	```
+	
+4. iaas_settings
+
+	The iaas settings stub contains iaas specific settings, including networks, cloud properties, and compilation properties. [We provide a default that should be suitable for a bosh-lite deployment](https://github.com/cloudfoundry-incubator/etcd-release/blob/master/manifest-generation/bosh-lite-stubs/iaas-settings.yml). Please see the bosh documentation for setting up networks and subnets on your iaas of choice. We currently allow for three network configurations on your iaas: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
+
+[Optional]
+
+1. If you wish to override the name of the release and the deployment (default: etcd) you can provide a release_name_stub with the following format:
+	
+	```yaml
+	---
+	name_overrides:
+	  release_name: NAME
+	  deployment_name: NAME
+	```
+	
+---
+#Running EATS (ETCD Acceptance Tests)
+
+We have written a test suite that exercises spinning up single/multiple etcd instances and scaling them. If you have already installed Go, you can run `EATS_CONFIG=[config_file.json] ./scripts/test`. The `test` script installs all dependancies and runs the full test suite. The EATS_CONFIG environment variable points to a configuration file which specifies the endpoint of the bosh director and the path to your iaas_settings stub. An example config json for bosh-lite would look like:
+
+```json
+{
+  "bosh_target": "192.168.50.4",
+  "iaas_settings_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings.yml"
+}
+```
+
+Currently you cannot specify indivudual tests to be run, however we are working on adding that functionality in the near future.
+
+---
+#Advanced
+
 
 ### Encrypting Traffic
 

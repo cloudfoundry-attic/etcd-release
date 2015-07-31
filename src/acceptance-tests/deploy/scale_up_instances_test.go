@@ -26,6 +26,8 @@ var _ = Describe("Multiple Instances", func() {
 
 		By("deploying")
 		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+
+		Expect(len(etcdClientURLs)).To(Equal(1))
 	})
 
 	AfterEach(func() {
@@ -35,10 +37,6 @@ var _ = Describe("Multiple Instances", func() {
 
 	Describe("scaling from 1 node to 3", func() {
 		It("succesfully scales to multiple etcd nodes", func() {
-			By("deploying")
-			Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-			Expect(len(etcdClientURLs)).To(Equal(1))
 			for index, value := range etcdClientURLs {
 				etcdClient := etcd.NewClient([]string{value})
 				eatsKey := "eats-key" + string(index)
