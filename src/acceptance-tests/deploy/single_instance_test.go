@@ -15,12 +15,11 @@ var _ = Describe("SingleInstance", func() {
 	)
 
 	BeforeEach(func() {
-
 		etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
 			directorUUIDStub.Name(),
 			helpers.InstanceCount1NodeStubPath,
 			helpers.PersistentDiskStubPath,
-			config.IAASSettingsStubPath,
+			config.IAASSettingsEtcdStubPath,
 			nameOverridesStub.Name(),
 		)
 

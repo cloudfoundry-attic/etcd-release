@@ -2,72 +2,42 @@ package turbulence_test
 
 import (
 	"acceptance-tests/helpers"
-	"fmt"
-	"io/ioutil"
-	"os"
+	"acceptance-tests/turbulence/client"
 
-	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = PDescribe("KillVm", func() {
+var _ = Describe("KillVm", func() {
 	var (
-		manifest helpers.Manifest
+		etcdClientURLs []string
 	)
 
 	BeforeEach(func() {
-		customStub := fmt.Sprintf(`---
-stub:
-  releases:
-    etcd:
-      version: latest
-      name: %s
-    turbulence:
-      version: latest
-      name: %s
-  jobs:
-    etcd_z1:
-      instances: 1
-    etcd_z2:
-      instances: 0
-    turbulence:
-      instances: 1
-`, etcdName, turbulenceName)
+		etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
+			directorUUIDStub.Name(),
+			helpers.InstanceCount3NodesStubPath,
+			helpers.PersistentDiskStubPath,
+			config.IAASSettingsEtcdStubPath,
+			etcdNameOverrideStub.Name(),
+		)
 
-		stubFile, err := ioutil.TempFile(os.TempDir(), "")
-		Expect(err).ToNot(HaveOccurred())
+		By("deploying")
+		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 
-		_, err = stubFile.Write([]byte(customStub))
-		Expect(err).ToNot(HaveOccurred())
-
-		manifest = bosh.GenerateAndSetDeploymentManifest(config, stubFile)
+		Expect(len(etcdClientURLs)).To(Equal(3))
 	})
 
 	AfterEach(func() {
 		By("delete deployment")
-		// Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
-	It("deploys one etcd node", func() {
-		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	It("kills one etcd node", func() {
+		turbulenceClient := client.NewClient(turbulencUrl)
 
-		Expect(len(manifest.Networks)).To(Equal(1))
-		for index, value := range manifest.Networks {
-			etcdClient := etcd.NewClient([]string{value})
-			eatsKey := "eats-key" + string(index)
-			eatsValue := "eats-value" + string(index)
-
-			response, err := etcdClient.Create(eatsKey, eatsValue, 60)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response).ToNot(BeNil())
-
-			response, err = etcdClient.Get(eatsKey, false, false)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Node.Value).To(Equal(eatsValue))
-		}
+		err := turbulenceClient.KillIndices(etcdName, "etcd_z2", []int{1})
+		Expect(err).ToNot(HaveOccurred())
 	})
-
 })

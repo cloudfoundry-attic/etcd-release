@@ -11,8 +11,11 @@ const (
 )
 
 type Config struct {
-	BoshTarget           string `json:"bosh_target"`
-	IAASSettingsStubPath string `json:"iaas_settings_stub_path"`
+	BoshTarget                     string `json:"bosh_target"`
+	IAASSettingsEtcdStubPath       string `json:"iaas_settings_etcd_stub_path"`
+	IAASSettingsTurbulenceStubPath string `json:"iaas_settings_turbulence_stub_path"`
+	CPIReleaseUrl                  string `json:"cpi_release_url"`
+	CPIReleaseName                 string `json:"cpi_release_name"`
 }
 
 var loadedConfig *Config
@@ -26,8 +29,8 @@ func LoadConfig() Config {
 		panic("missing BOSH target (e.g. 'lite' or '192.168.50.4'")
 	}
 
-	if loadedConfig.IAASSettingsStubPath == "" {
-		panic("missing IaaS settings stub path")
+	if loadedConfig.IAASSettingsEtcdStubPath == "" {
+		panic("missing etcd IaaS settings stub path")
 	}
 
 	return *loadedConfig

@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"net/http"
 )
@@ -51,11 +52,20 @@ func (c Client) KillIndices(deploymentName, jobName string, indices []int) error
 		return err
 	}
 
-	_, err = http.Post(c.baseURL+"/api/v1/incidents", "text/json", bytes.NewBuffer(jsonCommand))
+	request, err := http.NewRequest("POST", c.baseURL+"/api/v1/incidents", bytes.NewBuffer(jsonCommand))
+	if err != nil {
+		return err
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+
+	_, err = client.Do(request)
 	if err != nil {
 		return err
 	}
 
 	return nil
-
 }

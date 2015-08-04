@@ -12,4 +12,4 @@ export PATH=$root_dir/bin:$PATH
 # install ginkgo
 go install -v github.com/onsi/ginkgo/ginkgo
 
-ginkgo src/acceptance-tests/deploy
+ginkgo src/acceptance-tests/turbulence

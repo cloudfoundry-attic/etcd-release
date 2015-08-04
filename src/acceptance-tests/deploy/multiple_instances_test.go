@@ -20,7 +20,7 @@ var _ = Describe("Multiple Instances", func() {
 			directorUUIDStub.Name(),
 			helpers.InstanceCount3NodesStubPath,
 			helpers.PersistentDiskStubPath,
-			config.IAASSettingsStubPath,
+			config.IAASSettingsEtcdStubPath,
 			nameOverridesStub.Name(),
 		)
 
