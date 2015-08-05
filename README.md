@@ -92,16 +92,23 @@ Once installed, manifests can be generated using `./scripts/generate_deployment_
 ---
 #Running EATS (ETCD Acceptance Tests)
 
-We have written a test suite that exercises spinning up single/multiple etcd instances and scaling them. If you have already installed Go, you can run `EATS_CONFIG=[config_file.json] ./scripts/test`. The `test` script installs all dependancies and runs the full test suite. The EATS_CONFIG environment variable points to a configuration file which specifies the endpoint of the bosh director and the path to your iaas_settings stub. An example config json for bosh-lite would look like:
+We have written a test suite that exercises spinning up single/multiple etcd instances and scaling 
+them. If you have already installed Go, you can run `EATS_CONFIG=[config_file.json] ./scripts/test`. 
+The `test` script installs all dependancies and runs the full test suite. The EATS_CONFIG 
+environment variable points to a configuration file which specifies the endpoint of the bosh 
+director and the path to your iaas_settings stub. An example config json for bosh-lite would look like:
 
 ```json
 {
   "bosh_target": "192.168.50.4",
-  "iaas_settings_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings.yml"
+  "iaas_settings_etcd_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml",
+  "iaas_settings_turbulence_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings-turbulence.yml",
+  "cpi_release_url": "http://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=21",
+  "cpi_release_name": "bosh-warden-cpi"
 }
 ```
 
-Currently you cannot specify indivudual tests to be run, however we are working on adding that functionality in the near future.
+Currently you cannot specify individual tests to be run, however we are working on adding that functionality in the near future.
 
 ---
 #Advanced
