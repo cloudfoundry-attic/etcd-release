@@ -11,25 +11,34 @@ import (
 
 var _ = Describe("SingleInstance", func() {
 	var (
+		etcdManifest   = new(helpers.Manifest)
 		etcdClientURLs []string
 	)
 
 	BeforeEach(func() {
-		etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
-			directorUUIDStub.Name(),
+		By("generating etcd manifest")
+		bosh.GenerateAndSetDeploymentManifest(
+			etcdManifest,
+			etcdManifestGeneration,
+			directorUUIDStub,
 			helpers.InstanceCount1NodeStubPath,
 			helpers.PersistentDiskStubPath,
 			config.IAASSettingsEtcdStubPath,
-			nameOverridesStub.Name(),
+			etcdNameOverrideStub,
 		)
+
+		for _, elem := range etcdManifest.Properties.Etcd.Machines {
+			etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
+		}
 
 		By("deploying")
 		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(1))
 	})
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	It("deploys one etcd node", func() {

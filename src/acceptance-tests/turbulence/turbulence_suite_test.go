@@ -3,11 +3,8 @@ package turbulence_test
 import (
 	"acceptance-tests/helpers"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	. "github.com/onsi/ginkgo"
@@ -15,7 +12,6 @@ import (
 	. "github.com/onsi/gomega/gexec"
 
 	"testing"
-	"time"
 )
 
 func TestTurbulence(t *testing.T) {
@@ -24,136 +20,99 @@ func TestTurbulence(t *testing.T) {
 }
 
 var (
-	DEFAULT_TIMEOUT time.Duration = time.Minute * 5
+	goPath             string
+	turbulenceUrl      string
+	bosh               helpers.Bosh
+	config             helpers.Config
+	turbulenceManifest *helpers.Manifest
 
-	goPath         string
-	bosh           helpers.Bosh
-	config         helpers.Config
-	turbulencUrl   string
-	etcdName       = fmt.Sprintf("etcd-%s", generator.RandomName())
-	turbulenceName = fmt.Sprintf("turb-%s", generator.RandomName())
+	etcdRelease          = fmt.Sprintf("etcd-%s", generator.RandomName())
+	etcdDeployment       = etcdRelease
+	turbulenceRelease    = fmt.Sprintf("turb-%s", generator.RandomName())
+	turbulenceDeployment = turbulenceRelease
 
-	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub *os.File
+	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub string
+
+	turbulenceManifestGeneration string
+	etcdManifestGeneration       string
 )
 
 var _ = BeforeSuite(func() {
-	goEnv := os.Getenv("GOPATH")
-	goPath = strings.Split(goEnv, ":")[0]
-
-	// setup fast bosh when running locally
-	wd, err := os.Getwd()
-	Expect(err).ToNot(HaveOccurred())
-	gemfilePath := filepath.Join(wd, "..", "Gemfile")
-
-	cmd := exec.Command("bundle")
-	env := os.Environ()
-	cmd.Env = append(env, fmt.Sprintf("BUNDLE_GEMFILE=%s", gemfilePath))
-
-	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-	Eventually(session, time.Minute*5).Should(Exit(0))
-
-	// change to root directory of gopath so we can create and upload the etcd release
-	err = os.Chdir(goPath)
-	Expect(err).ToNot(HaveOccurred())
-
+	goPath = helpers.SetupGoPath()
+	gemfilePath := helpers.SetupFastBosh()
 	config = helpers.LoadConfig()
-	bosh = helpers.NewBosh(gemfilePath, goPath, config)
+	bosh = helpers.NewBosh(gemfilePath, goPath, config.BoshTarget)
 
-	targetDeployment()
+	turbulenceManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_turbulence_deployment_manifest")
+	etcdManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_etcd_Deployment_manifest")
 
-	uploadEtcd()
+	directorUUIDStub = bosh.TargetDeployment()
+
+	err := os.Chdir(goPath)
+	Expect(err).ToNot(HaveOccurred())
 
 	uploadBoshCpiRelease()
 
-	uploadAndDeployTurbulence()
+	createTurbulenceStub()
+
+	turbulenceManifest = new(helpers.Manifest)
+	bosh.GenerateAndSetDeploymentManifest(
+		turbulenceManifest,
+		turbulenceManifestGeneration,
+		directorUUIDStub,
+		helpers.TurbulenceInstanceCountOverridesStubPath,
+		helpers.TurbulencePersistentDiskOverridesStubPath,
+		config.IAASSettingsTurbulenceStubPath,
+		helpers.TurbulencePropertiesStubPath,
+		turbulenceNameOverrideStub,
+	)
+
+	bosh.CreateUploadAndDeployRelease(
+		filepath.Join(goPath, "src", "github.com", "cppforlife", "turbulence-release"),
+		turbulenceRelease,
+		turbulenceDeployment)
+
+	createEtcdStub()
+	bosh.CreateAndUploadRelease(goPath, etcdRelease)
 })
 
-func targetDeployment() {
-	By("targeting the director")
-	Expect(bosh.Command("target", config.BoshTarget).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+var _ = AfterSuite(func() {
+	By("delete etcd release")
+	Expect(bosh.Command("-n", "delete", "release", etcdRelease).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 
-	By("creating the director stub")
-	session := bosh.Command("status", "--uuid").Wait(DEFAULT_TIMEOUT)
-	Expect(session).To(Exit(0))
-	uuid := session.Out.Contents()
+	By("delete turbulence deployment")
+	Expect(bosh.Command("-n", "delete", "deployment", turbulenceDeployment).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 
-	uuidStub := fmt.Sprintf(`---
-director_uuid: %s
-`, uuid)
+	By("delete turbulence release")
+	Expect(bosh.Command("-n", "delete", "release", turbulenceRelease).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 
-	var err error
-	directorUUIDStub, err = ioutil.TempFile(os.TempDir(), "")
-	Expect(err).ToNot(HaveOccurred())
-	defer directorUUIDStub.Close()
+	By("deleting the cpi release")
+	Expect(bosh.Command("-n", "delete", "release", config.CPIReleaseName))
+})
 
-	_, err = directorUUIDStub.Write([]byte(uuidStub))
-	Expect(err).ToNot(HaveOccurred())
-}
-
-func uploadEtcd() {
-	nameStub := fmt.Sprintf(`---
+func createEtcdStub() {
+	By("creating the etcd overrides stub")
+	etcdStub := fmt.Sprintf(`---
 name_overrides:
   release_name: %s
   deployment_name: %s
-`, etcdName, etcdName)
+`, etcdRelease, etcdDeployment)
 
-	var err error
-	etcdNameOverrideStub, err = ioutil.TempFile(os.TempDir(), "")
-	Expect(err).ToNot(HaveOccurred())
-	defer etcdNameOverrideStub.Close()
-
-	_, err = etcdNameOverrideStub.Write([]byte(nameStub))
-	Expect(err).ToNot(HaveOccurred())
-
-	By("creating the etcd release")
-	Expect(bosh.Command("create", "release", "--force", "--name", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-	By("uploading the etcd release")
-	Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	etcdNameOverrideStub = helpers.WriteStub(etcdStub)
 }
 
-func uploadAndDeployTurbulence() {
-	err := os.Chdir(filepath.Join(goPath, "src", "github.com", "cppforlife", "turbulence-release"))
-	Expect(err).ToNot(HaveOccurred())
-
-	By("creating the turbulence release")
-	Expect(bosh.Command("create", "release", "--name", turbulenceName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-	By("uploading the turbulence release")
-	Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-	err = os.Chdir(goPath)
-	Expect(err).ToNot(HaveOccurred())
-
+func createTurbulenceStub() {
 	By("creating the turbulence overrides stub")
-	nameStub := fmt.Sprintf(`---
+	turbulenceStub := fmt.Sprintf(`---
 name_overrides:
   deployment_name: %s
   turbulence:
     release_name: %s
   cpi:
     release_name: %s
-`, turbulenceName, turbulenceName, config.CPIReleaseName)
+`, turbulenceDeployment, turbulenceRelease, config.CPIReleaseName)
 
-	turbulenceNameOverrideStub, err = ioutil.TempFile(os.TempDir(), "")
-	Expect(err).ToNot(HaveOccurred())
-
-	_, err = turbulenceNameOverrideStub.Write([]byte(nameStub))
-	Expect(err).ToNot(HaveOccurred())
-	turbulenceNameOverrideStub.Close()
-
-	turbulencUrl = bosh.GenerateAndSetDeploymentManifestTurbulence(
-		directorUUIDStub.Name(),
-		helpers.TurbulenceInstanceCountOverridesStubPath,
-		helpers.TurbulencePersistentDiskOverridesStubPath,
-		config.IAASSettingsTurbulenceStubPath,
-		helpers.TurbulencePropertiesStubPath,
-		turbulenceNameOverrideStub.Name(),
-	)
-
-	By("deploying the turbulence release")
-	Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	turbulenceNameOverrideStub = helpers.WriteStub(turbulenceStub)
 }
 
 func uploadBoshCpiRelease() {
@@ -165,19 +124,5 @@ func uploadBoshCpiRelease() {
 		panic("missing required cpi release name")
 	}
 
-	Expect(bosh.Command("-n", "upload", "release", config.CPIReleaseUrl, "--skip-if-exists").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("-n", "upload", "release", config.CPIReleaseUrl, "--skip-if-exists").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 }
-
-var _ = AfterSuite(func() {
-	By("delete etcd release")
-	Expect(bosh.Command("-n", "delete", "release", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-	By("delete turbulence release")
-	Expect(bosh.Command("-n", "delete", "deployment", turbulenceName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-	By("delete turbulence release")
-	Expect(bosh.Command("-n", "delete", "release", turbulenceName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
-
-	By("deleting the cpi release")
-	Expect(bosh.Command("-n", "delete", "release", config.CPIReleaseName))
-})

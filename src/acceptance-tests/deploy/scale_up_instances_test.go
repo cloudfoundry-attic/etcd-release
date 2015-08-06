@@ -12,57 +12,51 @@ import (
 
 var _ = Describe("Multiple Instances", func() {
 	var (
+		etcdManifest   = new(helpers.Manifest)
 		etcdClientURLs []string
 	)
 
 	BeforeEach(func() {
-		etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
-			directorUUIDStub.Name(),
+		bosh.GenerateAndSetDeploymentManifest(
+			etcdManifest,
+			etcdManifestGeneration,
+			directorUUIDStub,
 			helpers.InstanceCount1NodeStubPath,
 			helpers.PersistentDiskStubPath,
 			config.IAASSettingsEtcdStubPath,
-			nameOverridesStub.Name(),
+			etcdNameOverrideStub,
 		)
 
 		By("deploying")
 		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
-
-		Expect(len(etcdClientURLs)).To(Equal(1))
+		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(1))
 	})
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
 	})
 
 	Describe("scaling from 1 node to 3", func() {
 		It("succesfully scales to multiple etcd nodes", func() {
-			for index, value := range etcdClientURLs {
-				etcdClient := etcd.NewClient([]string{value})
-				eatsKey := "eats-key" + string(index)
-				eatsValue := "eats-value" + string(index)
-
-				response, err := etcdClient.Create(eatsKey, eatsValue, 60)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(response).ToNot(BeNil())
-
-				response, err = etcdClient.Get(eatsKey, false, false)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(response.Node.Value).To(Equal(eatsValue))
-			}
-
-			etcdClientURLs = bosh.GenerateAndSetDeploymentManifest(
-				directorUUIDStub.Name(),
+			bosh.GenerateAndSetDeploymentManifest(
+				etcdManifest,
+				etcdManifestGeneration,
+				directorUUIDStub,
 				helpers.InstanceCount3NodesStubPath,
 				helpers.PersistentDiskStubPath,
 				config.IAASSettingsEtcdStubPath,
-				nameOverridesStub.Name(),
+				etcdNameOverrideStub,
 			)
+
+			for _, elem := range etcdManifest.Properties.Etcd.Machines {
+				etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
+			}
 
 			By("deploying")
 			Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+			Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 
-			Expect(len(etcdClientURLs)).To(Equal(3))
 			for index, value := range etcdClientURLs {
 				etcdClient := etcd.NewClient([]string{value})
 

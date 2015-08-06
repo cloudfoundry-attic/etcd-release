@@ -5,25 +5,21 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	"github.com/cloudfoundry-incubator/candiedyaml"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
-)
-
-const (
-	etcdPort = "4001"
+	. "github.com/onsi/gomega/gexec"
 )
 
 type Bosh struct {
 	gemfilePath string
 	goPath      string
+	target      string
 }
 
-type manifest struct {
+type Manifest struct {
 	Jobs       []Job      `yaml:"jobs"`
 	Properties Properties `yaml:"properties"`
 }
@@ -51,111 +47,97 @@ type TurbulenceApi struct {
 	Password string `yaml:"password"`
 }
 
-func NewBosh(gemfilePath string, goPath string, config Config) Bosh {
+func NewBosh(gemfilePath string, goPath string, target string) Bosh {
 	return Bosh{
 		gemfilePath: gemfilePath,
 		goPath:      goPath,
+		target:      target,
 	}
 }
 
-func (bosh Bosh) Command(boshArgs ...string) *gexec.Session {
+func WriteStub(stub string) string {
+	stubFile, err := ioutil.TempFile(os.TempDir(), "")
+	Expect(err).ToNot(HaveOccurred())
+
+	defer stubFile.Close()
+
+	_, err = stubFile.Write([]byte(stub))
+	Expect(err).ToNot(HaveOccurred())
+
+	return stubFile.Name()
+}
+
+func (bosh Bosh) TargetDeployment() string {
+	By("targeting the director")
+	Expect(bosh.Command("target", bosh.target).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+
+	By("creating the director stub")
+	session := bosh.Command("status", "--uuid").Wait(DEFAULT_TIMEOUT)
+	Expect(session).To(Exit(0))
+	uuid := session.Out.Contents()
+
+	uuidStub := fmt.Sprintf(`---
+director_uuid: %s
+`, uuid)
+
+	var err error
+	directorUUIDStub, err := ioutil.TempFile(os.TempDir(), "")
+	Expect(err).ToNot(HaveOccurred())
+	defer directorUUIDStub.Close()
+
+	_, err = directorUUIDStub.Write([]byte(uuidStub))
+	Expect(err).ToNot(HaveOccurred())
+
+	return directorUUIDStub.Name()
+}
+
+func (bosh Bosh) CreateAndUploadRelease(releaseDir, releaseName string) {
+	err := os.Chdir(releaseDir)
+	Expect(err).ToNot(HaveOccurred())
+
+	By("creating the etcd release")
+	Expect(bosh.Command("create", "release", "--force", "--name", releaseName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+
+	By("uploading the etcd release")
+	Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+}
+
+func (bosh Bosh) CreateUploadAndDeployRelease(releaseDir, releaseName, deploymentName string) {
+	bosh.CreateAndUploadRelease(releaseDir, releaseName)
+
+	By("deploying the turbulence release")
+	Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+}
+
+func (bosh Bosh) Command(boshArgs ...string) *Session {
 	cmd := exec.Command("bundle", append([]string{"exec", "bosh"}, boshArgs...)...)
 	env := os.Environ()
 	cmd.Env = append(env, fmt.Sprintf("BUNDLE_GEMFILE=%s", bosh.gemfilePath))
 
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
 	return session
 }
 
-func (bosh Bosh) GenerateAndSetDeploymentManifest(
-	directorUUIDStub,
-	instanceCountOverridesStub,
-	persistentDiskOverridesStub,
-	iaasSettingsStub,
-	nameOverridesStub string,
-) []string {
+func (bosh Bosh) GenerateAndSetDeploymentManifest(manifest interface{}, manifestGenerateScripts string, stubs ...string) {
+	cmd := exec.Command(manifestGenerateScripts, stubs...)
+	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
+	Expect(err).ToNot(HaveOccurred())
+	Eventually(session, DEFAULT_TIMEOUT).Should(Exit(0))
+
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
 	Expect(err).ToNot(HaveOccurred())
-
-	generateDeploymentManifest := filepath.Join(bosh.goPath, "src", "acceptance-tests", "scripts", "generate_deployment_manifest")
-	cmd := exec.Command(
-		generateDeploymentManifest,
-		directorUUIDStub,
-		instanceCountOverridesStub,
-		persistentDiskOverridesStub,
-		iaasSettingsStub,
-		nameOverridesStub,
-	)
-
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-	Eventually(session, DEFAULT_TIMEOUT).Should(gexec.Exit(0))
-
 	_, err = tmpFile.Write(session.Out.Contents())
 	Expect(err).ToNot(HaveOccurred())
-
-	Expect(bosh.Command("deployment", tmpFile.Name()).Wait(time.Second * 10)).To(gexec.Exit(0))
-
-	manifest := new(manifest)
-
 	tmpFile.Close()
+
+	Expect(bosh.Command("deployment", tmpFile.Name()).Wait(time.Second * 10)).To(Exit(0))
+
 	tmpFile, err = os.Open(tmpFile.Name())
 	Expect(err).ToNot(HaveOccurred())
 
 	decoder := candiedyaml.NewDecoder(tmpFile)
 	err = decoder.Decode(manifest)
 	Expect(err).ToNot(HaveOccurred())
-
-	etcdClientURLs := make([]string, len(manifest.Properties.Etcd.Machines))
-	for index, elem := range manifest.Properties.Etcd.Machines {
-		etcdClientURLs[index] = "http://" + elem + ":" + etcdPort
-	}
-
-	return etcdClientURLs
-}
-
-func (bosh Bosh) GenerateAndSetDeploymentManifestTurbulence(
-	directorUUIDStub,
-	instanceCountOverridesStub,
-	persistentDiskOverridesStub,
-	iaasSettingsStub,
-	turbulenceProperties,
-	nameOverridesStub string,
-) string {
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
-	Expect(err).ToNot(HaveOccurred())
-
-	generateDeploymentManifest := filepath.Join(bosh.goPath, "src", "acceptance-tests", "scripts", "generate_turbulence_deployment_manifest")
-	cmd := exec.Command(
-		generateDeploymentManifest,
-		directorUUIDStub,
-		instanceCountOverridesStub,
-		persistentDiskOverridesStub,
-		iaasSettingsStub,
-		turbulenceProperties,
-		nameOverridesStub,
-	)
-
-	session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
-	Expect(err).ToNot(HaveOccurred())
-	Eventually(session, DEFAULT_TIMEOUT).Should(gexec.Exit(0))
-
-	_, err = tmpFile.Write(session.Out.Contents())
-	Expect(err).ToNot(HaveOccurred())
-
-	Expect(bosh.Command("deployment", tmpFile.Name()).Wait(time.Second * 10)).To(gexec.Exit(0))
-
-	manifest := new(manifest)
-
-	tmpFile.Close()
-	tmpFile, err = os.Open(tmpFile.Name())
-	Expect(err).ToNot(HaveOccurred())
-
-	decoder := candiedyaml.NewDecoder(tmpFile)
-	err = decoder.Decode(manifest)
-	Expect(err).ToNot(HaveOccurred())
-
-	return "https://turbulence:" + manifest.Properties.TurbulenceApi.Password + "@" + manifest.Jobs[0].Networks[0].StaticIps[0] + ":8080"
 }

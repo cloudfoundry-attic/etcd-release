@@ -3,11 +3,6 @@ package helpers
 import (
 	"encoding/json"
 	"os"
-	"time"
-)
-
-const (
-	DEFAULT_TIMEOUT = time.Minute * 5
 )
 
 type Config struct {
