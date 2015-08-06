@@ -36,7 +36,7 @@ In order to automatically generate a manifest you must have installed the follow
 1. [Go](https://golang.org/)
 2. [Spiff](https://github.com/cloudfoundry-incubator/spiff)
 
-Once installed, manifests can be generated using `./scripts/generate_deployment_manifest [STUB LIST]` with the provided stubs:
+Once installed, manifests can be generated using `./scripts/generate_etcd_deployment_manifest [STUB LIST]` with the provided stubs:
 
 1. uuid_stub
 	
@@ -109,6 +109,8 @@ director and the path to your iaas_settings stub. An example config json for bos
 ```
 
 Currently you cannot specify individual tests to be run, however we are working on adding that functionality in the near future.
+
+Note: The ruby `bundler` gem is used to install the correct version of the `bosh_cli`, as well as to decrease the `bosh` startup time. 
 
 ---
 #Advanced
@@ -224,20 +226,3 @@ placeholders and can be renamed provided that all clients client certificate.
 The server certificate must have the common name `etcd.service.consul` and
 must specify `etcd.service.consul` and `*.etcd.service.consul` as Subject
 Alternative Names (SANs).
-
-### Acceptance tests
-
-The ruby `bundler` gem is used to install the correct version of the `bosh_cli`, as well as to decrease the `bosh` startup time. 
-
-To run the acceptance tests you will need to generate an integration config json like so:
-```
-{
-  "director": "192.168.50.4",        // IP address of the bosh director you already have saved credentials for
-  "stub": "templates/etcd_stub.yml"  // Location of the stub to merge with the etcd template
-}
-```
-
-To run the tests:
-```
-CONFIG=$PWD/integration_config.json ./bin/test
-```
