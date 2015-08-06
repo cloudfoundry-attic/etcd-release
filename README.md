@@ -33,8 +33,7 @@ We provide a set of scripts and templates to generate a simple deployment manife
 
 In order to automatically generate a manifest you must have installed the following dependencies:
 
-1. [Go](https://golang.org/)
-2. [Spiff](https://github.com/cloudfoundry-incubator/spiff)
+1. [Spiff](https://github.com/cloudfoundry-incubator/spiff)
 
 Once installed, manifests can be generated using `./scripts/generate_etcd_deployment_manifest [STUB LIST]` with the provided stubs:
 
