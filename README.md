@@ -46,7 +46,7 @@ Once installed, manifests can be generated using `./scripts/generate_etcd_deploy
 	```
 2. instance_count_stub
 
-	The instance count stub provides the ability to overwrite the number of instances of etcd to deploy. The minimal deploymant of etcd is shown below:
+	The instance count stub provides the ability to overwrite the number of instances of etcd to deploy. The minimal deployment of etcd is shown below:
 	```yaml
 	---
 	instance_count_overrides:
