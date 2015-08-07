@@ -96,6 +96,9 @@ We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfo
 	  release_name: NAME
 	  deployment_name: NAME
 	```
+
+###5. Deploy
+Output the result of the above command to a file: `./scripts/generate_etcd_deployment_manifest [STUB LIST] > etcd.yml`.  Then run `bosh -d etcd.yml deploy`.
 	
 ---
 #Running EATS (ETCD Acceptance Tests)
