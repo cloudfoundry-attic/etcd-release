@@ -22,13 +22,16 @@ In order to deploy etcd-release you must follow the standard steps for deploying
 
 We assume you have already deployed and targeted a bosh director. For more instructions on how to do that please see the [bosh documentation](http://bosh.io/docs).
 
-###1. Creating a release
+###1. Uploading a stemcell
+Find the "BOSH Lite Warden" stemcell you wish to use. [bosh.io](https://bosh.io/stemcells) provides a resource to find and download stemcells.  Then run `bosh upload release PATH_TO_DOWNLOADED_STEMCELL`.
+
+###2. Creating a release
 From within the etcd-release director run `bosh create release --force` to create a development release.
 
-###2. Uploading a release
+###3. Uploading a release
 Once you've created a development release run `bosh upload release` to upload your development release to the director.
 
-###3. Generating a deployment manifest
+###4. Generating a deployment manifest
 We provide a set of scripts and templates to generate a simple deployment manifest. You should use these as a starting point for creating your own manifest, but they should not be considered comprehensive or production-ready.
 
 In order to automatically generate a manifest you must have installed the following dependencies:
