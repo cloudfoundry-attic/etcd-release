@@ -78,7 +78,13 @@ Once installed, manifests can be generated using `./scripts/generate_etcd_deploy
 	
 4. iaas_settings
 
-	The iaas settings stub contains iaas specific settings, including networks, cloud properties, and compilation properties. [We provide a default that should be suitable for a bosh-lite deployment](https://github.com/cloudfoundry-incubator/etcd-release/blob/master/manifest-generation/bosh-lite-stubs/iaas-settings.yml). Please see the bosh documentation for setting up networks and subnets on your iaas of choice. We currently allow for three network configurations on your iaas: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
+	The iaas settings stub contains iaas specific settings, including networks, cloud properties, and compilation properties. Please see the bosh documentation for setting up networks and subnets on your IaaS of choice. We currently allow for three network configurations on your IaaS: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
+	
+We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfoundry-incubator/etcd-release/blob/master/manifest-generation/bosh-lite-stubs).  Specifically:
+
+* instance_count_stub: [manifest-generation/bosh-lite-stubs/instance-count-overrides.yml](manifest-generation/bosh-lite-stubs/instance-count-overrides.yml)
+* persistent_disk_stub: [manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml](manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml)
+* iaas_settings: [manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml](manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml)
 
 [Optional]
 
