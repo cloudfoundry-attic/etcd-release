@@ -124,6 +124,8 @@ export EATS_CONFIG=$PWD/integration_config.json
 
 Currently you cannot specify individual tests to be run, however we are working on adding that functionality in the near future.
 
+Note: you must ensure that the stemcells specified in `iaas_settings_etcd_stub_path` and `iaas_settings_turbulence_stub_path` are already uploaded to the director at `bosh_target`.
+
 Note: The ruby `bundler` gem is used to install the correct version of the `bosh_cli`, as well as to decrease the `bosh` startup time. 
 
 ---
