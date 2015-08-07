@@ -67,11 +67,14 @@ jobs:
 properties:
   etcd:
     machines: (( jobs.etcd_z1.networks.etcd1.static_ips jobs.etcd_z2.networks.etcd2.static_ips ))
+    heartbeat_interval_in_milliseconds: (( property_overrides.etcd.heartbeat_interval_in_milliseconds || nil ))
 
 # The keys below should not be included in the final stub
 iaas_settings: (( merge ))
 instance_count_overrides: (( merge ))
 persistent_disk_overrides: (( merge ))
+property_overrides: (( merge ))
+
 name_defaults:
   release_name: etcd
   deployment_name: etcd

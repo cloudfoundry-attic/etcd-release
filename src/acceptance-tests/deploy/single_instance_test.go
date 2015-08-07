@@ -24,6 +24,7 @@ var _ = Describe("SingleInstance", func() {
 			helpers.InstanceCount1NodeStubPath,
 			helpers.PersistentDiskStubPath,
 			config.IAASSettingsEtcdStubPath,
+			helpers.PropertyOverridesStubPath,
 			etcdNameOverrideStub,
 		)
 

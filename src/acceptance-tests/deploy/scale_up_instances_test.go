@@ -24,6 +24,7 @@ var _ = Describe("Multiple Instances", func() {
 			helpers.InstanceCount1NodeStubPath,
 			helpers.PersistentDiskStubPath,
 			config.IAASSettingsEtcdStubPath,
+			helpers.PropertyOverridesStubPath,
 			etcdNameOverrideStub,
 		)
 
@@ -46,6 +47,7 @@ var _ = Describe("Multiple Instances", func() {
 				helpers.InstanceCount3NodesStubPath,
 				helpers.PersistentDiskStubPath,
 				config.IAASSettingsEtcdStubPath,
+				helpers.PropertyOverridesStubPath,
 				etcdNameOverrideStub,
 			)
 

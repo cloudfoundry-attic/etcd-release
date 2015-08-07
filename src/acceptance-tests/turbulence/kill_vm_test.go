@@ -33,6 +33,7 @@ var _ = Describe("KillVm", func() {
 			helpers.InstanceCount3NodesStubPath,
 			helpers.PersistentDiskStubPath,
 			config.IAASSettingsEtcdStubPath,
+			helpers.PropertyOverridesStubPath,
 			etcdNameOverrideStub,
 		)
 
