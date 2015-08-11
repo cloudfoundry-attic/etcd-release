@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/json"
 	"os"
+	"time"
 )
 
 type Config struct {
@@ -11,6 +12,8 @@ type Config struct {
 	IAASSettingsTurbulenceStubPath string `json:"iaas_settings_turbulence_stub_path"`
 	CPIReleaseUrl                  string `json:"cpi_release_url"`
 	CPIReleaseName                 string `json:"cpi_release_name"`
+	DefaultTimeoutString           string `json:"default_timeout"`
+	DefaultTimeout                 time.Duration
 }
 
 var loadedConfig *Config
@@ -27,6 +30,17 @@ func LoadConfig() Config {
 	if loadedConfig.IAASSettingsEtcdStubPath == "" {
 		panic("missing etcd IaaS settings stub path")
 	}
+
+	if loadedConfig.DefaultTimeoutString == "" {
+		panic("missing default timeout in minutes")
+	}
+
+	duration, err := time.ParseDuration(loadedConfig.DefaultTimeoutString)
+	if err != nil {
+		panic("invalid timeout string")
+	}
+
+	loadedConfig.DefaultTimeout = duration
 
 	return *loadedConfig
 }

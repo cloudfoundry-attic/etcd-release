@@ -38,7 +38,7 @@ var _ = BeforeSuite(func() {
 	config = helpers.LoadConfig()
 	bosh = helpers.NewBosh(gemfilePath, goPath, config.BoshTarget)
 
-	etcdManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_etcd_Deployment_manifest")
+	etcdManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_etcd_deployment_manifest")
 
 	err := os.Chdir(goPath)
 	Expect(err).ToNot(HaveOccurred())
@@ -50,7 +50,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("delete release")
-	Expect(bosh.Command("-n", "delete", "release", etcdRelease).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("-n", "delete", "release", etcdRelease).Wait(config.DefaultTimeout)).To(Exit(0))
 })
 
 func createEtcdStub() {

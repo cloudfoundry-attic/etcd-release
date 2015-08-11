@@ -33,13 +33,13 @@ var _ = Describe("Multiple Instance Rolling deploys", func() {
 		}
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 	})
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)).To(Exit(0))
 	})
 
 	It("Saves data after a rolling deploy", func() {
@@ -74,7 +74,7 @@ property_overrides:
 		)
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
 
 		By("reading each value from each machine")
 		for _, url := range etcdClientURLs {

@@ -1,7 +1,6 @@
 package client
 
 import (
-	"acceptance-tests/helpers"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -10,10 +9,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 )
 
 type Client struct {
 	baseURL string
+	config  helpers.Config
 }
 
 type deployment struct {
@@ -41,8 +43,10 @@ type Response struct {
 }
 
 func NewClient(baseURL string) Client {
+	config := helpers.LoadConfig()
 	return Client{
 		baseURL: baseURL,
+		config:  config,
 	}
 }
 
@@ -123,8 +127,8 @@ func (c Client) pollRequestCompleted(id string) error {
 			return nil
 		}
 
-		if time.Now().Sub(startTime) > helpers.DEFAULT_TIMEOUT {
-			return errors.New(fmt.Sprintf("Did not finish deleting vm in time: %d", helpers.DEFAULT_TIMEOUT))
+		if time.Now().Sub(startTime) > c.config.DefaultTimeout {
+			return errors.New(fmt.Sprintf("Did not finish deleting vm in time: %d", c.config.DefaultTimeout))
 		}
 
 		time.Sleep(2 * time.Second)

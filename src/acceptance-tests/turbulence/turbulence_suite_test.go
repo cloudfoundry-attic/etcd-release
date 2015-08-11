@@ -44,7 +44,7 @@ var _ = BeforeSuite(func() {
 	bosh = helpers.NewBosh(gemfilePath, goPath, config.BoshTarget)
 
 	turbulenceManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_turbulence_deployment_manifest")
-	etcdManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_etcd_Deployment_manifest")
+	etcdManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_etcd_deployment_manifest")
 
 	directorUUIDStub = bosh.TargetDeployment()
 
@@ -78,13 +78,13 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("delete etcd release")
-	Expect(bosh.Command("-n", "delete", "release", etcdRelease).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("-n", "delete", "release", etcdRelease).Wait(config.DefaultTimeout)).To(Exit(0))
 
 	By("delete turbulence deployment")
-	Expect(bosh.Command("-n", "delete", "deployment", turbulenceDeployment).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("-n", "delete", "deployment", turbulenceDeployment).Wait(config.DefaultTimeout)).To(Exit(0))
 
 	By("delete turbulence release")
-	Expect(bosh.Command("-n", "delete", "release", turbulenceRelease).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("-n", "delete", "release", turbulenceRelease).Wait(config.DefaultTimeout)).To(Exit(0))
 
 	By("deleting the cpi release")
 	Expect(bosh.Command("-n", "delete", "release", config.CPIReleaseName))
@@ -124,5 +124,5 @@ func uploadBoshCpiRelease() {
 		panic("missing required cpi release name")
 	}
 
-	Expect(bosh.Command("-n", "upload", "release", config.CPIReleaseUrl, "--skip-if-exists").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("-n", "upload", "release", config.CPIReleaseUrl, "--skip-if-exists").Wait(config.DefaultTimeout)).To(Exit(0))
 }

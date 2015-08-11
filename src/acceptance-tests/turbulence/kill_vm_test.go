@@ -38,7 +38,7 @@ var _ = Describe("KillVm", func() {
 		)
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 
 		for _, elem := range etcdManifest.Properties.Etcd.Machines {
@@ -57,10 +57,10 @@ var _ = Describe("KillVm", func() {
 
 	AfterEach(func() {
 		By("Fixing the release")
-		Expect(bosh.Command("cck", "--auto").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("cck", "--auto").Wait(config.DefaultTimeout)).To(Exit(0))
 
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)).To(Exit(0))
 	})
 
 	Context("When an etcd node is killed", func() {

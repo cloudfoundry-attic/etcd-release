@@ -29,13 +29,13 @@ var _ = Describe("Multiple Instances", func() {
 		)
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(1))
 	})
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)).To(Exit(0))
 	})
 
 	Describe("scaling from 1 node to 3", func() {
@@ -56,7 +56,7 @@ var _ = Describe("Multiple Instances", func() {
 			}
 
 			By("deploying")
-			Expect(bosh.Command("-n", "deploy").Wait(helpers.DEFAULT_TIMEOUT)).To(Exit(0))
+			Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
 			Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 
 			for index, value := range etcdClientURLs {
