@@ -11,7 +11,6 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 )
 
 func TestDeploy(t *testing.T) {
@@ -50,7 +49,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("delete release")
-	Expect(bosh.Command("-n", "delete", "release", etcdRelease).Wait(config.DefaultTimeout)).To(Exit(0))
+	bosh.Command("-n", "delete", "release", etcdRelease).Wait(config.DefaultTimeout)
 })
 
 func createEtcdStub() {

@@ -39,7 +39,7 @@ var _ = Describe("Multiple Instances", func() {
 
 	AfterEach(func() {
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)).To(Exit(0))
+		bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)
 	})
 
 	Describe("Multiple node deployment", func() {

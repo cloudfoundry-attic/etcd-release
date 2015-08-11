@@ -32,7 +32,7 @@ func LoadConfig() Config {
 	}
 
 	if loadedConfig.DefaultTimeoutString == "" {
-		panic("missing default timeout in minutes")
+		loadedConfig.DefaultTimeoutString = "5m"
 	}
 
 	duration, err := time.ParseDuration(loadedConfig.DefaultTimeoutString)

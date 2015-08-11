@@ -1,6 +1,7 @@
 package client
 
 import (
+	"acceptance-tests/helpers"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -9,8 +10,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/cloudfoundry-incubator/cf-test-helpers/helpers"
 )
 
 type Client struct {

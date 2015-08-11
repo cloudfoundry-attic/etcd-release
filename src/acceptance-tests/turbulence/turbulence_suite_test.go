@@ -78,16 +78,16 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("delete etcd release")
-	Expect(bosh.Command("-n", "delete", "release", etcdRelease).Wait(config.DefaultTimeout)).To(Exit(0))
+	bosh.Command("-n", "delete", "release", etcdRelease).Wait(config.DefaultTimeout)
 
 	By("delete turbulence deployment")
-	Expect(bosh.Command("-n", "delete", "deployment", turbulenceDeployment).Wait(config.DefaultTimeout)).To(Exit(0))
+	bosh.Command("-n", "delete", "deployment", turbulenceDeployment).Wait(config.DefaultTimeout)
 
 	By("delete turbulence release")
-	Expect(bosh.Command("-n", "delete", "release", turbulenceRelease).Wait(config.DefaultTimeout)).To(Exit(0))
+	bosh.Command("-n", "delete", "release", turbulenceRelease).Wait(config.DefaultTimeout)
 
 	By("deleting the cpi release")
-	Expect(bosh.Command("-n", "delete", "release", config.CPIReleaseName))
+	bosh.Command("-n", "delete", "release", config.CPIReleaseName)
 })
 
 func createEtcdStub() {

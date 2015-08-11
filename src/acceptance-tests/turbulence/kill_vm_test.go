@@ -57,10 +57,10 @@ var _ = Describe("KillVm", func() {
 
 	AfterEach(func() {
 		By("Fixing the release")
-		Expect(bosh.Command("cck", "--auto").Wait(config.DefaultTimeout)).To(Exit(0))
+		bosh.Command("cck", "--auto").Wait(config.DefaultTimeout)
 
 		By("delete deployment")
-		Expect(bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)).To(Exit(0))
+		bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)
 	})
 
 	Context("When an etcd node is killed", func() {
