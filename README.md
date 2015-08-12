@@ -128,7 +128,8 @@ The full set of config parameters is explained below:
 * `iass_settings_turbulence_stub_path` (required for turbulence tests) Stub containing iass setting for the turbulence deployment.
 * `cpi_release_url` (required for turbulence tests) CPI for the current bosh director being used to deploy tests with.
 * `cpi_release_name` (required for turbulence tests) Name for the `cpi_release_url` parameter
-* `default_timeout` (optional) Time to wait for a command to exit before erroring out. (default time is 5 min)
+* `bosh_operation_timeout` (optional) Time to wait for BOSH commands to exit before erroring out. (default time is 5 min if not specified)
+* `turbulence_operation_timeout` (optional) Time to wait for Turbulence operations to succeed before erroring out. (default time is 5 min if not specified)
 
 Currently you cannot specify individual tests to be run, however we are working on adding that functionality in the near future.
 

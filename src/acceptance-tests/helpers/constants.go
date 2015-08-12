@@ -3,5 +3,6 @@ package helpers
 import "time"
 
 var (
-	DEFAULT_TIMEOUT time.Duration = time.Minute * 5
+	defaultBoshOperationTimeout       = 5 * time.Minute
+	defaultTurbulenceOperationTimeout = 5 * time.Minute
 )

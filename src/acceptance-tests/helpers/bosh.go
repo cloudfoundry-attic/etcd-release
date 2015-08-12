@@ -14,9 +14,10 @@ import (
 )
 
 type Bosh struct {
-	gemfilePath string
-	goPath      string
-	target      string
+	gemfilePath      string
+	goPath           string
+	target           string
+	operationTimeout time.Duration
 }
 
 type Manifest struct {
@@ -47,11 +48,12 @@ type TurbulenceApi struct {
 	Password string `yaml:"password"`
 }
 
-func NewBosh(gemfilePath string, goPath string, target string) Bosh {
-	return Bosh{
-		gemfilePath: gemfilePath,
-		goPath:      goPath,
-		target:      target,
+func NewBosh(gemfilePath string, goPath string, target string, operationTimeout time.Duration) *Bosh {
+	return &Bosh{
+		gemfilePath:      gemfilePath,
+		goPath:           goPath,
+		target:           target,
+		operationTimeout: operationTimeout,
 	}
 }
 
@@ -67,12 +69,12 @@ func WriteStub(stub string) string {
 	return stubFile.Name()
 }
 
-func (bosh Bosh) TargetDeployment() string {
+func (bosh *Bosh) TargetDeployment() string {
 	By("targeting the director")
-	Expect(bosh.Command("target", bosh.target).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("target", bosh.target)).To(Exit(0))
 
 	By("creating the director stub")
-	session := bosh.Command("status", "--uuid").Wait(DEFAULT_TIMEOUT)
+	session := bosh.Command("status", "--uuid")
 	Expect(session).To(Exit(0))
 	uuid := session.Out.Contents()
 
@@ -91,25 +93,25 @@ director_uuid: %s
 	return directorUUIDStub.Name()
 }
 
-func (bosh Bosh) CreateAndUploadRelease(releaseDir, releaseName string) {
+func (bosh *Bosh) CreateAndUploadRelease(releaseDir, releaseName string) {
 	err := os.Chdir(releaseDir)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("creating the etcd release")
-	Expect(bosh.Command("create", "release", "--force", "--name", releaseName).Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("create", "release", "--force", "--name", releaseName)).To(Exit(0))
 
 	By("uploading the etcd release")
-	Expect(bosh.Command("upload", "release").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("upload", "release")).To(Exit(0))
 }
 
-func (bosh Bosh) CreateUploadAndDeployRelease(releaseDir, releaseName, deploymentName string) {
+func (bosh *Bosh) CreateUploadAndDeployRelease(releaseDir, releaseName, deploymentName string) {
 	bosh.CreateAndUploadRelease(releaseDir, releaseName)
 
 	By("deploying the turbulence release")
-	Expect(bosh.Command("-n", "deploy").Wait(DEFAULT_TIMEOUT)).To(Exit(0))
+	Expect(bosh.Command("-n", "deploy")).To(Exit(0))
 }
 
-func (bosh Bosh) Command(boshArgs ...string) *Session {
+func (bosh *Bosh) Command(boshArgs ...string) *Session {
 	cmd := exec.Command("bundle", append([]string{"exec", "bosh"}, boshArgs...)...)
 	env := os.Environ()
 	cmd.Env = append(env, fmt.Sprintf("BUNDLE_GEMFILE=%s", bosh.gemfilePath))
@@ -117,14 +119,14 @@ func (bosh Bosh) Command(boshArgs ...string) *Session {
 	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
 
-	return session
+	return session.Wait(bosh.operationTimeout)
 }
 
-func (bosh Bosh) GenerateAndSetDeploymentManifest(manifest interface{}, manifestGenerateScripts string, stubs ...string) {
+func (bosh *Bosh) GenerateAndSetDeploymentManifest(manifest interface{}, manifestGenerateScripts string, stubs ...string) {
 	cmd := exec.Command(manifestGenerateScripts, stubs...)
 	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
-	Eventually(session, DEFAULT_TIMEOUT).Should(Exit(0))
+	Eventually(session, 10*time.Second).Should(Exit(0))
 
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "")
 	Expect(err).ToNot(HaveOccurred())
@@ -132,7 +134,7 @@ func (bosh Bosh) GenerateAndSetDeploymentManifest(manifest interface{}, manifest
 	Expect(err).ToNot(HaveOccurred())
 	tmpFile.Close()
 
-	Expect(bosh.Command("deployment", tmpFile.Name()).Wait(time.Second * 10)).To(Exit(0))
+	Expect(bosh.Command("deployment", tmpFile.Name())).To(Exit(0))
 
 	tmpFile, err = os.Open(tmpFile.Name())
 	Expect(err).ToNot(HaveOccurred())

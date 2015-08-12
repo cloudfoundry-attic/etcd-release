@@ -20,22 +20,25 @@ func TestDeploy(t *testing.T) {
 
 var (
 	goPath string
-	bosh   helpers.Bosh
 	config helpers.Config
 
-	etcdRelease    = fmt.Sprintf("etcd-%s", generator.RandomName())
-	etcdDeployment = etcdRelease
-
-	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub string
+	bosh *helpers.Bosh
 
 	etcdManifestGeneration string
+
+	directorUUIDStub string
+
+	etcdRelease          = fmt.Sprintf("etcd-%s", generator.RandomName())
+	etcdDeployment       = etcdRelease
+	etcdNameOverrideStub string
 )
 
 var _ = BeforeSuite(func() {
 	goPath = helpers.SetupGoPath()
 	gemfilePath := helpers.SetupFastBosh()
 	config = helpers.LoadConfig()
-	bosh = helpers.NewBosh(gemfilePath, goPath, config.BoshTarget)
+	boshOperationTimeout := helpers.GetBoshOperationTimeout(config)
+	bosh = helpers.NewBosh(gemfilePath, goPath, config.BoshTarget, boshOperationTimeout)
 
 	etcdManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_etcd_deployment_manifest")
 
@@ -48,8 +51,12 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	if bosh == nil {
+		return
+	}
+
 	By("delete release")
-	bosh.Command("-n", "delete", "release", etcdRelease).Wait(config.DefaultTimeout)
+	bosh.Command("-n", "delete", "release", etcdRelease)
 })
 
 func createEtcdStub() {

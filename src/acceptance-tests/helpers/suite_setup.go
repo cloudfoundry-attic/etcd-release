@@ -34,7 +34,7 @@ func SetupFastBosh() string {
 
 	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
 	Expect(err).ToNot(HaveOccurred())
-	Eventually(session, time.Minute*5).Should(Exit(0))
+	Eventually(session, 5*time.Minute).Should(Exit(0))
 
 	return gemfilePath
 }

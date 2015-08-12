@@ -33,19 +33,19 @@ var _ = Describe("Multiple Instances", func() {
 		}
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy")).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 	})
 
 	AfterEach(func() {
 		By("delete deployment")
-		bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)
+		bosh.Command("-n", "delete", "deployment", etcdDeployment)
 	})
 
 	Describe("Multiple node deployment", func() {
 		It("succesfully deploys multiple etcd node", func() {
 			By("deploying")
-			Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
+			Expect(bosh.Command("-n", "deploy")).To(Exit(0))
 
 			By("setting a value on each machine")
 			for index, url := range etcdClientURLs {

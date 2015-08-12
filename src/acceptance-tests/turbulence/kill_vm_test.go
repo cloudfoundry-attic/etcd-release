@@ -38,7 +38,7 @@ var _ = Describe("KillVm", func() {
 		)
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy").Wait(config.DefaultTimeout)).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy")).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 
 		for _, elem := range etcdManifest.Properties.Etcd.Machines {
@@ -57,15 +57,16 @@ var _ = Describe("KillVm", func() {
 
 	AfterEach(func() {
 		By("Fixing the release")
-		bosh.Command("cck", "--auto").Wait(config.DefaultTimeout)
+		bosh.Command("cck", "--auto")
 
 		By("delete deployment")
-		bosh.Command("-n", "delete", "deployment", etcdDeployment).Wait(config.DefaultTimeout)
+		bosh.Command("-n", "delete", "deployment", etcdDeployment)
 	})
 
 	Context("When an etcd node is killed", func() {
 		BeforeEach(func() {
-			turbulenceClient := client.NewClient(turbulenceUrl)
+			turbulenceOperationTimeout := helpers.GetTurbulenceOperationTimeout(config)
+			turbulenceClient := client.NewClient(turbulenceUrl, turbulenceOperationTimeout)
 
 			err := turbulenceClient.KillIndices(etcdDeployment, "etcd_z1", []int{0})
 			Expect(err).ToNot(HaveOccurred())

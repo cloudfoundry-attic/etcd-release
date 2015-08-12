@@ -1,7 +1,6 @@
 package client
 
 import (
-	"acceptance-tests/helpers"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -13,8 +12,8 @@ import (
 )
 
 type Client struct {
-	baseURL string
-	config  helpers.Config
+	baseURL          string
+	operationTimeout time.Duration
 }
 
 type deployment struct {
@@ -41,11 +40,10 @@ type Response struct {
 	ExecutionCompletedAt string `json:"ExecutionCompletedAt"`
 }
 
-func NewClient(baseURL string) Client {
-	config := helpers.LoadConfig()
+func NewClient(baseURL string, operationTimeout time.Duration) Client {
 	return Client{
-		baseURL: baseURL,
-		config:  config,
+		baseURL:          baseURL,
+		operationTimeout: operationTimeout,
 	}
 }
 
@@ -91,10 +89,10 @@ func (c Client) KillIndices(deploymentName, jobName string, indices []int) error
 		return err
 	}
 
-	return c.pollRequestCompleted(turbulenceResponse.ID)
+	return c.pollRequestCompletedDeletingVM(turbulenceResponse.ID)
 }
 
-func (c Client) pollRequestCompleted(id string) error {
+func (c Client) pollRequestCompletedDeletingVM(id string) error {
 	request, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/incidents/%s", c.baseURL, id), nil)
 	if err != nil {
 		return err
@@ -126,8 +124,8 @@ func (c Client) pollRequestCompleted(id string) error {
 			return nil
 		}
 
-		if time.Now().Sub(startTime) > c.config.DefaultTimeout {
-			return errors.New(fmt.Sprintf("Did not finish deleting vm in time: %d", c.config.DefaultTimeout))
+		if time.Now().Sub(startTime) > c.operationTimeout {
+			return errors.New(fmt.Sprintf("Did not finish deleting VM in time: %d", c.operationTimeout))
 		}
 
 		time.Sleep(2 * time.Second)
