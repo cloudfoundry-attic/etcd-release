@@ -124,8 +124,8 @@ export EATS_CONFIG=$PWD/integration_config.json
 
 The full set of config parameters is explained below:
 * `bosh_target` (required) Public Bosh IP address that will be used to host test environment.
-* `iass_settings_etcd_stub_path` (required) Stub containing iaas settings for the etcd deployment.
-* `iass_settings_turbulence_stub_path` (required for turbulence tests) Stub containing iass setting for the turbulence deployment.
+* `iaas_settings_etcd_stub_path` (required) Stub containing iaas settings for the etcd deployment.
+* `iaas_settings_turbulence_stub_path` (required for turbulence tests) Stub containing iaas setting for the turbulence deployment.
 * `cpi_release_url` (required for turbulence tests) CPI for the current bosh director being used to deploy tests with.
 * `cpi_release_name` (required for turbulence tests) Name for the `cpi_release_url` parameter
 * `bosh_operation_timeout` (optional) Time to wait for BOSH commands to exit before erroring out. (default time is 5 min if not specified)
