@@ -261,10 +261,10 @@ configure your own aws account and blobstore. `scripts/configure-aws` creates
 an s3 bucket and associated IAM user and fills the details of those resources
 out in `final.yml` and `private.yml` files. The `configure-aws` script takes 2 inputs, in order.
 The first argument is the location of your private deployment directory which contains an aws_environment file.
-For on the deployment directories please see [deployment directory link in mega-ci readme].
+For on the deployment directories please see [Deployment Directory Details](https://github.com/cloudfoundry/mega-ci#deployment-directory-details).
 The second argument is the location of a directory where you would like to store
 your bosh `private.yml` file. For more on bosh `private.yml` files please see
-[link to bosh.io docs on private.yml]
+[adding blobs on bosh.io](https://bosh.io/docs/create-release.html#blobs).
 
 The cloudformation template used to configure the aws stack with your blobstore
 can be found in `templates/aws/etcd-blobs-bucket.json`. Due to s3 bucket names
