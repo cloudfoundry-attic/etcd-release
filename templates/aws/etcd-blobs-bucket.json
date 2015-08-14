@@ -64,11 +64,11 @@
     }
   },
   "Outputs" : {
-    "ConcourseAccessKeyID": {
+    "EtcdBlobstoreAccessKeyID": {
       "Description": "Access Key ID",
       "Value": { "Ref": "EtcdBlobstoreAccessKey" }
     },
-    "ConcourseSecretAccessKey" : {
+    "EtcdBlobstoreSecretAccessKey" : {
       "Description" : "Secret Key",
       "Value": { "Fn::GetAtt" : [ "EtcdBlobstoreAccessKey", "SecretAccessKey"]} 
     },
