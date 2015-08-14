@@ -251,3 +251,22 @@ placeholders and can be renamed provided that all clients client certificate.
 The server certificate must have the common name `etcd.service.consul` and
 must specify `etcd.service.consul` and `*.etcd.service.consul` as Subject
 Alternative Names (SANs).
+
+### Blobstore Creation
+
+Users who simply wish to consume and deploy etcd-release do not need to create
+their own bosh blobstore. If, however, you plan on forking and developing
+your own etcd-release seperate from the Cloudfoundry organization you must
+configure your own aws account and blobstore. `scripts/configure-aws` creates
+an s3 bucket and associated IAM user and fills the details of those resources
+out in `final.yml` and `private.yml` files. The `configure-aws` script takes 2 inputs, in order.
+The first argument is the location of your private deployment directory which contains an aws_environment file.
+For on the deployment directories please see [deployment directory link in mega-ci readme].
+The second argument is the location of a directory where you would like to store
+your bosh `private.yml` file. For more on bosh `private.yml` files please see
+[link to bosh.io docs on private.yml]
+
+The cloudformation template used to configure the aws stack with your blobstore
+can be found in `templates/aws/etcd-blobs-bucket.json`. Due to s3 bucket names
+being globally unique, you must first change the [bucket name](link to line with bucket-name)
+to your desired name in the cloudformation template.

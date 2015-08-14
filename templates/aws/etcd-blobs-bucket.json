@@ -1,0 +1,80 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "S3 buckets for final etcd blobs",
+
+  "Resources": { 
+    "EtcdBlobstoreUser": {
+      "Type" : "AWS::IAM::User"
+    },  
+    "EtcdBlobstoreAccessKey": {
+      "Type" : "AWS::IAM::AccessKey",
+      "Properties": {
+        "UserName": { "Ref": "EtcdBlobstoreUser" }
+      }
+    },
+    "EtcdReleaseBlobsBucket": {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "BucketName" : "etcd-release-blobs"
+      }
+    },
+    "EtcdReleaseBlobsBucketPolicy": {
+      "Type" : "AWS::S3::BucketPolicy",
+      "Properties" : {
+        "PolicyDocument" : {
+          "Id" : "etcd-release-blobs-bucket-policy",
+          "Statement" : [ { 
+            "Sid" : "AllowReadForEveryone",
+            "Action" : [
+              "s3:GetObject"
+            ],
+            "Effect" : "Allow",
+            "Principal" : "*",
+            "Resource" : { "Fn::Join" : [
+              "", [ "arn:aws:s3:::", { "Ref" : "EtcdReleaseBlobsBucket" } , "/*" ]
+            ] }
+          },
+          { 
+            "Sid" : "AllowList",
+            "Action" : [
+              "s3:ListBucket"
+            ],
+            "Effect" : "Allow",
+            "Principal" : "*",
+            "Resource" : { "Fn::Join" : [
+              "", [ "arn:aws:s3:::", { "Ref" : "EtcdReleaseBlobsBucket" } ]
+            ] }
+          },
+          { 
+            "Sid" : "AllowWrite",
+            "Action" : [
+              "s3:PutObject"
+            ],
+            "Effect" : "Allow",
+            "Principal" : {
+              "AWS" : { "Fn::GetAtt" : [ "EtcdBlobstoreUser", "Arn" ] }
+            },
+            "Resource" : { "Fn::Join" : [
+              "", [ "arn:aws:s3:::", { "Ref" : "EtcdReleaseBlobsBucket" } , "/*" ]
+            ] }
+          } ] 
+        },
+        "Bucket" : { "Ref" : "EtcdReleaseBlobsBucket" }
+      }
+    }
+  },
+  "Outputs" : {
+    "ConcourseAccessKeyID": {
+      "Description": "Access Key ID",
+      "Value": { "Ref": "EtcdBlobstoreAccessKey" }
+    },
+    "ConcourseSecretAccessKey" : {
+      "Description" : "Secret Key",
+      "Value": { "Fn::GetAtt" : [ "EtcdBlobstoreAccessKey", "SecretAccessKey"]} 
+    },
+    "EtcdBlobstoreDomain" : {
+      "Description": "Etcd Blobstore Domain", 
+      "Value": { "Ref": "EtcdReleaseBlobsBucket" }
+    }
+  }
+}
