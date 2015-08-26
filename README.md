@@ -3,7 +3,6 @@
 
 This is a [bosh](http://bosh.io) release for [etcd](https://github.com/coreos/etcd).
 
-* [Github Repo](http://github.com/cloudfoundry-incubator/etcd-release)
 * [CI](https://mega.ci.cf-app.com/pipelines/etcd)
 * [Roadmap](https://www.pivotaltracker.com/n/projects/1382120)
 
