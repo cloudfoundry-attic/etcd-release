@@ -1,17 +1,25 @@
 # etcd-release
 ---
 
-#About
-
 This is a [bosh](http://bosh.io) release for [etcd](https://github.com/coreos/etcd).
 
-###Usage
+* [Github Repo](http://github.com/cloudfoundry-incubator/etcd-release)
+* [CI](https://mega.ci.cf-app.com/pipelines/etcd)
+* [Roadmap](https://www.pivotaltracker.com/n/projects/1382120)
+
+Contents
+
+1. [Usage](#usage)
+2. [Deploying](#deploying)
+3. [Running Tests](#running-tests)
+4. [Advanced](#advanced)
+
+
+#Usage
 
 The `etcd.machines` property must be specified in your manifest. It should be an array of the form `[<ip>:<port>, ...]`.
 
 etcd should only be updated one instance at a time to avoid problems joining the cluster. Your max-in-flight for etcd jobs should be set to 1.
-
-###Etc
 
 * Currently this release is not consumed by Cloud Foundry as a stand-alone bosh release. This is expected to change in the near future
 * At no point should you deploy exactly two (2) instances of etcd. Please see [CoreOS's recommendations](https://coreos.com/docs/cluster-management/scaling/etcd-optimal-cluster-size/) for cluster sizes.
@@ -101,7 +109,7 @@ We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfo
 Output the result of the above command to a file: `./scripts/generate_etcd_deployment_manifest [STUB LIST] > etcd.yml`.  Then run `bosh -d etcd.yml deploy`.
 	
 ---
-#Running EATS (ETCD Acceptance Tests)
+#Running Tests
 
 We have written a test suite that exercises spinning up single/multiple etcd instances, scaling them
 and perform rolling deploys. If you have already installed Go, you can run `EATS_CONFIG=[config_file.json] ./scripts/test`.
