@@ -1,8 +1,10 @@
 name: (( name_overrides.deployment_name ))
 
+release_version: (( release_version_overrides || "latest" ))
+
 releases:
   - name: (( name_overrides.release_name ))
-    version: latest
+    version: (( release_version ))
 
 compilation:
   workers: 3
