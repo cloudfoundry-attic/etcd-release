@@ -8,5 +8,4 @@ var (
 
 	TurbulenceInstanceCountOverridesStubPath  = "manifest-generation/bosh-lite-stubs/instance-count-overrides.yml"
 	TurbulencePersistentDiskOverridesStubPath = "manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml"
-	TurbulencePropertiesStubPath              = "manifest-generation/bosh-lite-stubs/turbulence/property-overrides.yml"
 )

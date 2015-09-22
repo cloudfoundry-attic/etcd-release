@@ -122,6 +122,7 @@ cat > integration_config.json << EOF
   "bosh_target": "192.168.50.4",
   "iaas_settings_etcd_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml",
   "iaas_settings_turbulence_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings-turbulence.yml",
+  "turbulence_properties_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/turbulence/property-overrides.yml",
   "cpi_release_url": "https://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=21",
   "cpi_release_name": "bosh-warden-cpi"
 }
@@ -133,6 +134,7 @@ The full set of config parameters is explained below:
 * `bosh_target` (required) Public Bosh IP address that will be used to host test environment.
 * `iaas_settings_etcd_stub_path` (required) Stub containing iaas settings for the etcd deployment.
 * `iaas_settings_turbulence_stub_path` (required for turbulence tests) Stub containing iaas setting for the turbulence deployment.
+* `turbulence_properties_stub_path` (required for turbulence tests) Stub containing property overrides for the turbulence deployment.
 * `cpi_release_url` (required for turbulence tests) CPI for the current bosh director being used to deploy tests with.
 * `cpi_release_name` (required for turbulence tests) Name for the `cpi_release_url` parameter
 * `bosh_operation_timeout` (optional) Time to wait for BOSH commands to exit before erroring out. (default time is 5 min if not specified)
