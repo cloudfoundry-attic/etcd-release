@@ -1,7 +1,5 @@
 name: (( name_overrides.deployment_name ))
 
-release_version: (( release_version_overrides || "latest" ))
-
 releases:
   - name: (( name_overrides.release_name ))
     version: (( release_version ))
@@ -16,7 +14,7 @@ update:
   canaries: 1
   canary_watch_time: 1000-180000
   update_watch_time: 1000-180000
-  max_in_flight: 50
+  max_in_flight: 1
   serial: true
 
 networks:
@@ -51,8 +49,6 @@ jobs:
     networks:
       - name: etcd1
         static_ips: (( static_ips(0,1,2,3,4) ))
-    update:
-      max_in_flight: 1
   - name: etcd_z2
     templates:
       - name: etcd
@@ -63,8 +59,6 @@ jobs:
     networks:
       - name: etcd2
         static_ips: (( static_ips(0,1,2,3,4) ))
-    update:
-      max_in_flight: 1
 
 properties:
   etcd:
@@ -72,6 +66,7 @@ properties:
     heartbeat_interval_in_milliseconds: (( property_overrides.etcd.heartbeat_interval_in_milliseconds || nil ))
 
 # The keys below should not be included in the final stub
+release_version: (( release_version_overrides || "latest" ))
 iaas_settings: (( merge ))
 instance_count_overrides: (( merge ))
 persistent_disk_overrides: (( merge ))

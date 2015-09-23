@@ -16,7 +16,7 @@ update:
   canaries: 1
   canary_watch_time: 1000-180000
   update_watch_time: 1000-180000
-  max_in_flight: 50
+  max_in_flight: 1
   serial: true
 
 networks:
@@ -46,8 +46,6 @@ jobs:
     networks:
       - name: turbulence
         static_ips: (( static_ips(0) ))
-    update:
-      max_in_flight: 1
 
 properties:
   turbulence_api:
