@@ -1,36 +1,25 @@
 # etcd-release
 ---
 
-This is a [bosh](http://bosh.io) release for [etcd](https://github.com/coreos/etcd).
+This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/etcd).
 
 * [CI](https://mega.ci.cf-app.com/pipelines/etcd)
 * [Roadmap](https://www.pivotaltracker.com/n/projects/1382120)
 
 ###Contents
 
-1. [Usage](#usage)
-2. [Deploying](#deploying)
-3. [Running Tests](#running-tests)
-4. [Advanced](#advanced)
+1. [Deploying](#deploying)
+2. [Running Tests](#running-tests)
+3. [Advanced](#advanced)
 
+## Deploying
 
-#Usage
+In order to deploy etcd-release you must follow the standard steps for deploying software with BOSH.
 
-The `etcd.machines` property must be specified in your manifest. It should be an array of the form `[<ip>:<port>, ...]`.
-
-etcd should only be updated one instance at a time to avoid problems joining the cluster. Your max-in-flight for etcd jobs should be set to 1.
-
-* Currently this release is not consumed by Cloud Foundry as a stand-alone bosh release. This is expected to change in the near future
-* At no point should you deploy exactly two (2) instances of etcd. Please see [CoreOS's recommendations](https://coreos.com/docs/cluster-management/scaling/etcd-optimal-cluster-size/) for cluster sizes.
-
----
-#Deploying
-In order to deploy etcd-release you must follow the standard steps for deploying software with bosh.
-
-We assume you have already deployed and targeted a bosh director. For more instructions on how to do that please see the [bosh documentation](http://bosh.io/docs).
+We assume you have already deployed and targeted a BOSH director. For more instructions on how to do that please see the [BOSH documentation](http://bosh.io/docs).
 
 ###1. Uploading a stemcell
-Find the "BOSH Lite Warden" stemcell you wish to use. [bosh.io](https://bosh.io/stemcells) provides a resource to find and download stemcells.  Then run `bosh upload release PATH_TO_DOWNLOADED_STEMCELL`.
+Find the "BOSH Lite Warden" stemcell you wish to use. [bosh.io](https://bosh.io/stemcells) provides a resource to find and download stemcells.  Then run `bosh upload stemcell STEMCELL_URL_OR_PATH_TO_DOWNLOADED_STEMCELL`.
 
 ###2. Creating a release
 From within the etcd-release director run `bosh create release --force` to create a development release.
@@ -41,15 +30,11 @@ Once you've created a development release run `bosh upload release` to upload yo
 ###4. Generating a deployment manifest
 We provide a set of scripts and templates to generate a simple deployment manifest. You should use these as a starting point for creating your own manifest, but they should not be considered comprehensive or production-ready.
 
-In order to automatically generate a manifest you must have installed the following dependencies:
+In order to automatically generate a manifest you must install [spiff](https://github.com/cloudfoundry-incubator/spiff).  Once installed, manifests can be generated using `./scripts/generate_etcd_deployment_manifest [STUB LIST]` with the provided stubs:
 
-1. [Spiff](https://github.com/cloudfoundry-incubator/spiff)
-
-Once installed, manifests can be generated using `./scripts/generate_etcd_deployment_manifest [STUB LIST]` with the provided stubs:
-
-1. uuid_stub
+1. director_uuid_stub
 	
-	The uuid_stub provides the uuid for the currently targeted bosh director.
+	The director_uuid_stub provides the uuid for the currently targeted BOSH director.
 	```yaml
 	---
 	director_uuid: DIRECTOR_UUID
@@ -66,7 +51,7 @@ Once installed, manifests can be generated using `./scripts/generate_etcd_deploy
 	    instances: 0
 	```
 
-	Remember, at no time should you deploy only 2 instances of etcd.
+	NOTE: at no time should you deploy only 2 instances of etcd.
 3. persistent_disk_stub
 
 	The persistent disk stub allows you to override the size of the persistent disk used in each instance of the etcd job. If you wish to use the default settings provide a stub with only an empty hash:
@@ -85,7 +70,7 @@ Once installed, manifests can be generated using `./scripts/generate_etcd_deploy
 	
 4. iaas_settings
 
-	The iaas settings stub contains iaas specific settings, including networks, cloud properties, and compilation properties. Please see the bosh documentation for setting up networks and subnets on your IaaS of choice. We currently allow for three network configurations on your IaaS: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
+	The IaaS settings stub contains IaaS-specific settings, including networks, cloud properties, and compilation properties. Please see the BOSH documentation for setting up networks and subnets on your IaaS of choice. We currently allow for three network configurations on your IaaS: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
 	
 We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfoundry-incubator/etcd-release/blob/master/manifest-generation/bosh-lite-stubs).  Specifically:
 
@@ -104,17 +89,19 @@ We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfo
 	  deployment_name: NAME
 	```
 
+Output the result of the above command to a file: `./scripts/generate_etcd_deployment_manifest [STUB LIST] > OUTPUT_MANIFEST_PATH`.
+
 ###5. Deploy
-Output the result of the above command to a file: `./scripts/generate_etcd_deployment_manifest [STUB LIST] > etcd.yml`.  Then run `bosh -d etcd.yml deploy`.
+
+Run `bosh -d OUTPUT_MANIFEST_PATH deploy`.
 	
----
-#Running Tests
+## Running Tests
 
 We have written a test suite that exercises spinning up single/multiple etcd instances, scaling them
 and perform rolling deploys. If you have already installed Go, you can run `EATS_CONFIG=[config_file.json] ./scripts/test`.
 The `test` script installs all dependancies and runs the full test suite. The EATS_CONFIG 
-environment variable points to a configuration file which specifies the endpoint of the bosh 
-director and the path to your iaas_settings stub. An example config json for bosh-lite would look like:
+environment variable points to a configuration file which specifies the endpoint of the BOSH
+director and the path to your iaas_settings stub. An example config json for BOSH-lite would look like:
 
 ```json
 cat > integration_config.json << EOF
@@ -131,30 +118,29 @@ export EATS_CONFIG=$PWD/integration_config.json
 ```
 
 The full set of config parameters is explained below:
-* `bosh_target` (required) Public Bosh IP address that will be used to host test environment.
+* `bosh_target` (required) Public BOSH IP address that will be used to host test environment.
 * `iaas_settings_etcd_stub_path` (required) Stub containing iaas settings for the etcd deployment.
 * `iaas_settings_turbulence_stub_path` (required for turbulence tests) Stub containing iaas setting for the turbulence deployment.
 * `turbulence_properties_stub_path` (required for turbulence tests) Stub containing property overrides for the turbulence deployment.
-* `cpi_release_url` (required for turbulence tests) CPI for the current bosh director being used to deploy tests with.
+* `cpi_release_url` (required for turbulence tests) CPI for the current BOSH director being used to deploy tests with.
 * `cpi_release_name` (required for turbulence tests) Name for the `cpi_release_url` parameter
 * `bosh_operation_timeout` (optional) Time to wait for BOSH commands to exit before erroring out. (default time is 5 min if not specified)
 * `turbulence_operation_timeout` (optional) Time to wait for Turbulence operations to succeed before erroring out. (default time is 5 min if not specified)
 
-Currently you cannot specify individual tests to be run, however we are working on adding that functionality in the near future.
+Currently you cannot specify individual tests to be run.
 
 Note: you must ensure that the stemcells specified in `iaas_settings_etcd_stub_path` and `iaas_settings_turbulence_stub_path` are already uploaded to the director at `bosh_target`.
 
 Note: The ruby `bundler` gem is used to install the correct version of the `bosh_cli`, as well as to decrease the `bosh` startup time. 
 
----
-#Advanced
+## Advanced
 
 
 ### Encrypting Traffic
 
 To force communication between clients and etcd to use SSL, enable the etcd.require_ssl manifest property to true.
 
-To force communication between etcd nodes to use SSL, enable the etcd.peer_require_ssl manifest property to true.
+To force communication between etcd nodes to use SSL, set the `etcd.peer_require_ssl` manifest property to true.
 
 The instructions below detail how to create certificates. If SSL is required for client communication, the clients will also need copies of the certificates.
 
@@ -260,22 +246,3 @@ placeholders and can be renamed provided that all clients client certificate.
 The server certificate must have the common name `etcd.service.consul` and
 must specify `etcd.service.consul` and `*.etcd.service.consul` as Subject
 Alternative Names (SANs).
-
-### Blobstore Creation
-
-Users who simply wish to consume and deploy etcd-release do not need to create
-their own bosh blobstore. If, however, you plan on forking and developing
-your own etcd-release seperate from the Cloudfoundry organization you must
-configure your own aws account and blobstore. `scripts/configure-aws` creates
-an s3 bucket and associated IAM user and fills the details of those resources
-out in `final.yml` and `private.yml` files. The `configure-aws` script takes 2 inputs, in order.
-The first argument is the location of your private deployment directory which contains an aws_environment file.
-For on the deployment directories please see [Deployment Directory Details](https://github.com/cloudfoundry/mega-ci#deployment-directory-details).
-The second argument is the location of a directory where you would like to store
-your bosh `private.yml` file. For more on bosh `private.yml` files please see
-[adding blobs on bosh.io](https://bosh.io/docs/create-release.html#blobs).
-
-The cloudformation template used to configure the aws stack with your blobstore
-can be found in `templates/aws/etcd-blobs-bucket.json`. Due to s3 bucket names
-being globally unique, you must first change the [bucket name](link to line with bucket-name)
-to your desired name in the cloudformation template.
