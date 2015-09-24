@@ -11,7 +11,7 @@ type Config struct {
 	BoshTarget                     string `json:"bosh_target"`
 	IAASSettingsEtcdStubPath       string `json:"iaas_settings_etcd_stub_path"`
 	IAASSettingsTurbulenceStubPath string `json:"iaas_settings_turbulence_stub_path"`
-	TurbulencePropertiesStubPath   string `json:"turbulence_properties_stub_path"`
+	TurbulencePropertiesStubPath   string `json:turbulence_property_stub_path`
 	CPIReleaseUrl                  string `json:"cpi_release_url"`
 	CPIReleaseName                 string `json:"cpi_release_name"`
 	BoshOperationTimeout           string `json:"bosh_operation_timeout"`

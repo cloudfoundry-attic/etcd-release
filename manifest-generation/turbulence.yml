@@ -52,7 +52,6 @@ properties:
     password: (( property_overrides.turbulence_api.password ))
     certificate: (( property_overrides.turbulence_api.certificate ))
     private_key: (( property_overrides.turbulence_api.private_key ))
-    registry: (( property_overrides.registry || nil ))
 
     director:
       host: (( property_overrides.turbulence_api.director.host ))
@@ -60,17 +59,7 @@ properties:
       password: (( property_overrides.turbulence_api.director.password ))
       ca_cert: (( property_overrides.turbulence_api.director.ca_cert ))
 
-  cpi: (( property_overrides.cpi || nil ))
-  aws: (( property_overrides.aws || nil ))
-  registry: (( property_overrides.registry || nil ))
-  blobstore:
-    address: (( jobs.api.networks.turbulence.static_ips[0] ))
-    port: 25250
-    agent:
-      user: agent
-      password: agent-password
-  agent:
-    mbus: (( "nats://nats" property_overrides.nats_password "@" jobs.api.networks.turbulence.static_ips[0] ":4222" ))
+  cpi: (( property_overrides.cpi ))
 
 # The keys below should not be included in the final stub
 name_defaults:
