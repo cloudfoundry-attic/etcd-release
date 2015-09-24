@@ -69,7 +69,7 @@ var _ = BeforeSuite(func() {
 	)
 
 	By("uploading the turbulence release")
-	Expect(bosh.Command("-n", "upload", "release", turbulenceReleasePath).To(Exit(0)))
+	Expect(bosh.Command("-n", "upload", "release", turbulenceReleasePath)).To(Exit(0))
 
 	By("deploying the turbulence release")
 	Expect(bosh.Command("-n", "deploy")).To(Exit(0))
