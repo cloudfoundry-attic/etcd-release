@@ -21,15 +21,15 @@ func TestTurbulence(t *testing.T) {
 
 var (
 	goPath             string
-	turbulenceUrl      string
 	config             helpers.Config
 	bosh               *helpers.Bosh
 	turbulenceManifest *helpers.Manifest
 
 	etcdRelease          = fmt.Sprintf("etcd-%s", generator.RandomName())
 	etcdDeployment       = etcdRelease
-	turbulenceRelease    = fmt.Sprintf("turb-%s", generator.RandomName())
-	turbulenceDeployment = turbulenceRelease
+	turbulenceDeployment    = fmt.Sprintf("turb-%s", generator.RandomName())
+	turbulenceReleaseName = "turbulence"
+	turbulenceReleasePath = "http://bosh.io/d/github.com/cppforlife/turbulence-release?v=0.4"
 
 	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub string
 
@@ -68,10 +68,11 @@ var _ = BeforeSuite(func() {
 		turbulenceNameOverrideStub,
 	)
 
-	bosh.CreateUploadAndDeployRelease(
-		filepath.Join(goPath, "src", "github.com", "cppforlife", "turbulence-release"),
-		turbulenceRelease,
-		turbulenceDeployment)
+	By("uploading the turbulence release")
+	Expect(bosh.Command("-n", "upload", "release", turbulenceReleasePath).To(Exit(0)))
+
+	By("deploying the turbulence release")
+	Expect(bosh.Command("-n", "deploy")).To(Exit(0))
 
 	createEtcdStub()
 	bosh.CreateAndUploadRelease(goPath, etcdRelease)
@@ -87,9 +88,6 @@ var _ = AfterSuite(func() {
 
 	By("delete turbulence deployment")
 	bosh.Command("-n", "delete", "deployment", turbulenceDeployment)
-
-	By("delete turbulence release")
-	bosh.Command("-n", "delete", "release", turbulenceRelease)
 
 	By("deleting the cpi release")
 	bosh.Command("-n", "delete", "release", config.CPIReleaseName)
@@ -115,7 +113,7 @@ name_overrides:
     release_name: %s
   cpi:
     release_name: %s
-`, turbulenceDeployment, turbulenceRelease, config.CPIReleaseName)
+`, turbulenceDeployment, turbulenceReleaseName, config.CPIReleaseName)
 
 	turbulenceNameOverrideStub = helpers.WriteStub(turbulenceStub)
 }

@@ -104,13 +104,6 @@ func (bosh *Bosh) CreateAndUploadRelease(releaseDir, releaseName string) {
 	Expect(bosh.Command("upload", "release")).To(Exit(0))
 }
 
-func (bosh *Bosh) CreateUploadAndDeployRelease(releaseDir, releaseName, deploymentName string) {
-	bosh.CreateAndUploadRelease(releaseDir, releaseName)
-
-	By("deploying the turbulence release")
-	Expect(bosh.Command("-n", "deploy")).To(Exit(0))
-}
-
 func (bosh *Bosh) Command(boshArgs ...string) *Session {
 	cmd := exec.Command("bundle", append([]string{"exec", "bosh"}, boshArgs...)...)
 	env := os.Environ()
