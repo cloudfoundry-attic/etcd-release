@@ -65,7 +65,6 @@ var _ = BeforeSuite(func() {
 		helpers.TurbulencePersistentDiskOverridesStubPath,
 		config.IAASSettingsTurbulenceStubPath,
 		config.TurbulencePropertiesStubPath,
-		helpers.TurbulencePropertiesStubPath,
 		turbulenceNameOverrideStub,
 	)
 

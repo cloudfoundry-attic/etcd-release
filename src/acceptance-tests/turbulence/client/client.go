@@ -38,6 +38,11 @@ type killCommand struct {
 type Response struct {
 	ID                   string `json:"ID"`
 	ExecutionCompletedAt string `json:"ExecutionCompletedAt"`
+	Events     []*ResponseEvent `json:"Events"`
+}
+
+type ResponseEvent struct {
+	Error                string `json:"Error"`
 }
 
 func NewClient(baseURL string, operationTimeout time.Duration) Client {
@@ -121,6 +126,12 @@ func (c Client) pollRequestCompletedDeletingVM(id string) error {
 		}
 
 		if turbulenceResponse.ExecutionCompletedAt != "" {
+			if len(turbulenceResponse.Events) == 0 {
+				return errors.New("There should at least be one Event in response from turbulence.")
+			}
+			if turbulenceResponse.Events[0].Error != "" {
+				return errors.New(turbulenceResponse.Events[0].Error)
+			}
 			return nil
 		}
 
