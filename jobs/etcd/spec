@@ -26,7 +26,7 @@ properties:
     default: 30
   etcd.require_ssl:
     description: "enable ssl for all communication with etcd"
-    default: false
+    default: true
   etcd.ca_cert:
     description: "PEM-encoded CA certificate"
   etcd.server_cert:
