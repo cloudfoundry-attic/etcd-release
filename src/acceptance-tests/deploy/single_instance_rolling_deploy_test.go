@@ -58,6 +58,7 @@ var _ = Describe("Single Instance Rolling deploys", func() {
 property_overrides:
   etcd:
     heartbeat_interval_in_milliseconds: 51
+    require_ssl: false
 `)
 
 		etcdRollingDeployStub := helpers.WriteStub(etcdStub)

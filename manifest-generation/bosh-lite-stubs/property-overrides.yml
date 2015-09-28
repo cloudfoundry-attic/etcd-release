@@ -1,1 +1,3 @@
-property_overrides: {}
+property_overrides:
+  etcd:
+    require_ssl: false
