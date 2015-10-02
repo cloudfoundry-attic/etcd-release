@@ -76,9 +76,13 @@ fi
 aws cloudformation describe-stacks --stack-name etcd-buckets \
   > ${deployment_dir}/artifacts/iam-users/etcd-buckets.json
 
+set +x
+
 ETCD_BLOBS_BUCKET_ACCESS_KEY_ID=$(cat ${deployment_dir}/artifacts/iam-users/etcd-buckets.json | jq -e -r ".Stacks[0].Outputs[0].OutputValue" )
 ETCD_BLOBS_BUCKET_SECRET_KEY=$(cat ${deployment_dir}/artifacts/iam-users/etcd-buckets.json | jq -e -r ".Stacks[0].Outputs[1].OutputValue" )
 ETCD_BLOBS_DOMAIN_NAME=$(cat ${deployment_dir}/artifacts/iam-users/etcd-buckets.json | jq -e -r ".Stacks[0].Outputs[2].OutputValue" )
+
+set -x
 
 cat > ${credentials_dir}/private.yml <<EOF
 ---
