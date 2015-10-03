@@ -7,7 +7,7 @@ templates:
   etcd_metrics_server_ctl.erb: bin/etcd_metrics_server_ctl
 
 packages:
-  - common
+  - etcd-common
   - etcd_metrics_server
 
 properties:
