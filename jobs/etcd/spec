@@ -39,7 +39,7 @@ properties:
     description: "PEM-encoded client key"
   etcd.peer_require_ssl:
     description: "enable ssl between etcd peers"
-    default: false
+    default: true
   etcd.peer_ca_cert:
     description: "PEM-encoded peer CA certificate"
   etcd.peer_cert:
