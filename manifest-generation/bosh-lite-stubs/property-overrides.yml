@@ -1,3 +1,4 @@
 property_overrides:
   etcd:
     require_ssl: false
+    peer_require_ssl: false

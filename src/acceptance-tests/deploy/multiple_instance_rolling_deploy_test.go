@@ -59,6 +59,7 @@ property_overrides:
   etcd:
     heartbeat_interval_in_milliseconds: 51
     require_ssl: false
+    peer_require_ssl: false
 `)
 
 		etcdRollingDeployStub := helpers.WriteStub(etcdStub)
