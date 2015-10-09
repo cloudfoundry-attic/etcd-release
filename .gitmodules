@@ -24,4 +24,4 @@
 	url = https://github.com/cloudfoundry-incubator/candiedyaml.git
 [submodule "src/etcd-metrics-server"]
 	path = src/etcd-metrics-server
-	url = git@github.com:cloudfoundry-incubator/etcd-metrics-server.git
+	url = https://github.com/cloudfoundry-incubator/etcd-metrics-server.git
