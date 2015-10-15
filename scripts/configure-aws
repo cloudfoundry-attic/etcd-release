@@ -49,7 +49,6 @@ fi
 
 mkdir -p ${deployment_dir}/artifacts/iam-users
 mkdir -p ${deployment_dir}/artifacts/deployments
-mkdir -p generated-stubs
 
 start_time_in_s=$(date +%s)
 wait_time_in_s=$((30 * 60))
