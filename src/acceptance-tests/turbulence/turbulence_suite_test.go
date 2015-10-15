@@ -28,8 +28,6 @@ var (
 	etcdRelease          = fmt.Sprintf("etcd-%s", generator.RandomName())
 	etcdDeployment       = etcdRelease
 	turbulenceDeployment    = fmt.Sprintf("turb-%s", generator.RandomName())
-	turbulenceReleaseName = "turbulence"
-	turbulenceReleasePath = "http://bosh.io/d/github.com/cppforlife/turbulence-release?v=0.4"
 
 	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub string
 
@@ -69,7 +67,7 @@ var _ = BeforeSuite(func() {
 	)
 
 	By("uploading the turbulence release")
-	Expect(bosh.Command("-n", "upload", "release", turbulenceReleasePath)).To(Exit(0))
+	Expect(bosh.Command("-n", "upload", "release", config.TurbulenceReleaseUrl)).To(Exit(0))
 
 	By("deploying the turbulence release")
 	Expect(bosh.Command("-n", "deploy")).To(Exit(0))
@@ -113,7 +111,7 @@ name_overrides:
     release_name: %s
   cpi:
     release_name: %s
-`, turbulenceDeployment, turbulenceReleaseName, config.CPIReleaseName)
+`, turbulenceDeployment, config.TurbulenceReleaseName, config.CPIReleaseName)
 
 	turbulenceNameOverrideStub = helpers.WriteStub(turbulenceStub)
 }

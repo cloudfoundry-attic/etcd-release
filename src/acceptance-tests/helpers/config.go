@@ -16,6 +16,8 @@ type Config struct {
 	CPIReleaseName                 string `json:"cpi_release_name"`
 	BoshOperationTimeout           string `json:"bosh_operation_timeout"`
 	TurbulenceOperationTimeout     string `json:"turbulence_operation_timeout"`
+	TurbulenceReleaseUrl           string `json:"turbulence_release_url"`
+	TurbulenceReleaseName          string
 }
 
 var loadedConfig *Config
@@ -32,6 +34,8 @@ func LoadConfig() Config {
 	if loadedConfig.IAASSettingsEtcdStubPath == "" {
 		panic("missing etcd IaaS settings stub path")
 	}
+
+	loadedConfig.TurbulenceReleaseName = "turbulence"
 
 	return *loadedConfig
 }

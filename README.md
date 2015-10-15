@@ -111,7 +111,8 @@ cat > integration_config.json << EOF
   "iaas_settings_turbulence_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings-turbulence.yml",
   "turbulence_properties_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/turbulence/property-overrides.yml",
   "cpi_release_url": "https://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=21",
-  "cpi_release_name": "bosh-warden-cpi"
+  "cpi_release_name": "bosh-warden-cpi",
+  "turbulence_release_url": "http://bosh.io/d/github.com/cppforlife/turbulence-release?v=0.4"
 }
 EOF
 export EATS_CONFIG=$PWD/integration_config.json
