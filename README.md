@@ -33,7 +33,7 @@ We provide a set of scripts and templates to generate a simple deployment manife
 In order to automatically generate a manifest you must install [spiff](https://github.com/cloudfoundry-incubator/spiff).  Once installed, manifests can be generated using `./scripts/generate_etcd_deployment_manifest [STUB LIST]` with the provided stubs:
 
 1. director_uuid_stub
-	
+
 	The director_uuid_stub provides the uuid for the currently targeted BOSH director.
 	```yaml
 	---
@@ -59,29 +59,42 @@ In order to automatically generate a manifest you must install [spiff](https://g
 	---
 	persistent_disk_overrides: {}
 	```
-	
+
 	To override disk sizes the format is as follows
 	```yaml
 	---
 	persistent_disk_overrides:
 	  etcd_z1: 1234
-	  etcd_z2: 1234	
+	  etcd_z2: 1234
 	```
-	
+
 4. iaas_settings
 
 	The IaaS settings stub contains IaaS-specific settings, including networks, cloud properties, and compilation properties. Please see the BOSH documentation for setting up networks and subnets on your IaaS of choice. We currently allow for three network configurations on your IaaS: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
-	
+
 We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfoundry-incubator/etcd-release/blob/master/manifest-generation/bosh-lite-stubs).  Specifically:
 
 * instance_count_stub: [manifest-generation/bosh-lite-stubs/instance-count-overrides.yml](manifest-generation/bosh-lite-stubs/instance-count-overrides.yml)
 * persistent_disk_stub: [manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml](manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml)
 * iaas_settings: [manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml](manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml)
 
+```
+mkdir -p tmp
+cat >tmp/uuid.yml <<EOS
+director_uuid: $(bosh status --uuid)
+EOS
+./scripts/generate_etcd_deployment_manifest tmp/uuid.yml \
+	./manifest-generation/bosh-lite-stubs/instance-count-overrides.yml \
+	./manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml \
+	./manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml \
+	./manifest-generation/bosh-lite-stubs/property-overrides.yml > tmp/manifest.yml
+bosh deployment tmp/manifest.yml
+```
+
 [Optional]
 
 1. If you wish to override the name of the release and the deployment (default: etcd) you can provide a release_name_stub with the following format:
-	
+
 	```yaml
 	---
 	name_overrides:
@@ -94,12 +107,12 @@ Output the result of the above command to a file: `./scripts/generate_etcd_deplo
 ###5. Deploy
 
 Run `bosh -d OUTPUT_MANIFEST_PATH deploy`.
-	
+
 ## Running Tests
 
 We have written a test suite that exercises spinning up single/multiple etcd instances, scaling them
 and perform rolling deploys. If you have already installed Go, you can run `EATS_CONFIG=[config_file.json] ./scripts/test`.
-The `test` script installs all dependancies and runs the full test suite. The EATS_CONFIG 
+The `test` script installs all dependancies and runs the full test suite. The EATS_CONFIG
 environment variable points to a configuration file which specifies the endpoint of the BOSH
 director and the path to your iaas_settings stub. An example config json for BOSH-lite would look like:
 
@@ -132,7 +145,7 @@ Currently you cannot specify individual tests to be run.
 
 Note: you must ensure that the stemcells specified in `iaas_settings_etcd_stub_path` and `iaas_settings_turbulence_stub_path` are already uploaded to the director at `bosh_target`.
 
-Note: The ruby `bundler` gem is used to install the correct version of the `bosh_cli`, as well as to decrease the `bosh` startup time. 
+Note: The ruby `bundler` gem is used to install the correct version of the `bosh_cli`, as well as to decrease the `bosh` startup time.
 
 ## Advanced
 
