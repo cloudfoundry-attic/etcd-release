@@ -32,6 +32,8 @@ We provide a set of scripts and templates to generate a simple deployment manife
 
 In order to automatically generate a manifest you must install [spiff](https://github.com/cloudfoundry-incubator/spiff).  Once installed, manifests can be generated using `./scripts/generate_etcd_deployment_manifest [STUB LIST]` with the provided stubs:
 
+[Required]
+
 1. director_uuid_stub
 
 	The director_uuid_stub provides the uuid for the currently targeted BOSH director.
@@ -72,11 +74,16 @@ In order to automatically generate a manifest you must install [spiff](https://g
 
 	The IaaS settings stub contains IaaS-specific settings, including networks, cloud properties, and compilation properties. Please see the BOSH documentation for setting up networks and subnets on your IaaS of choice. We currently allow for three network configurations on your IaaS: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
 
+5. property_overrides_stub
+
+  To see the list of properties that can be overwritten look at [manifest-generation/etcd.yml](manifest-generation/etcd.yml) - keys containing `property_overrides.*` values can be overwritten.
+
 We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfoundry-incubator/etcd-release/blob/master/manifest-generation/bosh-lite-stubs).  Specifically:
 
 * instance_count_stub: [manifest-generation/bosh-lite-stubs/instance-count-overrides.yml](manifest-generation/bosh-lite-stubs/instance-count-overrides.yml)
 * persistent_disk_stub: [manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml](manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml)
 * iaas_settings: [manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml](manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml)
+* property-overrides: [manifest-generation/bosh-lite-stubs/property-overrides.yml](manifest-generation/bosh-lite-stubs/property-overrides.yml)
 
 ```
 mkdir -p tmp

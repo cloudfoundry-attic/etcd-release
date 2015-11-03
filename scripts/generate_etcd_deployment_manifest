@@ -17,8 +17,8 @@ function usage() {
     $0 ~/deployments/bosh-lite/director.yml \\
        manifest-generation/bosh-lite-stubs/instance-count-overrides.yml \\
        manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml \\
-       manifest-generation/bosh-lite-stubs/property-overrides.yml \\
-       manifest-generation/bosh-lite-stubs/iaas-settings.yml
+       manifest-generation/bosh-lite-stubs/iaas-settings.yml \\
+       manifest-generation/bosh-lite-stubs/property-overrides.yml
 "
   exit 1
 }
