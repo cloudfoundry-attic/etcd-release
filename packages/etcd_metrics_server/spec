@@ -6,3 +6,5 @@ dependencies:
 
 files:
   - etcd-metrics-server/**/*.go
+  - etcd-metrics-server/**/LICENSE
+  - etcd-metrics-server/**/NOTICE
