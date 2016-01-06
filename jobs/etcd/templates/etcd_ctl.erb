@@ -1,6 +1,4 @@
-#!/bin/bash
-
-set -e -u -x
+#!/bin/bash -exu
 
 RUN_DIR=/var/vcap/sys/run/etcd
 PIDFILE=${RUN_DIR}/etcd.pid
@@ -9,7 +7,7 @@ source /var/vcap/packages/etcd-common/utils.sh
 
 source /var/vcap/jobs/etcd/bin/etcd_bosh_utils.sh
 
-wait_for_this_node_to_synchronize() {
+function wait_for_this_node_to_synchronize() {
   for i in $(seq <%= p("etcd.log_sync_timeout_in_seconds") %>); do
     if /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -C ${advertise_client_url} ls; then
       synced=true
@@ -19,10 +17,16 @@ wait_for_this_node_to_synchronize() {
   done
 }
 
+function handle_orphaned_etcd() {
+  echo "killing etcd with pid ${etcd_pid}"
+  kill "${etcd_pid}"
+}
 
 case $1 in
 
   start)
+
+    trap handle_orphaned_etcd TERM
 
     pid_guard ${PIDFILE} "etcd"
 
@@ -91,7 +95,6 @@ case $1 in
 
     if ${synced}; then
       echo ${etcd_pid} > ${PIDFILE}
-      wait ${etcd_pid}
     else
       safe_teardown "${prior_member_list}"
       kill -9 ${etcd_pid}
