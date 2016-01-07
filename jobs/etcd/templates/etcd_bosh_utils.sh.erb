@@ -135,7 +135,7 @@ member_add() {
 }
 
 extract_cluster_from_member_list() {
-  members_with_names=$(echo "$1" | grep -v 'name= ' | sed 's/\[.*\]//')
+  members_with_names=$(echo "$1" | grep 'name=' | grep -v 'name= ' | sed 's/\[.*\]//')
   name_peerURL_pairs=$(echo "$members_with_names" | sed 's/.*name=//' | sed 's/ clientURLs.*//' | sed 's/ peerURLs//')
   echo "$name_peerURL_pairs" | tr -s "\n" "," | sed 's/,$//'
 }
