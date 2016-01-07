@@ -64,13 +64,13 @@ properties:
   aws: (( property_overrides.aws || nil ))
   registry: (( property_overrides.registry || nil ))
   blobstore:
-    address: (( jobs.api.networks.turbulence.static_ips[0] ))
+    address: (( jobs.api.networks.turbulence.static_ips.[0] ))
     port: 25250
     agent:
       user: agent
       password: agent-password
   agent:
-    mbus: (( "nats://nats" property_overrides.nats_password "@" jobs.api.networks.turbulence.static_ips[0] ":4222" ))
+    mbus: (( "nats://nats" property_overrides.nats_password "@" jobs.api.networks.turbulence.static_ips.[0] ":4222" ))
 
 # The keys below should not be included in the final stub
 name_defaults:
