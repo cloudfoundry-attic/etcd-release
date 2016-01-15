@@ -59,4 +59,4 @@ properties:
 
   etcd.dns_health_check_host:
     description: "Host to ping for confirmation of DNS resolution"
-    default: "self.service.cf.internal"
+    default: "consul.service.cf.internal"
