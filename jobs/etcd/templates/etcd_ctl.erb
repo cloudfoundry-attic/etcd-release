@@ -28,6 +28,16 @@ case $1 in
 
     trap handle_orphaned_etcd TERM
 
+    <% if p("etcd.require_ssl") %>
+      set +e
+      ping -c 2 <%= p("etcd.dns_health_check_host") %>
+      if [[ "0" != "$?" ]]; then
+        echo "DNS is not up"
+        exit 1
+      fi
+      set -e
+    <% end %>
+
     pid_guard ${PIDFILE} "etcd"
 
     if ! mountpoint -q ${STORE_DIR}; then

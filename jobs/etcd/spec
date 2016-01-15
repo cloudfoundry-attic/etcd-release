@@ -14,32 +14,49 @@ properties:
   etcd.heartbeat_interval_in_milliseconds:
     description: "Interval between heartbeats in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
     default: 50
+
   etcd.election_timeout_in_milliseconds:
     description: "Time without receiving a heartbeat before peer should attempt to become leader in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
     default: 1000
+
   etcd.machines:
     description: "Addresses of etcd machines"
+
   etcd.cluster:
     description: "Information about etcd cluster"
+
   etcd.require_ssl:
     description: "enable ssl for all communication with etcd"
     default: true
+
   etcd.ca_cert:
     description: "PEM-encoded CA certificate"
+
   etcd.server_cert:
     description: "PEM-encoded server certificate"
+
   etcd.server_key:
     description: "PEM-encoded server key"
+
   etcd.client_cert:
     description: "PEM-encoded client certificate"
+
   etcd.client_key:
     description: "PEM-encoded client key"
+
   etcd.peer_require_ssl:
     description: "enable ssl between etcd peers"
     default: true
+
   etcd.peer_ca_cert:
     description: "PEM-encoded peer CA certificate"
+
   etcd.peer_cert:
     description: "PEM-encoded peer certificate"
+
   etcd.peer_key:
     description: "PEM-encoded peer key"
+
+  etcd.dns_health_check_host:
+    description: "Host to ping for confirmation of DNS resolution"
+    default: "self.service.cf.internal"
