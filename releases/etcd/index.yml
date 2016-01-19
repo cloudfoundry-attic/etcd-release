@@ -50,4 +50,6 @@ builds:
     version: '24'
   11eee1e0-8d2d-4c83-a463-0829ee45be6d:
     version: '25'
+  7639a9f5-6383-410b-9e6b-eccf3f5efe70:
+    version: '26'
 format-version: '2'
