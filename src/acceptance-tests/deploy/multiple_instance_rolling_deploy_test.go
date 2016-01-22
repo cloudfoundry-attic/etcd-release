@@ -33,7 +33,7 @@ var _ = Describe("Multiple Instance Rolling deploys", func() {
 		}
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy")).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 	})
 
@@ -76,7 +76,7 @@ property_overrides:
 		)
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy")).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
 
 		By("reading each value from each machine")
 		for _, url := range etcdClientURLs {

@@ -1,4 +1,5 @@
 property_overrides:
+  nats_password: nats-password
   turbulence_api:
     password: turbulence-password
     certificate: |

@@ -117,7 +117,7 @@ func (bosh *Bosh) Command(boshArgs ...string) *Session {
 
 func (bosh *Bosh) GenerateAndSetDeploymentManifest(manifest interface{}, manifestGenerateScripts string, stubs ...string) {
 	cmd := exec.Command(manifestGenerateScripts, stubs...)
-	session, err := Start(cmd, GinkgoWriter, GinkgoWriter)
+	session, err := Start(cmd, nil, nil)
 	Expect(err).ToNot(HaveOccurred())
 	Eventually(session, 10*time.Second).Should(Exit(0))
 

@@ -38,7 +38,7 @@ var _ = Describe("KillVm", func() {
 		)
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy")).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 
 		for _, elem := range etcdManifest.Properties.Etcd.Machines {

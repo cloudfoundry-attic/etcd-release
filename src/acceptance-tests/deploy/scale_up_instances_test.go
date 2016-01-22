@@ -29,7 +29,7 @@ var _ = Describe("Multiple Instances", func() {
 		)
 
 		By("deploying")
-		Expect(bosh.Command("-n", "deploy")).To(Exit(0))
+		Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
 		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(1))
 	})
 
@@ -56,7 +56,7 @@ var _ = Describe("Multiple Instances", func() {
 			}
 
 			By("deploying")
-			Expect(bosh.Command("-n", "deploy")).To(Exit(0))
+			Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
 			Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
 
 			for index, value := range etcdClientURLs {

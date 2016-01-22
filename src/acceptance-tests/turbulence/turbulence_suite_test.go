@@ -27,7 +27,7 @@ var (
 
 	etcdRelease          = fmt.Sprintf("etcd-%s", generator.RandomName())
 	etcdDeployment       = etcdRelease
-	turbulenceDeployment    = fmt.Sprintf("turb-%s", generator.RandomName())
+	turbulenceDeployment = fmt.Sprintf("turb-%s", generator.RandomName())
 
 	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub string
 
@@ -70,7 +70,7 @@ var _ = BeforeSuite(func() {
 	Expect(bosh.Command("-n", "upload", "release", config.TurbulenceReleaseUrl)).To(Exit(0))
 
 	By("deploying the turbulence release")
-	Expect(bosh.Command("-n", "deploy")).To(Exit(0))
+	Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
 
 	createEtcdStub()
 	bosh.CreateAndUploadRelease(goPath, etcdRelease)
