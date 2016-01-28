@@ -27,7 +27,7 @@ var (
 
 	etcdRelease          = fmt.Sprintf("etcd-%s", generator.RandomName())
 	etcdDeployment       = etcdRelease
-	turbulenceDeployment = fmt.Sprintf("turb-%s", generator.RandomName())
+	turbulenceDeployment = fmt.Sprintf("turb-etcd-%s", generator.RandomName())
 
 	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub string
 
