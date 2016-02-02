@@ -25,3 +25,9 @@
 [submodule "src/etcd-metrics-server"]
 	path = src/etcd-metrics-server
 	url = https://github.com/cloudfoundry-incubator/etcd-metrics-server.git
+[submodule "src/acceptance-tests/vendor/github.com/onsi/ginkgo"]
+	path = src/acceptance-tests/vendor/github.com/onsi/ginkgo
+	url = git://github.com/onsi/ginkgo
+[submodule "src/acceptance-tests/vendor/github.com/onsi/gomega"]
+	path = src/acceptance-tests/vendor/github.com/onsi/gomega
+	url = git://github.com/onsi/gomega

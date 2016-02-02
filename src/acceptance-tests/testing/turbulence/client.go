@@ -1,4 +1,4 @@
-package client
+package turbulence
 
 import (
 	"bytes"
@@ -36,19 +36,19 @@ type killCommand struct {
 }
 
 type Response struct {
-	ID                   string `json:"ID"`
-	ExecutionCompletedAt string `json:"ExecutionCompletedAt"`
-	Events     []*ResponseEvent `json:"Events"`
+	ID                   string           `json:"ID"`
+	ExecutionCompletedAt string           `json:"ExecutionCompletedAt"`
+	Events               []*ResponseEvent `json:"Events"`
 }
 
 type ResponseEvent struct {
-	Error                string `json:"Error"`
+	Error string `json:"Error"`
 }
 
-func NewClient(baseURL string, operationTimeout time.Duration) Client {
+func NewClient(baseURL string) Client {
 	return Client{
 		baseURL:          baseURL,
-		operationTimeout: operationTimeout,
+		operationTimeout: 5 * time.Minute,
 	}
 }
 
@@ -129,9 +129,13 @@ func (c Client) pollRequestCompletedDeletingVM(id string) error {
 			if len(turbulenceResponse.Events) == 0 {
 				return errors.New("There should at least be one Event in response from turbulence.")
 			}
-			if turbulenceResponse.Events[0].Error != "" {
-				return errors.New(turbulenceResponse.Events[0].Error)
+
+			for _, event := range turbulenceResponse.Events {
+				if event.Error != "" {
+					return errors.New(event.Error)
+				}
 			}
+
 			return nil
 		}
 

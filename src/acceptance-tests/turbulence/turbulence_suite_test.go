@@ -1,129 +1,125 @@
 package turbulence_test
 
 import (
-	"acceptance-tests/helpers"
-	"fmt"
-	"os"
-	"path/filepath"
+	"acceptance-tests/testing/bosh"
+	"acceptance-tests/testing/destiny"
+	"acceptance-tests/testing/helpers"
+	"acceptance-tests/testing/turbulence"
 
-	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 
 	"testing"
 )
 
 func TestTurbulence(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Turbulence Suite")
+	RunSpecs(t, "turbulence")
 }
 
 var (
-	goPath             string
-	config             helpers.Config
-	bosh               *helpers.Bosh
-	turbulenceManifest *helpers.Manifest
+	config helpers.Config
+	client bosh.Client
 
-	etcdRelease          = fmt.Sprintf("etcd-%s", generator.RandomName())
-	etcdDeployment       = etcdRelease
-	turbulenceDeployment = fmt.Sprintf("turb-etcd-%s", generator.RandomName())
-
-	directorUUIDStub, etcdNameOverrideStub, turbulenceNameOverrideStub string
-
-	turbulenceManifestGeneration string
-	etcdManifestGeneration       string
+	turbulenceManifest destiny.Manifest
+	turbulenceClient   turbulence.Client
 )
 
 var _ = BeforeSuite(func() {
-	goPath = helpers.SetupGoPath()
-	gemfilePath := helpers.SetupFastBosh()
-	config = helpers.LoadConfig()
-	boshOperationTimeout := helpers.GetBoshOperationTimeout(config)
-	bosh = helpers.NewBosh(gemfilePath, goPath, config.BoshTarget, boshOperationTimeout)
+	configPath, err := helpers.ConfigPath()
+	Expect(err).NotTo(HaveOccurred())
 
-	turbulenceManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_turbulence_deployment_manifest")
-	etcdManifestGeneration = filepath.Join(goPath, "src", "acceptance-tests", "scripts", "generate_etcd_deployment_manifest")
+	config, err = helpers.LoadConfig(configPath)
+	Expect(err).NotTo(HaveOccurred())
 
-	directorUUIDStub = bosh.TargetDeployment()
+	client = bosh.NewClient(bosh.Config{
+		URL:              fmt.Sprintf("https://%s:25555", config.BOSH.Target),
+		Username:         config.BOSH.Username,
+		Password:         config.BOSH.Password,
+		AllowInsecureSSL: true,
+	})
 
-	err := os.Chdir(goPath)
-	Expect(err).ToNot(HaveOccurred())
+	By("deploying turbulence", func() {
+		info, err := client.Info()
+		Expect(err).NotTo(HaveOccurred())
 
-	uploadBoshCpiRelease()
+		guid, err := helpers.NewGUID()
+		Expect(err).NotTo(HaveOccurred())
 
-	createTurbulenceStub()
+		manifestConfig := destiny.Config{
+			DirectorUUID: info.UUID,
+			Name:         "turbulence-etcd-" + guid,
+			BOSH: destiny.ConfigBOSH{
+				Target:         config.BOSH.Target,
+				Username:       config.BOSH.Username,
+				Password:       config.BOSH.Password,
+				DirectorCACert: config.BOSH.DirectorCACert,
+			},
+		}
 
-	turbulenceManifest = new(helpers.Manifest)
-	bosh.GenerateAndSetDeploymentManifest(
-		turbulenceManifest,
-		turbulenceManifestGeneration,
-		directorUUIDStub,
-		helpers.TurbulenceInstanceCountOverridesStubPath,
-		helpers.TurbulencePersistentDiskOverridesStubPath,
-		config.IAASSettingsTurbulenceStubPath,
-		config.TurbulencePropertiesStubPath,
-		turbulenceNameOverrideStub,
-	)
+		switch info.CPI {
+		case "aws_cpi":
+			manifestConfig.IAAS = destiny.AWS
 
-	By("uploading the turbulence release")
-	Expect(bosh.Command("-n", "upload", "release", config.TurbulenceReleaseUrl)).To(Exit(0))
+			if config.AWS.Subnet == "" {
+				Fail("aws.subnet is required for AWS IAAS deployment")
+			}
 
-	By("deploying the turbulence release")
-	Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
+			manifestConfig.AWS = destiny.ConfigAWS{
+				AccessKeyID:           config.AWS.AccessKeyID,
+				SecretAccessKey:       config.AWS.SecretAccessKey,
+				DefaultKeyName:        config.AWS.DefaultKeyName,
+				DefaultSecurityGroups: config.AWS.DefaultSecurityGroups,
+				Region:                config.AWS.Region,
+				Subnet:                config.AWS.Subnet,
+			}
+			manifestConfig.Registry = destiny.ConfigRegistry{
+				Host:     config.Registry.Host,
+				Port:     config.Registry.Port,
+				Username: config.Registry.Username,
+				Password: config.Registry.Password,
+			}
+		case "warden_cpi":
+			manifestConfig.IAAS = destiny.Warden
+		default:
+			Fail("unknown infrastructure type")
+		}
 
-	createEtcdStub()
-	bosh.CreateAndUploadRelease(goPath, etcdRelease)
+		turbulenceManifest = destiny.NewTurbulence(manifestConfig)
+
+		yaml, err := turbulenceManifest.ToYAML()
+		Expect(err).NotTo(HaveOccurred())
+
+		yaml, err = client.ResolveManifestVersions(yaml)
+		Expect(err).NotTo(HaveOccurred())
+
+		turbulenceManifest, err = destiny.FromYAML(yaml)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = client.Deploy(yaml)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() ([]bosh.VM, error) {
+			return client.DeploymentVMs(turbulenceManifest.Name)
+		}, "1m", "10s").Should(ConsistOf([]bosh.VM{
+			{"running"},
+		}))
+	})
+
+	By("preparing turbulence client", func() {
+		turbulenceUrl := fmt.Sprintf("https://turbulence:%s@%s:8080",
+			turbulenceManifest.Properties.TurbulenceAPI.Password,
+			turbulenceManifest.Jobs[0].Networks[0].StaticIPs[0])
+
+		turbulenceClient = turbulence.NewClient(turbulenceUrl)
+	})
 })
 
 var _ = AfterSuite(func() {
-	if bosh == nil {
-		return
-	}
-
-	By("delete etcd release")
-	bosh.Command("-n", "delete", "release", etcdRelease)
-
-	By("delete turbulence deployment")
-	bosh.Command("-n", "delete", "deployment", turbulenceDeployment)
-
-	By("deleting the cpi release")
-	bosh.Command("-n", "delete", "release", config.CPIReleaseName)
+	By("deleting the turbulence deployment", func() {
+		err := client.DeleteDeployment(turbulenceManifest.Name)
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
-
-func createEtcdStub() {
-	By("creating the etcd overrides stub")
-	etcdStub := fmt.Sprintf(`---
-name_overrides:
-  release_name: %s
-  deployment_name: %s
-`, etcdRelease, etcdDeployment)
-
-	etcdNameOverrideStub = helpers.WriteStub(etcdStub)
-}
-
-func createTurbulenceStub() {
-	By("creating the turbulence overrides stub")
-	turbulenceStub := fmt.Sprintf(`---
-name_overrides:
-  deployment_name: %s
-  turbulence:
-    release_name: %s
-  cpi:
-    release_name: %s
-`, turbulenceDeployment, config.TurbulenceReleaseName, config.CPIReleaseName)
-
-	turbulenceNameOverrideStub = helpers.WriteStub(turbulenceStub)
-}
-
-func uploadBoshCpiRelease() {
-	if config.CPIReleaseUrl == "" {
-		panic("missing required cpi release url")
-	}
-
-	if config.CPIReleaseName == "" {
-		panic("missing required cpi release name")
-	}
-
-	Expect(bosh.Command("-n", "upload", "release", config.CPIReleaseUrl, "--skip-if-exists")).To(Exit(0))
-}

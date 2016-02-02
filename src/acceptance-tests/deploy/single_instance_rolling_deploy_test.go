@@ -1,90 +1,82 @@
 package deploy_test
 
 import (
-	"acceptance-tests/helpers"
-	"fmt"
+	"acceptance-tests/testing/bosh"
+	"acceptance-tests/testing/destiny"
+	"acceptance-tests/testing/helpers"
 
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("Single Instance Rolling deploys", func() {
+var _ = Describe("Single instance rolling deploys", func() {
 	var (
-		etcdManifest   = new(helpers.Manifest)
+		manifest       destiny.Manifest
+		testKey        string
+		testValue      string
+		etcdClient     *etcd.Client
 		etcdClientURLs []string
 	)
 
 	BeforeEach(func() {
-		bosh.GenerateAndSetDeploymentManifest(
-			etcdManifest,
-			etcdManifestGeneration,
-			directorUUIDStub,
-			helpers.InstanceCount1NodeStubPath,
-			helpers.PersistentDiskStubPath,
-			config.IAASSettingsEtcdStubPath,
-			helpers.PropertyOverridesStubPath,
-			etcdNameOverrideStub,
-		)
+		guid, err := helpers.NewGUID()
+		Expect(err).NotTo(HaveOccurred())
 
-		for _, elem := range etcdManifest.Properties.Etcd.Machines {
+		testKey = "etcd-key-" + guid
+		testValue = "etcd-value-" + guid
+
+		manifest, err = helpers.DeployEtcdWithInstanceCount(1, client, config)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() ([]bosh.VM, error) {
+			return client.DeploymentVMs(manifest.Name)
+		}, "1m", "10s").Should(ConsistOf([]bosh.VM{
+			{"running"},
+		}))
+
+		for _, elem := range manifest.Properties.Etcd.Machines {
 			etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
 		}
 
-		By("deploying")
-		Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
-		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(1))
+		etcdClient = etcd.NewClient(etcdClientURLs)
 	})
 
 	AfterEach(func() {
-		By("delete deployment")
-		bosh.Command("-n", "delete", "deployment", etcdDeployment)
+		err := client.DeleteDeployment(manifest.Name)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("Saves data after a rolling deploy", func() {
-		By("setting a persistent value")
-		etcdClient := etcd.NewClient(etcdClientURLs)
-
-		eatsKey := "eats-key"
-		eatsValue := "eats-value"
-
-		response, err := etcdClient.Create(eatsKey, eatsValue, 6000)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(response).ToNot(BeNil())
-
-		// generate new stub that overwrites a property
-		etcdStub := fmt.Sprintf(`---
-property_overrides:
-  etcd:
-    heartbeat_interval_in_milliseconds: 51
-    require_ssl: false
-    peer_require_ssl: false
-`)
-
-		etcdRollingDeployStub := helpers.WriteStub(etcdStub)
-
-		bosh.GenerateAndSetDeploymentManifest(
-			etcdManifest,
-			etcdManifestGeneration,
-			directorUUIDStub,
-			helpers.InstanceCount1NodeStubPath,
-			helpers.PersistentDiskStubPath,
-			config.IAASSettingsEtcdStubPath,
-			etcdRollingDeployStub,
-			etcdNameOverrideStub,
-		)
-
-		By("deploying")
-		Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
-
-		By("reading each value from each machine")
-		for _, url := range etcdClientURLs {
-			etcdClient := etcd.NewClient([]string{url})
-
-			response, err := etcdClient.Get(eatsKey, false, false)
+	It("persists data throughout the rolling deploy", func() {
+		By("setting a persistent value", func() {
+			response, err := etcdClient.Create(testKey, testValue, 6000)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Node.Value).To(Equal(eatsValue))
-		}
+			Expect(response).ToNot(BeNil())
+		})
+
+		By("deploying", func() {
+			manifest.Properties.Etcd.HeartbeatIntervalInMilliseconds = 51
+
+			yaml, err := manifest.ToYAML()
+			Expect(err).NotTo(HaveOccurred())
+
+			yaml, err = client.ResolveManifestVersions(yaml)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = client.Deploy(yaml)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() ([]bosh.VM, error) {
+				return client.DeploymentVMs(manifest.Name)
+			}, "1m", "10s").Should(ConsistOf([]bosh.VM{
+				{"running"},
+			}))
+		})
+
+		By("reading the value from etcd", func() {
+			response, err := etcdClient.Get(testKey, false, false)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(response.Node.Value).To(Equal(testValue))
+		})
 	})
 })

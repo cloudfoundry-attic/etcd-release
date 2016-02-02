@@ -1,21 +1,64 @@
-#!/bin/sh
+#!/bin/bash -eux
 
-set -ex
+etcd_release_version="99999+dev.${RANDOM}"
+warden_cpi_version="29"
+turbulence_version="0.4"
 
-root_dir=$(cd $(dirname $0)/.. && pwd)
+function check_dependencies() {
+  if [[ $(which jq) == '' ]]; then
+    echo "This test runner requires 'jq'"
+    exit 1
+  fi
+}
 
-echo $root_dir
+function main() {
+  parse_config
 
-export GOPATH=$root_dir:$GOPATH
-export PATH=$root_dir/bin:$PATH
+  local scripts_dir
+  scripts_dir=$(cd "$(dirname "${0}")" && pwd)
 
-# install ginkgo
-go install -v github.com/onsi/ginkgo/ginkgo
+  upload_releases "${scripts_dir}"
+  bash -c "${scripts_dir}/../src/acceptance-tests/scripts/test $@"
+}
 
-ginkgo \
-    -r \
-    -race \
-    -randomizeAllSpecs \
-    -randomizeSuites \
-    "$@" \
-    src/acceptance-tests
+function parse_config() {
+  set +x
+  export BOSH_DIRECTOR=$(jq --raw-output '.bosh.target' "${EATS_CONFIG}")
+  export BOSH_USER=$(jq --raw-output '.bosh.username' "${EATS_CONFIG}")
+  export BOSH_PASSWORD=$(jq --raw-output '.bosh.password' "${EATS_CONFIG}")
+  set -x
+}
+
+function upload_releases() {
+  local scripts_dir
+  scripts_dir="${1}"
+
+  pushd "${scripts_dir}/.." > /dev/null
+    bosh -t "${BOSH_DIRECTOR}" create release --force --version "${etcd_release_version}"
+    bosh -t "${BOSH_DIRECTOR}" upload release
+  popd > /dev/null
+
+  local releases_dir
+  releases_dir="/tmp/eats/releases"
+  mkdir -p "${releases_dir}"
+
+  if [[ ! -e "${releases_dir}/bosh-warden-cpi-release.tgz" ]]; then
+    wget -O "${releases_dir}/bosh-warden-cpi-release.tgz" "http://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=${warden_cpi_version}"
+  fi
+  bosh -t ${BOSH_DIRECTOR} upload release "${releases_dir}/bosh-warden-cpi-release.tgz" --skip-if-exists
+
+  if [[ ! -e "${releases_dir}/turbulence-release.tgz" ]]; then
+    wget -O "${releases_dir}/turbulence-release.tgz" "http://bosh.io/d/github.com/cppforlife/turbulence-release?v=${turbulence_version}"
+  fi
+  bosh -t "${BOSH_DIRECTOR}" upload release "${releases_dir}/turbulence-release.tgz" --skip-if-exists
+}
+
+function cleanup_releases() {
+  bosh -t "${BOSH_DIRECTOR}" -n delete release turbulence "${turbulence_version}"
+  bosh -t "${BOSH_DIRECTOR}" -n delete release bosh-warden-cpi "${warden_cpi_version}"
+  bosh -t "${BOSH_DIRECTOR}" -n delete release etcd "${etcd_release_version}"
+}
+
+check_dependencies
+trap cleanup_releases EXIT
+main "$@"

@@ -1,102 +1,92 @@
 package turbulence_test
 
 import (
-	"acceptance-tests/helpers"
-	"acceptance-tests/turbulence/client"
-	"fmt"
-	"time"
+	"acceptance-tests/testing/bosh"
+	"acceptance-tests/testing/destiny"
+	"acceptance-tests/testing/helpers"
 
 	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("KillVm", func() {
 	var (
-		etcdManifest  = new(helpers.Manifest)
-		turbulenceUrl string
+		etcdManifest destiny.Manifest
+		etcdClient   *etcd.Client
 
+		testKey        string
+		testValue      string
 		etcdClientURLs []string
-		killedEtcdUrls []string
-		aliveEtcdUrls  []string
 	)
 
 	BeforeEach(func() {
-		turbulenceUrl = "https://turbulence:" + turbulenceManifest.Properties.TurbulenceApi.Password + "@" + turbulenceManifest.Jobs[0].Networks[0].StaticIps[0] + ":8080"
+		guid, err := helpers.NewGUID()
+		Expect(err).NotTo(HaveOccurred())
 
-		By("generating etcd manifest")
-		bosh.GenerateAndSetDeploymentManifest(
-			etcdManifest,
-			etcdManifestGeneration,
-			directorUUIDStub,
-			helpers.InstanceCount3NodesStubPath,
-			helpers.PersistentDiskStubPath,
-			config.IAASSettingsEtcdStubPath,
-			helpers.PropertyOverridesStubPath,
-			etcdNameOverrideStub,
-		)
+		testKey = "etcd-key-" + guid
+		testValue = "etcd-value-" + guid
 
-		By("deploying")
-		Expect(bosh.Command("-n", "deploy", "--redact-diff")).To(Exit(0))
-		Expect(len(etcdManifest.Properties.Etcd.Machines)).To(Equal(3))
+		etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config)
+		Expect(err).NotTo(HaveOccurred())
 
-		for _, elem := range etcdManifest.Properties.Etcd.Machines {
-			etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
-		}
-
-		aliveEtcdUrls = []string{
-			"http://" + etcdManifest.Jobs[1].Networks[0].StaticIps[0] + ":4001",
-			"http://" + etcdManifest.Jobs[1].Networks[0].StaticIps[1] + ":4001",
-		}
-
-		killedEtcdUrls = []string{
-			"http://" + etcdManifest.Jobs[0].Networks[0].StaticIps[0] + ":4001",
-		}
+		Eventually(func() ([]bosh.VM, error) {
+			return client.DeploymentVMs(etcdManifest.Name)
+		}, "1m", "10s").Should(ConsistOf([]bosh.VM{
+			{"running"},
+			{"running"},
+			{"running"},
+		}))
 	})
 
 	AfterEach(func() {
-		By("Fixing the release")
-		bosh.Command("cck", "--auto")
+		By("fixing the deployment", func() {
+			yaml, err := etcdManifest.ToYAML()
+			Expect(err).NotTo(HaveOccurred())
 
-		By("delete deployment")
-		bosh.Command("-n", "delete", "deployment", etcdDeployment)
-	})
+			err = client.ScanAndFix(yaml)
+			Expect(err).NotTo(HaveOccurred())
 
-	Context("When an etcd node is killed", func() {
-		BeforeEach(func() {
-			turbulenceOperationTimeout := helpers.GetTurbulenceOperationTimeout(config)
-			turbulenceClient := client.NewClient(turbulenceUrl, turbulenceOperationTimeout)
-
-			err := turbulenceClient.KillIndices(etcdDeployment, "etcd_z1", []int{0})
-			Expect(err).ToNot(HaveOccurred())
+			Eventually(func() ([]bosh.VM, error) {
+				return client.DeploymentVMs(etcdManifest.Name)
+			}, "1m", "10s").Should(ConsistOf([]bosh.VM{
+				{"running"},
+				{"running"},
+				{"running"},
+			}))
 		})
 
-		It("Is still able to function on healthy vms", func() {
-			for index, value := range aliveEtcdUrls {
-				etcdClient := etcd.NewClient([]string{value})
+		By("deleting the deployment", func() {
+			err := client.DeleteDeployment(etcdManifest.Name)
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 
-				eatsKey := fmt.Sprintf("eats-key%d", index)
-				eatsValue := fmt.Sprintf("eats-value%d", index)
+	Context("when a etcd node is killed", func() {
+		It("is still able to function on healthy vms", func() {
+			By("killing indices", func() {
+				err := turbulenceClient.KillIndices(etcdManifest.Name, "etcd_z1", []int{0})
+				Expect(err).ToNot(HaveOccurred())
+			})
 
-				response, err := etcdClient.Create(eatsKey, eatsValue, 60)
+			By("creating an etcd client connection", func() {
+				etcdClientURLs = append(etcdClientURLs, "http://"+etcdManifest.Properties.Etcd.Machines[1]+":4001")
+				etcdClientURLs = append(etcdClientURLs, "http://"+etcdManifest.Properties.Etcd.Machines[2]+":4001")
+
+				etcdClient = etcd.NewClient(etcdClientURLs)
+			})
+
+			By("setting a persistent value", func() {
+				response, err := etcdClient.Create(testKey, testValue, 60)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(response).ToNot(BeNil())
-			}
+			})
 
-			time.Sleep(100 * time.Millisecond)
-			for _, url := range aliveEtcdUrls {
-				etcdClient := etcd.NewClient([]string{url})
-
-				for index, _ := range aliveEtcdUrls {
-					eatsKey := fmt.Sprintf("eats-key%d", index)
-					eatsValue := fmt.Sprintf("eats-value%d", index)
-
-					response, err := etcdClient.Get(eatsKey, false, false)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(response.Node.Value).To(Equal(eatsValue))
-				}
-			}
+			By("reading the value from etcd", func() {
+				response, err := etcdClient.Get(testKey, false, false)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(response.Node.Value).To(Equal(testValue))
+			})
 		})
 	})
 })
