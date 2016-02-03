@@ -40,8 +40,10 @@ var _ = Describe("Scaling down instances", func() {
 	})
 
 	AfterEach(func() {
-		err := client.DeleteDeployment(manifest.Name)
-		Expect(err).NotTo(HaveOccurred())
+		if !CurrentGinkgoTestDescription().Failed {
+			err := client.DeleteDeployment(manifest.Name)
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 
 	It("scales from 3 to 1 nodes", func() {

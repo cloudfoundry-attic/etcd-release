@@ -17,6 +17,7 @@ function main() {
 			-race \
 			-randomizeAllSpecs \
 			-randomizeSuites \
+			-failFast \
 			-skipPackage vendor \
 			-slowSpecThreshold 300 \
 			"$@"
