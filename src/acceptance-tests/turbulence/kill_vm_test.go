@@ -3,9 +3,9 @@ package turbulence_test
 import (
 	"acceptance-tests/testing/bosh"
 	"acceptance-tests/testing/destiny"
+	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
 
-	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -13,7 +13,7 @@ import (
 var _ = Describe("KillVm", func() {
 	var (
 		etcdManifest destiny.Manifest
-		etcdClient   *etcd.Client
+		etcdClient   etcd.Client
 
 		testKey        string
 		testValue      string
@@ -73,19 +73,18 @@ var _ = Describe("KillVm", func() {
 				etcdClientURLs = append(etcdClientURLs, "http://"+etcdManifest.Properties.Etcd.Machines[1]+":4001")
 				etcdClientURLs = append(etcdClientURLs, "http://"+etcdManifest.Properties.Etcd.Machines[2]+":4001")
 
-				etcdClient = etcd.NewClient(etcdClientURLs)
+				etcdClient = NewEtcdClient(etcdClientURLs)
 			})
 
 			By("setting a persistent value", func() {
-				response, err := etcdClient.Create(testKey, testValue, 60)
+				err := etcdClient.Set(testKey, testValue)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(response).ToNot(BeNil())
 			})
 
 			By("reading the value from etcd", func() {
-				response, err := etcdClient.Get(testKey, false, false)
+				value, err := etcdClient.Get(testKey)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(response.Node.Value).To(Equal(testValue))
+				Expect(value).To(Equal(testValue))
 			})
 		})
 	})

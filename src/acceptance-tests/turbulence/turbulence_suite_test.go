@@ -3,11 +3,13 @@ package turbulence_test
 import (
 	"acceptance-tests/testing/bosh"
 	"acceptance-tests/testing/destiny"
+	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
 	"acceptance-tests/testing/turbulence"
 
 	"fmt"
 
+	goetcd "github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -123,3 +125,7 @@ var _ = AfterSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
+
+func NewEtcdClient(machines []string) etcd.Client {
+	return etcd.NewClient(goetcd.NewClient(machines))
+}

@@ -3,19 +3,20 @@ package deploy_test
 import (
 	"acceptance-tests/testing/bosh"
 	"acceptance-tests/testing/destiny"
+	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
 
-	"github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Multiple instance rolling deploys", func() {
 	var (
-		manifest       destiny.Manifest
+		manifest   destiny.Manifest
+		etcdClient etcd.Client
+
 		testKey        string
 		testValue      string
-		etcdClient     *etcd.Client
 		etcdClientURLs []string
 	)
 
@@ -41,7 +42,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 			etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
 		}
 
-		etcdClient = etcd.NewClient(etcdClientURLs)
+		etcdClient = NewEtcdClient(etcdClientURLs)
 	})
 
 	AfterEach(func() {
@@ -51,9 +52,8 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 
 	It("persists data throughout the rolling deploy", func() {
 		By("setting a persistent value", func() {
-			response, err := etcdClient.Create(testKey, testValue, 6000)
+			err := etcdClient.Set(testKey, testValue)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(response).ToNot(BeNil())
 		})
 
 		By("deploying", func() {
@@ -78,9 +78,9 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 		})
 
 		By("reading the value from etcd", func() {
-			response, err := etcdClient.Get(testKey, false, false)
+			value, err := etcdClient.Get(testKey)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(response.Node.Value).To(Equal(testValue))
+			Expect(value).To(Equal(testValue))
 		})
 	})
 })
