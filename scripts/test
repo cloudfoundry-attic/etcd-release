@@ -5,8 +5,20 @@ warden_cpi_version="29"
 turbulence_version="0.4"
 
 function check_dependencies() {
-  if [[ $(which jq) == '' ]]; then
-    echo "This test runner requires 'jq'"
+  test -n "${EATS_CONFIG?"EATS_CONFIG is a required environment variable"}"
+
+  require bosh
+  require jq
+  require go
+  require wget
+}
+
+function require() {
+  local dependency
+  dependency="${1}"
+
+  if [[ -z "$(which "${dependency}")" ]]; then
+    echo "This test runner requires '${dependency}'"
     exit 1
   fi
 }
