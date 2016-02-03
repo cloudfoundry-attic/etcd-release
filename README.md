@@ -123,36 +123,33 @@ The `test` script installs all dependancies and runs the full test suite. The EA
 environment variable points to a configuration file which specifies the endpoint of the BOSH
 director and the path to your iaas_settings stub. An example config json for BOSH-lite would look like:
 
-```json
 cat > integration_config.json << EOF
 {
-  "bosh_target": "192.168.50.4",
-  "iaas_settings_etcd_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml",
-  "iaas_settings_turbulence_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/iaas-settings-turbulence.yml",
-  "turbulence_properties_stub_path": "./src/acceptance-tests/manifest-generation/bosh-lite-stubs/turbulence/property-overrides.yml",
-  "cpi_release_url": "https://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=21",
-  "cpi_release_name": "bosh-warden-cpi",
-  "turbulence_release_url": "http://bosh.io/d/github.com/cppforlife/turbulence-release?v=0.4"
+  "bosh":{
+    "target": "192.168.50.4",
+    "username": "admin",
+    "password": "admin"
+  }
 }
 EOF
-export EATS_CONFIG=$PWD/integration_config.json
+EATS_CONFIG=$PWD/integration_config.json ./scripts/test
 ```
 
 The full set of config parameters is explained below:
-* `bosh_target` (required) Public BOSH IP address that will be used to host test environment.
-* `iaas_settings_etcd_stub_path` (required) Stub containing iaas settings for the etcd deployment.
-* `iaas_settings_turbulence_stub_path` (required for turbulence tests) Stub containing iaas setting for the turbulence deployment.
-* `turbulence_properties_stub_path` (required for turbulence tests) Stub containing property overrides for the turbulence deployment.
-* `cpi_release_url` (required for turbulence tests) CPI for the current BOSH director being used to deploy tests with.
-* `cpi_release_name` (required for turbulence tests) Name for the `cpi_release_url` parameter
-* `bosh_operation_timeout` (optional) Time to wait for BOSH commands to exit before erroring out. (default time is 5 min if not specified)
-* `turbulence_operation_timeout` (optional) Time to wait for Turbulence operations to succeed before erroring out. (default time is 5 min if not specified)
-
-Currently you cannot specify individual tests to be run.
-
-Note: you must ensure that the stemcells specified in `iaas_settings_etcd_stub_path` and `iaas_settings_turbulence_stub_path` are already uploaded to the director at `bosh_target`.
-
-Note: The ruby `bundler` gem is used to install the correct version of the `bosh_cli`, as well as to decrease the `bosh` startup time.
+* `bosh.target` (required) Public BOSH IP address that will be used to host test environment
+* `bosh.username` (required) Username for the BOSH director login
+* `bosh.password` (required) Password for the BOSH director login
+* `bosh.director_ca_cert` BOSH Director CA Cert
+* `aws.subnet` Subnet ID for AWS deployments
+* `aws.access_key_id` Key ID for AWS deployments
+* `aws.secret_access_key` Secret Access Key for AWS deployments
+* `aws.default_key_name` Default Key Name for AWS deployments
+* `aws.default_security_groups` Security groups for AWS deployments
+* `aws.region` Region for AWS deployments
+* `registry.host` Host for the BOSH registry
+* `registry.port` Port for the BOSH registry
+* `registry.username` Username for the BOSH registry
+* `registry.password` Password for the BOSH registry
 
 ## Advanced
 
