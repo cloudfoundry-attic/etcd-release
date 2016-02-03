@@ -40,7 +40,7 @@ var _ = Describe("Single instance rolling deploys", func() {
 			etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
 		}
 
-		etcdClient = NewEtcdClient(etcdClientURLs)
+		etcdClient = helpers.NewEtcdClient(etcdClientURLs)
 	})
 
 	AfterEach(func() {

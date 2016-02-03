@@ -73,7 +73,7 @@ var _ = Describe("KillVm", func() {
 				etcdClientURLs = append(etcdClientURLs, "http://"+etcdManifest.Properties.Etcd.Machines[1]+":4001")
 				etcdClientURLs = append(etcdClientURLs, "http://"+etcdManifest.Properties.Etcd.Machines[2]+":4001")
 
-				etcdClient = NewEtcdClient(etcdClientURLs)
+				etcdClient = helpers.NewEtcdClient(etcdClientURLs)
 			})
 
 			By("setting a persistent value", func() {

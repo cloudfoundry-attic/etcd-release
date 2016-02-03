@@ -70,7 +70,7 @@ var _ = Describe("Scaling up instances", func() {
 				etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
 			}
 
-			etcdClient = NewEtcdClient(etcdClientURLs)
+			etcdClient = helpers.NewEtcdClient(etcdClientURLs)
 		})
 
 		By("setting a persistent value", func() {

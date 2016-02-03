@@ -5,10 +5,8 @@ import (
 	"testing"
 
 	"acceptance-tests/testing/bosh"
-	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
 
-	goetcd "github.com/coreos/go-etcd/etcd"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -37,7 +35,3 @@ var _ = BeforeSuite(func() {
 		AllowInsecureSSL: true,
 	})
 })
-
-func NewEtcdClient(machines []string) etcd.Client {
-	return etcd.NewClient(goetcd.NewClient(machines))
-}
