@@ -123,6 +123,7 @@ The `test` script installs all dependancies and runs the full test suite. The EA
 environment variable points to a configuration file which specifies the endpoint of the BOSH
 director and the path to your iaas_settings stub. An example config json for BOSH-lite would look like:
 
+```
 cat > integration_config.json << EOF
 {
   "bosh":{
