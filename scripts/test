@@ -66,9 +66,11 @@ function upload_releases() {
 }
 
 function cleanup_releases() {
+  set +e
   bosh -t "${BOSH_DIRECTOR}" -n delete release turbulence "${turbulence_version}"
   bosh -t "${BOSH_DIRECTOR}" -n delete release bosh-warden-cpi "${warden_cpi_version}"
   bosh -t "${BOSH_DIRECTOR}" -n delete release etcd "${etcd_release_version}"
+  set -e
 }
 
 check_dependencies

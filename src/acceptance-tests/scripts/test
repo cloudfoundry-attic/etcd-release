@@ -13,12 +13,18 @@ function main() {
 	install_ginkgo "${root_dir}"
 	pushd "${root_dir}" > /dev/null
 		ginkgo \
+			-race \
+			-skipPackage vendor \
+			precheck \
+
+		ginkgo \
 			-r \
 			-race \
 			-randomizeAllSpecs \
 			-randomizeSuites \
 			-failFast \
 			-skipPackage vendor \
+			-skipPackage precheck \
 			-slowSpecThreshold 300 \
 			"$@"
 	popd > /dev/null
