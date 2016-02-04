@@ -1,10 +1,11 @@
 package deploy_test
 
 import (
-	"acceptance-tests/testing/bosh"
-	"acceptance-tests/testing/destiny"
 	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
+
+	"github.com/pivotal-cf-experimental/bosh-test/bosh"
+	"github.com/pivotal-cf-experimental/destiny"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

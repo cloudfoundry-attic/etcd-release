@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	"acceptance-tests/testing/bosh"
-	"acceptance-tests/testing/destiny"
+	"github.com/pivotal-cf-experimental/bosh-test/bosh"
+	"github.com/pivotal-cf-experimental/destiny"
 )
 
 func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config) (manifest destiny.Manifest, err error) {

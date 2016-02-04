@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"testing"
 
-	"acceptance-tests/testing/bosh"
 	"acceptance-tests/testing/helpers"
+
+	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
