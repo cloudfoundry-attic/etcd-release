@@ -2,6 +2,7 @@ package turbulence_test
 
 import (
 	"acceptance-tests/testing/helpers"
+	"time"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/bosh-test/turbulence"
@@ -114,7 +115,7 @@ var _ = BeforeSuite(func() {
 			turbulenceManifest.Properties.TurbulenceAPI.Password,
 			turbulenceManifest.Jobs[0].Networks[0].StaticIPs[0])
 
-		turbulenceClient = turbulence.NewClient(turbulenceUrl)
+		turbulenceClient = turbulence.NewClient(turbulenceUrl, 5*time.Minute, 2*time.Second)
 	})
 })
 
