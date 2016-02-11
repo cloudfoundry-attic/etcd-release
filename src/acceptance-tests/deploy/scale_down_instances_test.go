@@ -1,8 +1,8 @@
 package deploy_test
 
 import (
-	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
+	"fmt"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny"
@@ -13,12 +13,10 @@ import (
 
 var _ = Describe("Scaling down instances", func() {
 	var (
-		manifest   destiny.Manifest
-		etcdClient etcd.Client
+		manifest destiny.Manifest
 
-		testKey        string
-		testValue      string
-		etcdClientURLs []string
+		testKey   string
+		testValue string
 	)
 
 	BeforeEach(func() {
@@ -48,6 +46,15 @@ var _ = Describe("Scaling down instances", func() {
 	})
 
 	It("scales from 3 to 1 nodes", func() {
+		By("setting a persistent value", func() {
+			etcdClient := helpers.NewEtcdClient([]string{
+				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[1]),
+			})
+
+			err := etcdClient.Set(testKey, testValue)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		By("scaling down to 1 node", func() {
 			manifest.Jobs[0], manifest.Properties = destiny.SetJobInstanceCount(manifest.Jobs[0], manifest.Networks[0], manifest.Properties, 1)
 
@@ -67,20 +74,11 @@ var _ = Describe("Scaling down instances", func() {
 			}))
 		})
 
-		By("instantiating a etcd client connection", func() {
-			for _, elem := range manifest.Properties.Etcd.Machines {
-				etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
-			}
-
-			etcdClient = helpers.NewEtcdClient(etcdClientURLs)
-		})
-
-		By("setting a persistent value", func() {
-			err := etcdClient.Set(testKey, testValue)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 		By("reading the value from etcd", func() {
+			etcdClient := helpers.NewEtcdClient([]string{
+				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[0]),
+			})
+
 			value, err := etcdClient.Get(testKey)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(value).To(Equal(testValue))
