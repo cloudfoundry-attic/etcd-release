@@ -1,8 +1,8 @@
 package deploy_test
 
 import (
-	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
+	"fmt"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny"
@@ -13,12 +13,10 @@ import (
 
 var _ = Describe("Single instance rolling deploys", func() {
 	var (
-		manifest   destiny.Manifest
-		etcdClient etcd.Client
+		manifest destiny.Manifest
 
-		testKey        string
-		testValue      string
-		etcdClientURLs []string
+		testKey   string
+		testValue string
 	)
 
 	BeforeEach(func() {
@@ -36,12 +34,6 @@ var _ = Describe("Single instance rolling deploys", func() {
 		}, "1m", "10s").Should(ConsistOf([]bosh.VM{
 			{"running"},
 		}))
-
-		for _, elem := range manifest.Properties.Etcd.Machines {
-			etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
-		}
-
-		etcdClient = helpers.NewEtcdClient(etcdClientURLs)
 	})
 
 	AfterEach(func() {
@@ -53,6 +45,10 @@ var _ = Describe("Single instance rolling deploys", func() {
 
 	It("persists data throughout the rolling deploy", func() {
 		By("setting a persistent value", func() {
+			etcdClient := helpers.NewEtcdClient([]string{
+				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[0]),
+			})
+
 			err := etcdClient.Set(testKey, testValue)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -77,6 +73,10 @@ var _ = Describe("Single instance rolling deploys", func() {
 		})
 
 		By("reading the value from etcd", func() {
+			etcdClient := helpers.NewEtcdClient([]string{
+				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[0]),
+			})
+
 			value, err := etcdClient.Get(testKey)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(value).To(Equal(testValue))

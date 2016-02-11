@@ -1,6 +1,6 @@
 #!/bin/bash -eux
 
-etcd_release_version="99999+dev.${RANDOM}"
+etcd_release_version="99999+dev.$(date +%s)"
 warden_cpi_version="29"
 turbulence_version="0.4"
 
