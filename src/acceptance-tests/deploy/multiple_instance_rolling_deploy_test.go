@@ -1,8 +1,9 @@
 package deploy_test
 
 import (
-	"acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
+	"fmt"
+	"sync"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny"
@@ -13,12 +14,10 @@ import (
 
 var _ = Describe("Multiple instance rolling deploys", func() {
 	var (
-		manifest   destiny.Manifest
-		etcdClient etcd.Client
+		manifest destiny.Manifest
 
-		testKey        string
-		testValue      string
-		etcdClientURLs []string
+		testKey   string
+		testValue string
 	)
 
 	BeforeEach(func() {
@@ -39,11 +38,6 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 			{"running"},
 		}))
 
-		for _, elem := range manifest.Properties.Etcd.Machines {
-			etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
-		}
-
-		etcdClient = helpers.NewEtcdClient(etcdClientURLs)
 	})
 
 	AfterEach(func() {
@@ -54,7 +48,17 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 	})
 
 	It("persists data throughout the rolling deploy", func() {
+		keyVals := make(map[string]string)
+
 		By("setting a persistent value", func() {
+			var etcdClientURLs []string
+
+			for _, elem := range manifest.Properties.Etcd.Machines {
+				etcdClientURLs = append(etcdClientURLs, "http://"+elem+":4001")
+			}
+
+			etcdClient := helpers.NewEtcdClient(etcdClientURLs)
+
 			err := etcdClient.Set(testKey, testValue)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -68,6 +72,11 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 			yaml, err = client.ResolveManifestVersions(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
+			var wg sync.WaitGroup
+			done := make(chan struct{})
+
+			keysChan := helpers.SpamEtcd(done, &wg, manifest.Properties.Etcd.Machines)
+
 			err = client.Deploy(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -78,12 +87,34 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 				{"running"},
 				{"running"},
 			}))
+
+			close(done)
+			wg.Wait()
+			keyVals = <-keysChan
+
+			if err, ok := keyVals["error"]; ok {
+				Fail(err)
+			}
 		})
 
 		By("reading the value from etcd", func() {
-			value, err := etcdClient.Get(testKey)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(value).To(Equal(testValue))
+			for _, machine := range manifest.Properties.Etcd.Machines {
+				etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", machine)})
+
+				value, err := etcdClient.Get(testKey)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(value).To(Equal(testValue))
+			}
+
+			for _, machine := range manifest.Properties.Etcd.Machines {
+				etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", machine)})
+
+				for key, value := range keyVals {
+					v, err := etcdClient.Get(key)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(v).To(Equal(value))
+				}
+			}
 		})
 	})
 })

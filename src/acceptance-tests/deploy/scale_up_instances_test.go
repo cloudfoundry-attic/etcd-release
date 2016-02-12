@@ -3,6 +3,7 @@ package deploy_test
 import (
 	"acceptance-tests/testing/helpers"
 	"fmt"
+	"sync"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny"
@@ -45,6 +46,8 @@ var _ = Describe("Scaling up instances", func() {
 	})
 
 	It("scales from 1 to 3 nodes", func() {
+		var keyVals map[string]string
+
 		By("setting a persistent value", func() {
 			etcdClient := helpers.NewEtcdClient([]string{
 				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[0]),
@@ -63,6 +66,11 @@ var _ = Describe("Scaling up instances", func() {
 			yaml, err := manifest.ToYAML()
 			Expect(err).NotTo(HaveOccurred())
 
+			var wg sync.WaitGroup
+			done := make(chan struct{})
+
+			keysChan := helpers.SpamEtcd(done, &wg, manifest.Properties.Etcd.Machines)
+
 			err = client.Deploy(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -73,15 +81,34 @@ var _ = Describe("Scaling up instances", func() {
 				{"running"},
 				{"running"},
 			}))
+
+			close(done)
+			wg.Wait()
+			keyVals = <-keysChan
+
+			if err, ok := keyVals["error"]; ok {
+				Fail(err)
+			}
+
 		})
 
 		By("reading the value from each etcd node in the cluster", func() {
-			for _, elem := range manifest.Properties.Etcd.Machines {
-				etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", elem)})
+			for _, machine := range manifest.Properties.Etcd.Machines {
+				etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", machine)})
 
 				value, err := etcdClient.Get(testKey)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(value).To(Equal(testValue))
+			}
+
+			for _, machine := range manifest.Properties.Etcd.Machines {
+				etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", machine)})
+
+				for k, v := range keyVals {
+					value, err := etcdClient.Get(k)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(value).To(Equal(v))
+				}
 			}
 		})
 

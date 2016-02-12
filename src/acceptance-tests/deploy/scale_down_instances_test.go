@@ -3,6 +3,7 @@ package deploy_test
 import (
 	"acceptance-tests/testing/helpers"
 	"fmt"
+	"sync"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny"
@@ -46,6 +47,8 @@ var _ = Describe("Scaling down instances", func() {
 	})
 
 	It("scales from 3 to 1 nodes", func() {
+		var keyVals map[string]string
+
 		By("setting a persistent value", func() {
 			etcdClient := helpers.NewEtcdClient([]string{
 				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[1]),
@@ -64,6 +67,11 @@ var _ = Describe("Scaling down instances", func() {
 			yaml, err := manifest.ToYAML()
 			Expect(err).NotTo(HaveOccurred())
 
+			var wg sync.WaitGroup
+			done := make(chan struct{})
+
+			keysChan := helpers.SpamEtcd(done, &wg, manifest.Properties.Etcd.Machines)
+
 			err = client.Deploy(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -72,6 +80,14 @@ var _ = Describe("Scaling down instances", func() {
 			}, "1m", "10s").Should(ConsistOf([]bosh.VM{
 				{"running"},
 			}))
+
+			close(done)
+			wg.Wait()
+			keyVals = <-keysChan
+
+			if err, ok := keyVals["error"]; ok {
+				Fail(err)
+			}
 		})
 
 		By("reading the value from etcd", func() {
@@ -82,6 +98,12 @@ var _ = Describe("Scaling down instances", func() {
 			value, err := etcdClient.Get(testKey)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(value).To(Equal(testValue))
+
+			for key, value := range keyVals {
+				v, err := etcdClient.Get(key)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(v).To(Equal(value))
+			}
 		})
 	})
 })
