@@ -104,16 +104,19 @@ var _ = Describe("KillVm", func() {
 				}))
 			})
 
-			By("reading the value from the resurrected VM", func() {
+			By("reading each value from the resurrected VM", func() {
 				etcdClient := helpers.NewEtcdClient([]string{
 					fmt.Sprintf("http://%s:4001", etcdManifest.Properties.Etcd.Machines[0]),
 				})
 
-				value, err := etcdClient.Get(testKey2)
+				value, err := etcdClient.Get(testKey1)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(value).To(Equal(testValue1))
+
+				value, err = etcdClient.Get(testKey2)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(value).To(Equal(testValue2))
 			})
-
 		})
 	})
 })
