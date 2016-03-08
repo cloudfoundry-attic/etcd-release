@@ -74,6 +74,7 @@ properties:
     peer_ca_cert: (( property_overrides.etcd.peer_ca_cert || nil ))
     peer_cert: (( property_overrides.etcd.peer_cert || nil ))
     peer_key: (( property_overrides.etcd.peer_key || nil ))
+    advertise_urls_dns_suffix: (( property_overrides.etcd.advertise_urls_dns_suffix ))
 
 # The keys below should not be included in the final stub
 release_version: (( release_version_overrides || "latest" ))
