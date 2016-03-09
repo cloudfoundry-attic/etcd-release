@@ -3,22 +3,22 @@
 	url = https://github.com/coreos/etcd.git
 [submodule "src/github.com/onsi/ginkgo"]
 	path = src/github.com/onsi/ginkgo
-	url = http://github.com/onsi/ginkgo.git
+	url = https://github.com/onsi/ginkgo.git
 [submodule "src/github.com/onsi/gomega"]
 	path = src/github.com/onsi/gomega
-	url = http://github.com/onsi/gomega.git
+	url = https://github.com/onsi/gomega.git
 [submodule "src/github.com/cloudfoundry-incubator/cf-test-helpers"]
 	path = src/github.com/cloudfoundry-incubator/cf-test-helpers
-	url = http://github.com/cloudfoundry-incubator/cf-test-helpers.git
+	url = https://github.com/cloudfoundry-incubator/cf-test-helpers.git
 [submodule "src/github.com/coreos/go-etcd"]
 	path = src/github.com/coreos/go-etcd
-	url = http://github.com/coreos/go-etcd.git
+	url = https://github.com/coreos/go-etcd.git
 [submodule "src/github.com/nu7hatch/gouuid"]
 	path = src/github.com/nu7hatch/gouuid
-	url = http://github.com/nu7hatch/gouuid.git
+	url = https://github.com/nu7hatch/gouuid.git
 [submodule "src/github.com/ugorji/go"]
 	path = src/github.com/ugorji/go
-	url = http://github.com/ugorji/go.git
+	url = https://github.com/ugorji/go.git
 [submodule "src/github.com/cloudfoundry-incubator/candiedyaml"]
 	path = src/github.com/cloudfoundry-incubator/candiedyaml
 	url = https://github.com/cloudfoundry-incubator/candiedyaml.git
@@ -27,16 +27,16 @@
 	url = https://github.com/cloudfoundry-incubator/etcd-metrics-server.git
 [submodule "src/acceptance-tests/vendor/github.com/onsi/ginkgo"]
 	path = src/acceptance-tests/vendor/github.com/onsi/ginkgo
-	url = git://github.com/onsi/ginkgo
+	url = https://github.com/onsi/ginkgo.git
 [submodule "src/acceptance-tests/vendor/github.com/onsi/gomega"]
 	path = src/acceptance-tests/vendor/github.com/onsi/gomega
-	url = git://github.com/onsi/gomega
+	url = https://github.com/onsi/gomega.git
 [submodule "src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/bosh-test"]
 	path = src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/bosh-test
-	url = git://github.com/pivotal-cf-experimental/bosh-test
+	url = https://github.com/pivotal-cf-experimental/bosh-test.git
 [submodule "src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/destiny"]
 	path = src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/destiny
-	url = git://github.com/pivotal-cf-experimental/destiny
+	url = https://github.com/pivotal-cf-experimental/destiny.git
 [submodule "src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/gomegamatchers"]
 	path = src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/gomegamatchers
-	url = git://github.com/pivotal-cf-experimental/gomegamatchers
+	url = https://github.com/pivotal-cf-experimental/gomegamatchers.git
