@@ -60,3 +60,7 @@ properties:
   etcd.dns_health_check_host:
     description: "Host to ping for confirmation of DNS resolution"
     default: "consul.service.cf.internal"
+
+  etcd.advertise_urls_dns_suffix:
+    description: "DNS suffix for all nodes in the etcd cluster"
+    default: "etcd.service.cf.internal"
