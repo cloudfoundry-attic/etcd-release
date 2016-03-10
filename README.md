@@ -27,89 +27,9 @@ From within the etcd-release director run `bosh create release --force` to creat
 ###3. Uploading a release
 Once you've created a development release run `bosh upload release` to upload your development release to the director.
 
-###4. Generating a deployment manifest
-We provide a set of scripts and templates to generate a simple deployment manifest. You should use these as a starting point for creating your own manifest, but they should not be considered comprehensive or production-ready.
+### 4. Using a sample deployment manifest
 
-In order to automatically generate a manifest you must install [spiff](https://github.com/cloudfoundry-incubator/spiff).  Once installed, manifests can be generated using `./scripts/generate_etcd_deployment_manifest [STUB LIST]` with the provided stubs:
-
-[Required]
-
-1. director_uuid_stub
-
-	The director_uuid_stub provides the uuid for the currently targeted BOSH director.
-	```yaml
-	---
-	director_uuid: DIRECTOR_UUID
-	```
-2. instance_count_stub
-
-	The instance count stub provides the ability to overwrite the number of instances of etcd to deploy. The minimal deployment of etcd is shown below:
-	```yaml
-	---
-	instance_count_overrides:
-	  etcd_z1:
-	    instances: 1
-	  etcd_z2:
-	    instances: 0
-	```
-
-	NOTE: at no time should you deploy only 2 instances of etcd.
-3. persistent_disk_stub
-
-	The persistent disk stub allows you to override the size of the persistent disk used in each instance of the etcd job. If you wish to use the default settings provide a stub with only an empty hash:
-	```yaml
-	---
-	persistent_disk_overrides: {}
-	```
-
-	To override disk sizes the format is as follows
-	```yaml
-	---
-	persistent_disk_overrides:
-	  etcd_z1: 1234
-	  etcd_z2: 1234
-	```
-
-4. iaas_settings
-
-	The IaaS settings stub contains IaaS-specific settings, including networks, cloud properties, and compilation properties. Please see the BOSH documentation for setting up networks and subnets on your IaaS of choice. We currently allow for three network configurations on your IaaS: etcd1, etcd2, and compilation. You must also specify the stemcell to deploy against as well as the version (or latest).
-
-5. property_overrides_stub
-
-  To see the list of properties that can be overwritten look at [manifest-generation/etcd.yml](manifest-generation/etcd.yml) - keys containing `property_overrides.*` values can be overwritten.
-
-We provide [default stubs for a BOSH-Lite deployment](https://github.com/cloudfoundry-incubator/etcd-release/blob/master/manifest-generation/bosh-lite-stubs).  Specifically:
-
-* instance_count_stub: [manifest-generation/bosh-lite-stubs/instance-count-overrides.yml](manifest-generation/bosh-lite-stubs/instance-count-overrides.yml)
-* persistent_disk_stub: [manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml](manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml)
-* iaas_settings: [manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml](manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml)
-* property-overrides: [manifest-generation/bosh-lite-stubs/property-overrides.yml](manifest-generation/bosh-lite-stubs/property-overrides.yml)
-
-```
-mkdir -p tmp
-cat >tmp/uuid.yml <<EOS
-director_uuid: $(bosh status --uuid)
-EOS
-./scripts/generate_etcd_deployment_manifest tmp/uuid.yml \
-	./manifest-generation/bosh-lite-stubs/instance-count-overrides.yml \
-	./manifest-generation/bosh-lite-stubs/persistent-disk-overrides.yml \
-	./manifest-generation/bosh-lite-stubs/iaas-settings-etcd.yml \
-	./manifest-generation/bosh-lite-stubs/property-overrides.yml > tmp/manifest.yml
-bosh deployment tmp/manifest.yml
-```
-
-[Optional]
-
-1. If you wish to override the name of the release and the deployment (default: etcd) you can provide a release_name_stub with the following format:
-
-	```yaml
-	---
-	name_overrides:
-	  release_name: NAME
-	  deployment_name: NAME
-	```
-
-Output the result of the above command to a file: `./scripts/generate_etcd_deployment_manifest [STUB LIST] > OUTPUT_MANIFEST_PATH`.
+We provide a set of sample deployment manifests that can be used as a starting point for creating your own manifest, but they should not be considered comprehensive. They are located in manifests/aws and manifests/bosh-lite.
 
 ###5. Deploy
 
