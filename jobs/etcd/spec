@@ -63,4 +63,3 @@ properties:
 
   etcd.advertise_urls_dns_suffix:
     description: "DNS suffix for all nodes in the etcd cluster"
-    default: "etcd.service.cf.internal"
