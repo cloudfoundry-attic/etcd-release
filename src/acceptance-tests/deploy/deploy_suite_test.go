@@ -19,7 +19,7 @@ var (
 
 func TestDeploy(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Deploy Suite")
+	RunSpecs(t, "deploy")
 }
 
 var _ = BeforeSuite(func() {
