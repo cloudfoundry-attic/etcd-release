@@ -27,6 +27,7 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config) (
 	switch info.CPI {
 	case "aws_cpi":
 		manifestConfig.IAAS = destiny.AWS
+		manifestConfig.IPRange = "10.0.16.0/24"
 		if config.AWS.Subnet != "" {
 			manifestConfig.AWS.Subnet = config.AWS.Subnet
 		} else {
@@ -35,6 +36,7 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config) (
 		}
 	case "warden_cpi":
 		manifestConfig.IAAS = destiny.Warden
+		manifestConfig.IPRange = "10.244.16.0/24"
 	default:
 		err = errors.New("unknown infrastructure type")
 		return
@@ -59,7 +61,7 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config) (
 		return
 	}
 
-	err = client.Deploy(yaml)
+	_, err = client.Deploy(yaml)
 	if err != nil {
 		return
 	}

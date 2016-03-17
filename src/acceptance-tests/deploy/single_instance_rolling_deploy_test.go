@@ -62,7 +62,7 @@ var _ = Describe("Single instance rolling deploys", func() {
 			yaml, err = client.ResolveManifestVersions(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
-			err = client.Deploy(yaml)
+			_, err = client.Deploy(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {

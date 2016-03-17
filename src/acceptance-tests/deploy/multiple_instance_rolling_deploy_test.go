@@ -77,7 +77,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 
 			keysChan := helpers.SpamEtcd(done, &wg, manifest.Properties.Etcd.Machines)
 
-			err = client.Deploy(yaml)
+			_, err = client.Deploy(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {

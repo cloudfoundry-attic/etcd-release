@@ -69,6 +69,7 @@ var _ = BeforeSuite(func() {
 				Fail("aws.subnet is required for AWS IAAS deployment")
 			}
 
+			manifestConfig.IPRange = "10.0.16.0/24"
 			manifestConfig.AWS = destiny.ConfigAWS{
 				AccessKeyID:           config.AWS.AccessKeyID,
 				SecretAccessKey:       config.AWS.SecretAccessKey,
@@ -85,6 +86,7 @@ var _ = BeforeSuite(func() {
 			}
 		case "warden_cpi":
 			manifestConfig.IAAS = destiny.Warden
+			manifestConfig.IPRange = "10.244.16.0/24"
 		default:
 			Fail("unknown infrastructure type")
 		}
@@ -100,7 +102,7 @@ var _ = BeforeSuite(func() {
 		turbulenceManifest, err = destiny.FromYAML(yaml)
 		Expect(err).NotTo(HaveOccurred())
 
-		err = client.Deploy(yaml)
+		_, err = client.Deploy(yaml)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() ([]bosh.VM, error) {

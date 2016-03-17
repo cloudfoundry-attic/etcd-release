@@ -72,7 +72,7 @@ var _ = Describe("Scaling down instances", func() {
 
 			keysChan := helpers.SpamEtcd(done, &wg, manifest.Properties.Etcd.Machines)
 
-			err = client.Deploy(yaml)
+			_, err = client.Deploy(yaml)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
