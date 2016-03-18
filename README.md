@@ -10,7 +10,8 @@ This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/et
 
 1. [Deploying](#deploying)
 2. [Running Tests](#running-tests)
-3. [Advanced](#advanced)
+3. [Encryption](#encryption)
+4. [Disaster Recovery](#disaster-recovery)
 
 ## Deploying
 
@@ -72,8 +73,7 @@ The full set of config parameters is explained below:
 * `registry.username` Username for the BOSH registry
 * `registry.password` Password for the BOSH registry
 
-## Advanced
-
+## Encryption
 
 ### Encrypting Traffic
 
@@ -185,3 +185,20 @@ placeholders and can be renamed provided that all clients client certificate.
 The server certificate must have the common name `etcd.service.consul` and
 must specify `etcd.service.consul` and `*.etcd.service.consul` as Subject
 Alternative Names (SANs).
+
+## Disaster Recovery
+
+In the event that the etcd cluster ends up in a bad state that is difficult
+to debug, you have the option of stopping etcd on each node, removing its
+data store, and then restarting the process:
+
+```
+monit stop etcd (on all nodes in etcd cluster)
+rm -rf /var/vcap/store/etcd/* (on all nodes in etcd cluster)
+monit start etcd (one-by-one on each node in etcd cluster)
+```
+
+There are often more graceful ways to solve specific issues, but it is hard
+to document all of the possible failure modes and recovery steps. As long as
+your etcd cluster does not contain critical data that cannot be repopulated,
+this option is safe and will probably get you unstuck.
