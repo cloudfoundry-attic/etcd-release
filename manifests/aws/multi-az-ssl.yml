@@ -137,6 +137,7 @@ properties:
     peer_require_ssl: true
     require_ssl: true
     heartbeat_interval_in_milliseconds: 50
+    advertise_urls_dns_suffix: etcd.service.cf.internal
     cluster:
     - instances: 2
       name: etcd_z1
@@ -368,6 +369,7 @@ properties:
       -----END RSA PRIVATE KEY-----
   consul:
     agent:
+      domain: cf.internal
       servers:
         lan:
         - 10.0.24.6
