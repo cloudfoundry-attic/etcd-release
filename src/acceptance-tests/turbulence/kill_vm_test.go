@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("KillVm", func() {
+var _ = PDescribe("KillVm", func() {
 	var (
 		etcdManifest destiny.Manifest
 		etcdClient   etcd.Client
