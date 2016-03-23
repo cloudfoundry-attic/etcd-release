@@ -27,13 +27,11 @@ node_name="<%= name.gsub('_', '-') %>-<%= spec.index %>"
   client_protocol = p("etcd.require_ssl") ? "https" : "http"
   peer_protocol = p("etcd.peer_require_ssl") ? "https" : "http"
 
-
   if p("etcd.require_ssl") || p("etcd.peer_require_ssl")
-    dns_suffix = p("etcd.advertise_urls_dns_suffix")
     cluster_members = p("etcd.cluster").map do |zone|
       result = []
       for i in 0..zone["instances"]-1
-        result << "#{client_protocol}://#{zone["name"].gsub('_', '-')}-#{i}.#{dns_suffix}:4001"
+        result << "#{client_protocol}://#{zone["name"].gsub('_', '-')}-#{i}.#{p("etcd.advertise_urls_dns_suffix")}:4001"
       end
       result
     end.flatten.join(",")
@@ -48,9 +46,8 @@ peer_protocol=<%= peer_protocol %>
 listen_peer_url="${peer_protocol}://0.0.0.0:7001"
 
 <% if p("etcd.require_ssl") || p("etcd.peer_require_ssl") %>
-dns_suffix = p("etcd.advertise_urls_dns_suffix")
-advertise_peer_url="${peer_protocol}://${node_name}.<%= dns_suffix %>:7001"
-advertise_client_url="${client_protocol}://${node_name}.<%= dns_suffix %>:4001"
+advertise_peer_url="${peer_protocol}://${node_name}.<%= p("etcd.advertise_urls_dns_suffix") %>:7001"
+advertise_client_url="${client_protocol}://${node_name}.<%= p("etcd.advertise_urls_dns_suffix") %>:4001"
 <% else %>
 advertise_peer_url="http://<%= my_ip %>:7001"
 advertise_client_url="http://<%= my_ip %>:4001"
