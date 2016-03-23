@@ -2,7 +2,7 @@
 name: etcd
 
 dependencies:
-  - golang1.4
+  - golang1.6
 files:
   - github.com/coreos/etcd/**/*
 excluded_files:
