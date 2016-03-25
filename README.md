@@ -26,7 +26,7 @@ also provides an optional SSL-cert authentication mechanism.
 
 The primary use case for Etcd within CloudFoundry is as a cache for information
 about where and how processes are running within the container runtime. It is
-also used, to a much less extent, as a discovery mechanism for some components.
+also used, to a much lesser extent, as a discovery mechanism for some components.
 
 ### Fault Tolerance and Data Durability
 
@@ -36,8 +36,8 @@ outlines that such a system will have to make a tradeoff with regards to the
 guarantees of consistency, availability, and partition tolerance. In the default
 configuration, Etcd has a preference for availability and partition tolerance.
 This means that under a network partition, it is possible to read "stale" data
-from the cluster. This behavior only affects reads as writes will still require
-quorum to commit. Etcd has an option query parameter that can be provided when
+from the cluster. This behavior only affects reads. Writes will still require
+quorum to commit. Etcd has an optional query parameter that can be provided when
 submitting read requests to force the read to be consistent. More information
 about the fault tolerance profile of Etcd can be found in the
 [documentation](https://coreos.com/etcd/docs/latest://coreos.com/etcd/docs/latest/).
