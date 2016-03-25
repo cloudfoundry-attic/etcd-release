@@ -8,11 +8,12 @@ This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/et
 
 ###Contents
 
-1. [Using Etcd](#using-etcd)
-2. [Deploying](#deploying)
-3. [Running Tests](#running-tests)
-4. [Encryption](#encryption)
-5. [Disaster Recovery](#disaster-recovery)
+* [Using Etcd](#using-etcd)
+* [Deploying](#deploying)
+* [Contributing](#contributing)
+* [Running Tests](#running-tests)
+* [Encryption](#encryption)
+* [Disaster Recovery](#disaster-recovery)
 
 ## Using Etcd
 
@@ -66,6 +67,25 @@ We provide a set of sample deployment manifests that can be used as a starting p
 ###5. Deploy
 
 Run `bosh -d OUTPUT_MANIFEST_PATH deploy`.
+
+## Contributing
+
+### Contributor License Agreement
+
+Contributors must sign the Contributor License Agreement before their
+contributions can be merged. Follow the directions
+[here](https://www.cloudfoundry.org/community/contribute/) to complete
+that process.
+
+### Developer Workflow
+
+Make sure that you are working against the `develop` branch. PRs submitted
+against other branches will need to be resubmitted with the correct branch
+targeted.
+
+Before submitting a PR, make sure to run the test suites. Information about
+how to run the suites can be seen in the [Running Tests](#running-tests)
+section.
 
 ## Running Tests
 
