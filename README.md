@@ -8,10 +8,41 @@ This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/et
 
 ###Contents
 
-1. [Deploying](#deploying)
-2. [Running Tests](#running-tests)
-3. [Encryption](#encryption)
-4. [Disaster Recovery](#disaster-recovery)
+1. [Using Etcd](#using-etcd)
+2. [Deploying](#deploying)
+3. [Running Tests](#running-tests)
+4. [Encryption](#encryption)
+5. [Disaster Recovery](#disaster-recovery)
+
+## Using Etcd
+
+Etcd is a distributed key-value store. It uses the
+[Raft consensus algorithm](https://raft.github.io/) to manage fault tolerance.
+Etcd provides a JSON HTTP API for managing the key-value set. The client
+also provides an optional SSL-cert authentication mechanism.
+
+### Within CloudFoundry
+
+The primary use case for Etcd within CloudFoundry is as a cache for information
+about where and how processes are running within the container runtime. It is
+also used, to a much less extent, as a discovery mechanism for some components.
+
+### Fault Tolerance and Data Durability
+
+Etcd is a distributed computing system which conforms to the properties outlined
+in the [CAP Theorem]( https://en.wikipedia.org/wiki/CAP_theorem). The theorem
+outlines that such a system will have to make a tradeoff with regards to the
+guarantees of consistency, availability, and partition tolerance. In the default
+configuration, Etcd has a preference for availability and partition tolerance.
+This means that under a network partition, it is possible to read "stale" data
+from the cluster. This behavior only affects reads as writes will still require
+quorum to commit. Etcd has an option query parameter that can be provided when
+submitting read requests to force the read to be consistent. More information
+about the fault tolerance profile of Etcd can be found in the
+[documentation](https://coreos.com/etcd/docs/latest://coreos.com/etcd/docs/latest/).
+Etcd was also investigated using the Jepsen framework. The results for that
+investigation can be found
+[here](https://aphyr.com/posts/316-jepsen-etcd-and-consul).
 
 ## Deploying
 
