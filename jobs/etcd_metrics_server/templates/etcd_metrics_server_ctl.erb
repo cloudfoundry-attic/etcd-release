@@ -20,7 +20,7 @@ case $1 in
     exec chpst -u vcap:vcap /var/vcap/packages/etcd_metrics_server/bin/etcd-metrics-server \
         -index=<%= spec.index %> \
         -etcdAddress=<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %> \
-        -natsAddresses=<%= p("etcd_metrics_server.nats.machines").collect { |addr| "#{addr}:#{p("etcd_metrics_server.nats.port")}" }.join(",") %> \
+        -natsAddresses=<%= p("etcd_metrics_server.nats.machines").collect { |addr| "#{addr}:#{p("etcd_metrics_server.nats.port")}" }.join(", ") %> \
         -natsUsername='<%= p("etcd_metrics_server.nats.username") %>' \
         -natsPassword='<%= p("etcd_metrics_server.nats.password") %>' \
         -port=<%= p("etcd_metrics_server.status.port") %> \
