@@ -1,0 +1,9 @@
+---
+name: testconsumer
+
+dependencies:
+  - golang1.6
+
+files:
+ - acceptance-tests/**/*
+ - github.com/**/*

@@ -1,0 +1,63 @@
+#!/bin/bash -exu
+
+function main() {
+  local run_dir
+  run_dir="/var/vcap/sys/run/etcd-test-consumer"
+
+  local log_dir
+  log_dir="/var/vcap/sys/log/etcd-test-consumer"
+
+  local pkg_dir
+  pkg_dir="/var/vcap/packages/testconsumer"
+
+  local pidfile
+  pidfile="${run_dir}/etcd-test-consumer.pid"
+
+  local cert_dir
+  cert_dir="/var/vcap/jobs/testconsumer/config/certs"
+  mkdir -p "${cert_dir}"
+
+  mkdir -p "${run_dir}"
+  mkdir -p "${log_dir}"
+
+  case "${1}" in
+    "start")
+
+      <% if p("etcd.require_ssl") %>
+      ca_cert_file=${cert_dir}/server-ca.crt
+      server_cert_file=${cert_dir}/server.crt
+      server_key_file=${cert_dir}/server.key
+      client_cert_file=${cert_dir}/client.crt
+      client_key_file=${cert_dir}/client.key
+      echo -n '<%= p("etcd.ca_cert") %>' > ${ca_cert_file}
+      echo -n '<%= p("etcd.server_cert") %>' > ${server_cert_file}
+      echo -n '<%= p("etcd.server_key") %>' > ${server_key_file}
+      echo -n '<%= p("etcd.client_cert") %>' > ${client_cert_file}
+      echo -n '<%= p("etcd.client_key") %>' > ${client_key_file}
+      <% end %>
+
+      chpst -u vcap:vcap "${pkg_dir}/bin/testconsumer" --port 6769 --etcd-service https://etcd.service.cf.internal:4001 \
+        --ca-cert-file ${ca_cert_file} \
+        --client-ssl-cert-file ${client_cert_file} \
+        --client-ssl-key-file ${client_key_file} \
+        2> >(tee -a ${log_dir}/etcd-test-consumer.stderr.log | logger -p user.error -t vcap.etcd-test-consumer) \
+        1> >(tee -a ${log_dir}/etcd-test-consumer.stdout.log | logger -p user.info  -t vcap.etcd-test-consumer) &
+      echo "${!}" > "${pidfile}"
+      ;;
+
+    "stop")
+      local pid
+      pid="$(cat "${pidfile}")"
+
+      kill -9 "${pid}"
+      rm "${pidfile}"
+      ;;
+
+    *)
+      echo "Usage: $0 {start|stop}"
+      ;;
+
+  esac
+}
+
+main ${@}
