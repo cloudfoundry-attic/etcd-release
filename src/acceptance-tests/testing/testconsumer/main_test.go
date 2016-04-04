@@ -100,7 +100,7 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 
 			Context("PUT", func() {
 				It("sets a value with the given key", func() {
-					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "value=some-value")
+					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "some-value")
 					Expect(err).NotTo(HaveOccurred())
 					Expect(status).To(Equal(http.StatusCreated))
 				})
@@ -131,7 +131,7 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 
 			Context("PUT", func() {
 				It("sets a value with the given key", func() {
-					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "value=some-value")
+					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "some-value")
 					Expect(err).NotTo(HaveOccurred())
 					Expect(status).To(Equal(http.StatusCreated))
 				})

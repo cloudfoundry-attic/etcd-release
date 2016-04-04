@@ -1,10 +1,13 @@
 package handlers
 
 import (
-	"acceptance-tests/testing/helpers"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"acceptance-tests/testing/testconsumer/etcd"
+
+	goetcd "github.com/coreos/go-etcd/etcd"
 )
 
 const KEY_NOT_FOUND = "Key not found"
@@ -30,14 +33,21 @@ func (k *KVHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	splitPath := strings.Split(req.URL.Path, "/")
 	key := splitPath[len(splitPath)-1]
 
-	client := helpers.NewEtcdClient([]string{k.etcdURL})
+	var goEtcdClient *goetcd.Client
+
 	if k.caCert != "" && k.clientCert != "" && k.clientKey != "" {
-		client, err = helpers.NewEtcdTLSClient([]string{k.etcdURL}, k.clientCert, k.clientKey, k.caCert)
+		goEtcdClient, err = goetcd.NewTLSClient([]string{k.etcdURL}, k.clientCert, k.clientKey, k.caCert)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+	} else {
+		goEtcdClient = goetcd.NewClient([]string{k.etcdURL})
 	}
+
+	goEtcdClient.SetConsistency(goetcd.STRONG_CONSISTENCY)
+
+	client := etcd.NewClient(goEtcdClient)
 
 	switch req.Method {
 	case "GET":

@@ -1,7 +1,7 @@
 package helpers
 
 import (
-	"acceptance-tests/testing/etcd"
+	"acceptance-tests/testing/testconsumer/etcd"
 
 	goetcd "github.com/coreos/go-etcd/etcd"
 )

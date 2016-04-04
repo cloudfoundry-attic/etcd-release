@@ -1,64 +1,143 @@
 package etcd_test
 
 import (
-	"acceptance-tests/testing/etcd"
-	"acceptance-tests/testing/etcd/fakes"
 	"errors"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+
+	"acceptance-tests/testing/etcd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Client", func() {
-	var fakeClient *fakes.Client
-
-	BeforeEach(func() {
-		fakeClient = fakes.NewClient()
-	})
-
+var _ = Describe("etcd", func() {
 	Describe("Get", func() {
-		It("returns a value given a valid key", func() {
-			fakeClient.GetCall.Returns.Value = func(key string) string {
-				if key == "some-key" {
-					return "some-value"
-				}
-				return ""
-			}
+		AfterEach(func() {
+			etcd.ResetBodyReader()
+		})
 
-			client := etcd.NewClient(fakeClient)
+		It("returns the value with the given key", func() {
+			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method == "GET" && r.URL.Path == "/kv/some-key" {
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("some-value"))
+					return
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+			}))
+
+			client := etcd.NewClient(testServer.URL)
+
 			value, err := client.Get("some-key")
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(value).To(Equal("some-value"))
 		})
 
-		It("returns an error on an underlying etcd error", func() {
-			fakeClient.GetCall.Returns.Error = errors.New("some etcd error")
+		Context("failure cases", func() {
+			It("returns an error when the request fails", func() {
+				client := etcd.NewClient("%%%%%%")
 
-			client := etcd.NewClient(fakeClient)
-			_, err := client.Get("some-key")
+				_, err := client.Get("some-key")
+				Expect(err.(*url.Error).Op).To(Equal("parse"))
+			})
 
-			Expect(err).To(MatchError("some etcd error"))
+			It("returns an error when a bad read occurs", func() {
+				testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte("some-value"))
+				}))
+
+				etcd.SetBodyReader(func(io.Reader) ([]byte, error) {
+					return []byte{}, errors.New("bad things happened")
+				})
+
+				client := etcd.NewClient(testServer.URL)
+
+				_, err := client.Get("some-key")
+				Expect(err).To(MatchError("bad things happened"))
+			})
+
+			It("returns an error when the response is not 200", func() {
+				testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+					w.Write([]byte("something bad happened"))
+				}))
+
+				client := etcd.NewClient(testServer.URL)
+
+				_, err := client.Get("some-key")
+				Expect(err).To(MatchError("unexpected status: 500 Internal Server Error something bad happened"))
+			})
 		})
 	})
 
 	Describe("Set", func() {
-		It("sets the value of a given key", func() {
-			client := etcd.NewClient(fakeClient)
-			err := client.Set("some-key", "some-value")
+		It("sets the value with the given key", func() {
+			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				body, err := ioutil.ReadAll(r.Body)
+				Expect(err).NotTo(HaveOccurred())
 
+				if r.Method == "PUT" && r.URL.Path == "/kv/some-key" {
+					if string(body) == "some-value" {
+						w.WriteHeader(http.StatusCreated)
+						return
+					}
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+			}))
+
+			client := etcd.NewClient(testServer.URL)
+
+			err := client.Set("some-key", "some-value")
 			Expect(err).NotTo(HaveOccurred())
-			Expect(fakeClient.SetCall.Receives.Key).To(Equal("some-key"))
-			Expect(fakeClient.SetCall.Receives.Value).To(Equal("some-value"))
-			Expect(fakeClient.SetCall.Receives.TTL).To(Equal(uint64(6000)))
 		})
 
-		It("returns an error on an underlying etcd error", func() {
-			fakeClient.SetCall.Returns.Error = errors.New("some etcd error")
+		Context("failure cases", func() {
+			It("returns an error when the status is not StatusCreated", func() {
+				testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusInternalServerError)
+					w.Write([]byte("something bad happened"))
+				}))
 
-			client := etcd.NewClient(fakeClient)
-			err := client.Set("some-key", "some-value")
-			Expect(err).To(MatchError("some etcd error"))
+				client := etcd.NewClient(testServer.URL)
+
+				err := client.Set("some-key", "some-value")
+				Expect(err).To(MatchError("unexpected status: 500 Internal Server Error something bad happened"))
+			})
+
+			It("returns an error when the request is malformed", func() {
+				client := etcd.NewClient("%%%%%")
+
+				err := client.Set("some-key", "some-value")
+				Expect(err.(*url.Error).Op).To(Equal("parse"))
+			})
+
+			It("returns an error when the request is malformed", func() {
+				client := etcd.NewClient("banana://something")
+
+				err := client.Set("some-key", "some-value")
+				Expect(err).To(MatchError(ContainSubstring("unsupported protocol")))
+			})
+
+			It("returns an error when a bad read occurs", func() {
+				testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusCreated)
+				}))
+
+				etcd.SetBodyReader(func(io.Reader) ([]byte, error) {
+					return []byte{}, errors.New("bad things happened")
+				})
+
+				client := etcd.NewClient(testServer.URL)
+
+				err := client.Set("some-key", "some-value")
+				Expect(err).To(MatchError("bad things happened"))
+			})
 		})
 	})
 })

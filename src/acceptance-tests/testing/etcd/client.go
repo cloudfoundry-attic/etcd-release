@@ -1,35 +1,60 @@
 package etcd
 
-import goetcd "github.com/coreos/go-etcd/etcd"
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+)
 
-type GoEtcd interface {
-	Get(key string, sort, recursive bool) (*goetcd.Response, error)
-	Set(key string, value string, ttl uint64) (*goetcd.Response, error)
-}
+var bodyReader = ioutil.ReadAll
 
 type Client struct {
-	goEtcdClient GoEtcd
+	testConsumerURL string
 }
 
-func NewClient(client GoEtcd) Client {
+func NewClient(testConsumerURL string) Client {
 	return Client{
-		goEtcdClient: client,
+		testConsumerURL: testConsumerURL,
 	}
 }
 
 func (c Client) Get(key string) (string, error) {
-	response, err := c.goEtcdClient.Get(key, false, false)
+	resp, err := http.Get(fmt.Sprintf("%s/kv/%s", c.testConsumerURL, key))
 	if err != nil {
 		return "", err
 	}
 
-	return response.Node.Value, nil
+	body, err := bodyReader(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status: %d %s %s", resp.StatusCode, http.StatusText(resp.StatusCode), string(body))
+	}
+
+	return string(body), nil
 }
 
-func (c Client) Set(key string, value string) error {
-	_, err := c.goEtcdClient.Set(key, value, 6000)
+func (c Client) Set(key, value string) error {
+	request, err := http.NewRequest("PUT", fmt.Sprintf("%s/kv/%s", c.testConsumerURL, key), strings.NewReader(value))
 	if err != nil {
 		return err
+	}
+
+	resp, err := http.DefaultClient.Do(request)
+	if err != nil {
+		return err
+	}
+
+	body, err := bodyReader(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return fmt.Errorf("unexpected status: %d %s %s", resp.StatusCode, http.StatusText(resp.StatusCode), string(body))
 	}
 
 	return nil

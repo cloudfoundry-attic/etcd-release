@@ -1,11 +1,13 @@
 package deploy_test
 
 import (
-	"acceptance-tests/testing/helpers"
 	"fmt"
 
+	etcdclient "acceptance-tests/testing/etcd"
+	"acceptance-tests/testing/helpers"
+
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	"github.com/pivotal-cf-experimental/destiny"
+	"github.com/pivotal-cf-experimental/destiny/etcd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,7 +15,8 @@ import (
 
 var _ = Describe("Single instance rolling deploys", func() {
 	var (
-		manifest destiny.Manifest
+		manifest   etcd.Manifest
+		etcdClient etcdclient.Client
 
 		testKey   string
 		testValue string
@@ -31,9 +34,7 @@ var _ = Describe("Single instance rolling deploys", func() {
 
 		Eventually(func() ([]bosh.VM, error) {
 			return client.DeploymentVMs(manifest.Name)
-		}, "1m", "10s").Should(ConsistOf([]bosh.VM{
-			{"running"},
-		}))
+		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 	})
 
 	AfterEach(func() {
@@ -45,9 +46,7 @@ var _ = Describe("Single instance rolling deploys", func() {
 
 	It("persists data throughout the rolling deploy", func() {
 		By("setting a persistent value", func() {
-			etcdClient := helpers.NewEtcdClient([]string{
-				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[0]),
-			})
+			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
 
 			err := etcdClient.Set(testKey, testValue)
 			Expect(err).ToNot(HaveOccurred())
@@ -67,16 +66,10 @@ var _ = Describe("Single instance rolling deploys", func() {
 
 			Eventually(func() ([]bosh.VM, error) {
 				return client.DeploymentVMs(manifest.Name)
-			}, "1m", "10s").Should(ConsistOf([]bosh.VM{
-				{"running"},
-			}))
+			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 		})
 
 		By("reading the value from etcd", func() {
-			etcdClient := helpers.NewEtcdClient([]string{
-				fmt.Sprintf("http://%s:4001", manifest.Properties.Etcd.Machines[0]),
-			})
-
 			value, err := etcdClient.Get(testKey)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(value).To(Equal(testValue))

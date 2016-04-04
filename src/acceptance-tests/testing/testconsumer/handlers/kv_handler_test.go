@@ -76,7 +76,7 @@ var _ = Describe("KVHandler", func() {
 			})
 
 			It("sets a value given a key", func() {
-				request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("value=some-value"))
+				request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("some-value"))
 				Expect(err).NotTo(HaveOccurred())
 
 				handler = handlers.NewKVHandler(etcdServer.URL, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
@@ -250,7 +250,7 @@ var _ = Describe("KVHandler", func() {
 						w.WriteHeader(http.StatusTeapot)
 					}))
 
-					request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("value=some-value"))
+					request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("some-value"))
 					Expect(err).NotTo(HaveOccurred())
 
 					handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")

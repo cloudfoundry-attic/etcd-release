@@ -1,12 +1,13 @@
 package turbulence_test
 
 import (
-	"acceptance-tests/testing/etcd"
+	etcdclient "acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
 	"fmt"
+	"math/rand"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	"github.com/pivotal-cf-experimental/destiny"
+	"github.com/pivotal-cf-experimental/destiny/etcd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,8 +15,8 @@ import (
 
 var _ = PDescribe("KillVm", func() {
 	var (
-		etcdManifest destiny.Manifest
-		etcdClient   etcd.Client
+		etcdManifest etcd.Manifest
+		etcdClient   etcdclient.Client
 
 		testKey1   string
 		testValue1 string
@@ -39,11 +40,7 @@ var _ = PDescribe("KillVm", func() {
 
 		Eventually(func() ([]bosh.VM, error) {
 			return client.DeploymentVMs(etcdManifest.Name)
-		}, "1m", "10s").Should(ConsistOf([]bosh.VM{
-			{"running"},
-			{"running"},
-			{"running"},
-		}))
+		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 	})
 
 	AfterEach(func() {
@@ -58,13 +55,7 @@ var _ = PDescribe("KillVm", func() {
 	Context("when a etcd node is killed", func() {
 		It("is still able to function on healthy vms and recover", func() {
 			By("creating an etcd client connection", func() {
-				var etcdClientURLs []string
-
-				for _, machine := range etcdManifest.Properties.Etcd.Machines {
-					etcdClientURLs = append(etcdClientURLs, fmt.Sprintf("http://%s:4001", machine))
-				}
-
-				etcdClient = helpers.NewEtcdClient(etcdClientURLs)
+				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
 			})
 
 			By("setting a persistent value", func() {
@@ -73,7 +64,7 @@ var _ = PDescribe("KillVm", func() {
 			})
 
 			By("killing indices", func() {
-				err := turbulenceClient.KillIndices(etcdManifest.Name, "etcd_z1", []int{0})
+				err := turbulenceClient.KillIndices(etcdManifest.Name, "etcd_z1", []int{rand.Intn(3)})
 				Expect(err).ToNot(HaveOccurred())
 			})
 
@@ -97,18 +88,10 @@ var _ = PDescribe("KillVm", func() {
 
 				Eventually(func() ([]bosh.VM, error) {
 					return client.DeploymentVMs(etcdManifest.Name)
-				}, "1m", "10s").Should(ConsistOf([]bosh.VM{
-					{"running"},
-					{"running"},
-					{"running"},
-				}))
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 			})
 
 			By("reading each value from the resurrected VM", func() {
-				etcdClient := helpers.NewEtcdClient([]string{
-					fmt.Sprintf("http://%s:4001", etcdManifest.Properties.Etcd.Machines[0]),
-				})
-
 				value, err := etcdClient.Get(testKey1)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(value).To(Equal(testValue1))
