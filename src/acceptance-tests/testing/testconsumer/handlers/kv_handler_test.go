@@ -79,7 +79,7 @@ var _ = Describe("KVHandler", func() {
 				request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("some-value"))
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewKVHandler(etcdServer.URL, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
+				handler = handlers.NewKVHandler([]string{etcdServer.URL}, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -90,7 +90,7 @@ var _ = Describe("KVHandler", func() {
 			It("gets a value given a key", func() {
 				request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
 				Expect(err).NotTo(HaveOccurred())
-				handler = handlers.NewKVHandler(etcdServer.URL, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
+				handler = handlers.NewKVHandler([]string{etcdServer.URL}, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -104,7 +104,7 @@ var _ = Describe("KVHandler", func() {
 					request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
 					fakePath := "/some/fake/path"
-					handler = handlers.NewKVHandler(etcdServer.URL, fakePath, fakePath, fakePath)
+					handler = handlers.NewKVHandler([]string{etcdServer.URL}, fakePath, fakePath, fakePath)
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -128,7 +128,7 @@ var _ = Describe("KVHandler", func() {
 
 				request, err := http.NewRequest("DELETE", "/v2/keys/some-key", strings.NewReader(""))
 				Expect(err).NotTo(HaveOccurred())
-				handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")
+				handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -161,7 +161,7 @@ var _ = Describe("KVHandler", func() {
 
 					request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
-					handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")
+					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -187,7 +187,7 @@ var _ = Describe("KVHandler", func() {
 
 					request, err := http.NewRequest("GET", "/v2/keys/", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
-					handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")
+					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -213,7 +213,7 @@ var _ = Describe("KVHandler", func() {
 
 					request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
-					handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")
+					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -253,7 +253,7 @@ var _ = Describe("KVHandler", func() {
 					request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("some-value"))
 					Expect(err).NotTo(HaveOccurred())
 
-					handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")
+					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -281,7 +281,7 @@ var _ = Describe("KVHandler", func() {
 					request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
 
-					handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")
+					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -297,7 +297,7 @@ var _ = Describe("KVHandler", func() {
 					request, err := http.NewRequest("PUT", "/v2/keys/some-key", badReader{})
 					Expect(err).NotTo(HaveOccurred())
 
-					handler = handlers.NewKVHandler(etcdServer.URL, "", "", "")
+					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)

@@ -13,15 +13,15 @@ import (
 const KEY_NOT_FOUND = "Key not found"
 
 type KVHandler struct {
-	etcdURL    string
+	etcdURLs   []string
 	caCert     string
 	clientCert string
 	clientKey  string
 }
 
-func NewKVHandler(etcdURL, caCert, clientCert, clientKey string) KVHandler {
+func NewKVHandler(etcdURLs []string, caCert, clientCert, clientKey string) KVHandler {
 	return KVHandler{
-		etcdURL:    etcdURL,
+		etcdURLs:   etcdURLs,
 		caCert:     caCert,
 		clientCert: clientCert,
 		clientKey:  clientKey,
@@ -36,13 +36,13 @@ func (k *KVHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var goEtcdClient *goetcd.Client
 
 	if k.caCert != "" && k.clientCert != "" && k.clientKey != "" {
-		goEtcdClient, err = goetcd.NewTLSClient([]string{k.etcdURL}, k.clientCert, k.clientKey, k.caCert)
+		goEtcdClient, err = goetcd.NewTLSClient(k.etcdURLs, k.clientCert, k.clientKey, k.caCert)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	} else {
-		goEtcdClient = goetcd.NewClient([]string{k.etcdURL})
+		goEtcdClient = goetcd.NewClient(k.etcdURLs)
 	}
 
 	goEtcdClient.SetConsistency(goetcd.STRONG_CONSISTENCY)

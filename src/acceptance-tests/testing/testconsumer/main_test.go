@@ -63,6 +63,57 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 		session.Terminate().Wait()
 	})
 
+	Context("main", func() {
+		It("allows multiple etcd-service urls", func() {
+			etcdServer1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{
+						"action": "get",
+						"node": {
+							"createdIndex": 2,
+							"key": "/some-key",
+							"modifiedIndex": 2,
+							"value": "server1"
+						}
+					}`))
+			}))
+
+			etcdServer2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{
+						"action": "get",
+						"node": {
+							"createdIndex": 2,
+							"key": "/some-key",
+							"modifiedIndex": 2,
+							"value": "server2"
+						}
+					}`))
+			}))
+
+			command := exec.Command(pathToConsumer, "--port", port,
+				"--etcd-service", etcdServer1.URL,
+				"--etcd-service", etcdServer2.URL,
+			)
+
+			var err error
+			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			waitForServerToStart(port)
+
+			Eventually(func() (string, error) {
+				_, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "")
+				return body, err
+			}).Should(Equal("server1"))
+
+			Eventually(func() (string, error) {
+				_, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "")
+				return body, err
+			}).Should(Equal("server2"))
+		})
+	})
+
 	Context("kv", func() {
 		Context("etcd ssl mode", func() {
 			BeforeEach(func() {

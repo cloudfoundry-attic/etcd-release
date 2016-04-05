@@ -11,6 +11,9 @@ properties:
     description: "enable ssl for all communication with etcd"
     default: true
 
+  etcd.machines:
+    description: "Addresses of etcd machines"
+
   etcd.ca_cert:
     description: "PEM-encoded CA certificate"
 

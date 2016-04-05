@@ -15,86 +15,96 @@ import (
 )
 
 var _ = Describe("Scaling down instances", func() {
-	var (
-		manifest   etcd.Manifest
-		etcdClient etcdclient.Client
+	ScaleDownInstances := func(enableSSL bool) {
+		var (
+			manifest   etcd.Manifest
+			etcdClient etcdclient.Client
 
-		testKey   string
-		testValue string
-	)
+			testKey   string
+			testValue string
+		)
 
-	BeforeEach(func() {
-		guid, err := helpers.NewGUID()
-		Expect(err).NotTo(HaveOccurred())
-
-		testKey = "etcd-key-" + guid
-		testValue = "etcd-value-" + guid
-
-		manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config)
-		Expect(err).NotTo(HaveOccurred())
-
-		Eventually(func() ([]bosh.VM, error) {
-			return client.DeploymentVMs(manifest.Name)
-		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
-	})
-
-	AfterEach(func() {
-		if !CurrentGinkgoTestDescription().Failed {
-			err := client.DeleteDeployment(manifest.Name)
-			Expect(err).NotTo(HaveOccurred())
-		}
-	})
-
-	It("scales from 3 to 1 nodes", func() {
-		var keyVals map[string]string
-
-		By("setting a persistent value", func() {
-			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
-
-			err := etcdClient.Set(testKey, testValue)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		By("scaling down to 1 node", func() {
-			manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, 1)
-
-			members := manifest.EtcdMembers()
-			Expect(members).To(HaveLen(1))
-
-			yaml, err := manifest.ToYAML()
+		BeforeEach(func() {
+			guid, err := helpers.NewGUID()
 			Expect(err).NotTo(HaveOccurred())
 
-			var wg sync.WaitGroup
-			done := make(chan struct{})
+			testKey = "etcd-key-" + guid
+			testValue = "etcd-value-" + guid
 
-			keysChan := helpers.SpamEtcd(done, &wg, etcdClient)
-
-			_, err = client.Deploy(yaml)
+			manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
 				return client.DeploymentVMs(manifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+		})
 
-			close(done)
-			wg.Wait()
-			keyVals = <-keysChan
-
-			if err, ok := keyVals["error"]; ok {
-				Fail(err)
+		AfterEach(func() {
+			if !CurrentGinkgoTestDescription().Failed {
+				err := client.DeleteDeployment(manifest.Name)
+				Expect(err).NotTo(HaveOccurred())
 			}
 		})
 
-		By("reading the value from etcd", func() {
-			value, err := etcdClient.Get(testKey)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(value).To(Equal(testValue))
+		It("scales from 3 to 1 nodes", func() {
+			var keyVals map[string]string
 
-			for key, value := range keyVals {
-				v, err := etcdClient.Get(key)
+			By("setting a persistent value", func() {
+				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
+
+				err := etcdClient.Set(testKey, testValue)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(v).To(Equal(value))
-			}
+			})
+
+			By("scaling down to 1 node", func() {
+				manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, 1)
+
+				members := manifest.EtcdMembers()
+				Expect(members).To(HaveLen(1))
+
+				yaml, err := manifest.ToYAML()
+				Expect(err).NotTo(HaveOccurred())
+
+				var wg sync.WaitGroup
+				done := make(chan struct{})
+
+				keysChan := helpers.SpamEtcd(done, &wg, etcdClient)
+
+				_, err = client.Deploy(yaml)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() ([]bosh.VM, error) {
+					return client.DeploymentVMs(manifest.Name)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+
+				close(done)
+				wg.Wait()
+				keyVals = <-keysChan
+
+				if err, ok := keyVals["error"]; ok {
+					Fail(err)
+				}
+			})
+
+			By("reading the value from etcd", func() {
+				value, err := etcdClient.Get(testKey)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(value).To(Equal(testValue))
+
+				for key, value := range keyVals {
+					v, err := etcdClient.Get(key)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(v).To(Equal(value))
+				}
+			})
 		})
+	}
+
+	Context("without TLS", func() {
+		ScaleDownInstances(false)
+	})
+
+	Context("with TLS", func() {
+		ScaleDownInstances(true)
 	})
 })

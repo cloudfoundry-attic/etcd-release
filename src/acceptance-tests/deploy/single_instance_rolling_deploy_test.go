@@ -14,54 +14,23 @@ import (
 )
 
 var _ = Describe("Single instance rolling deploys", func() {
-	var (
-		manifest   etcd.Manifest
-		etcdClient etcdclient.Client
+	SingleInstanceRollingDeploy := func(enableSSL bool) {
+		var (
+			manifest   etcd.Manifest
+			etcdClient etcdclient.Client
 
-		testKey   string
-		testValue string
-	)
+			testKey   string
+			testValue string
+		)
 
-	BeforeEach(func() {
-		guid, err := helpers.NewGUID()
-		Expect(err).NotTo(HaveOccurred())
-
-		testKey = "etcd-key-" + guid
-		testValue = "etcd-value-" + guid
-
-		manifest, err = helpers.DeployEtcdWithInstanceCount(1, client, config)
-		Expect(err).NotTo(HaveOccurred())
-
-		Eventually(func() ([]bosh.VM, error) {
-			return client.DeploymentVMs(manifest.Name)
-		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
-	})
-
-	AfterEach(func() {
-		if !CurrentGinkgoTestDescription().Failed {
-			err := client.DeleteDeployment(manifest.Name)
-			Expect(err).NotTo(HaveOccurred())
-		}
-	})
-
-	It("persists data throughout the rolling deploy", func() {
-		By("setting a persistent value", func() {
-			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
-
-			err := etcdClient.Set(testKey, testValue)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
-		By("deploying", func() {
-			manifest.Properties.Etcd.HeartbeatIntervalInMilliseconds = 51
-
-			yaml, err := manifest.ToYAML()
+		BeforeEach(func() {
+			guid, err := helpers.NewGUID()
 			Expect(err).NotTo(HaveOccurred())
 
-			yaml, err = client.ResolveManifestVersions(yaml)
-			Expect(err).NotTo(HaveOccurred())
+			testKey = "etcd-key-" + guid
+			testValue = "etcd-value-" + guid
 
-			_, err = client.Deploy(yaml)
+			manifest, err = helpers.DeployEtcdWithInstanceCount(1, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
@@ -69,10 +38,51 @@ var _ = Describe("Single instance rolling deploys", func() {
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 		})
 
-		By("reading the value from etcd", func() {
-			value, err := etcdClient.Get(testKey)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(value).To(Equal(testValue))
+		AfterEach(func() {
+			if !CurrentGinkgoTestDescription().Failed {
+				err := client.DeleteDeployment(manifest.Name)
+				Expect(err).NotTo(HaveOccurred())
+			}
 		})
+
+		It("persists data throughout the rolling deploy", func() {
+			By("setting a persistent value", func() {
+				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
+
+				err := etcdClient.Set(testKey, testValue)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			By("deploying", func() {
+				manifest.Properties.Etcd.HeartbeatIntervalInMilliseconds = 51
+
+				yaml, err := manifest.ToYAML()
+				Expect(err).NotTo(HaveOccurred())
+
+				yaml, err = client.ResolveManifestVersions(yaml)
+				Expect(err).NotTo(HaveOccurred())
+
+				_, err = client.Deploy(yaml)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() ([]bosh.VM, error) {
+					return client.DeploymentVMs(manifest.Name)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+			})
+
+			By("reading the value from etcd", func() {
+				value, err := etcdClient.Get(testKey)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(value).To(Equal(testValue))
+			})
+		})
+	}
+
+	Context("without TLS", func() {
+		SingleInstanceRollingDeploy(false)
+	})
+
+	Context("with TLS", func() {
+		SingleInstanceRollingDeploy(true)
 	})
 })

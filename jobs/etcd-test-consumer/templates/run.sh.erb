@@ -23,7 +23,11 @@ function main() {
   case "${1}" in
     "start")
 
+      local protocol
+      protocol="http://"
+
       <% if p("etcd.require_ssl") %>
+      protocol="https://"
       ca_cert_file=${cert_dir}/server-ca.crt
       server_cert_file=${cert_dir}/server.crt
       server_key_file=${cert_dir}/server.key
@@ -36,10 +40,20 @@ function main() {
       echo -n '<%= p("etcd.client_key") %>' > ${client_key_file}
       <% end %>
 
-      chpst -u vcap:vcap "${pkg_dir}/bin/testconsumer" --port 6769 --etcd-service https://etcd.service.cf.internal:4001 \
-        --ca-cert-file ${ca_cert_file} \
-        --client-ssl-cert-file ${client_cert_file} \
-        --client-ssl-key-file ${client_key_file} \
+      local addresses
+      addresses=""
+
+      <% p("etcd.machines").each do |machine| %>
+        addresses="${addresses} --etcd-service ${protocol}<%= machine %>:4001"
+      <% end %>
+
+      chpst -u vcap:vcap "${pkg_dir}/bin/testconsumer" --port 6769 \
+        ${addresses} \
+        <% if p("etcd.require_ssl") %> \
+          --ca-cert-file ${ca_cert_file} \
+          --client-ssl-cert-file ${client_cert_file} \
+          --client-ssl-key-file ${client_key_file} \
+        <% end %> \
         2> >(tee -a ${log_dir}/etcd-test-consumer.stderr.log | logger -p user.error -t vcap.etcd-test-consumer) \
         1> >(tee -a ${log_dir}/etcd-test-consumer.stdout.log | logger -p user.info  -t vcap.etcd-test-consumer) &
       echo "${!}" > "${pidfile}"

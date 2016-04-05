@@ -34,7 +34,14 @@ func SpamEtcd(done chan struct{}, wg *sync.WaitGroup, etcdClient etcd.Client) ch
 
 				err = etcdClient.Set(key, value)
 				if err != nil {
-					if !strings.Contains(err.Error(), "All the given peers are not reachable") {
+					switch {
+					case strings.Contains(err.Error(), "All the given peers are not reachable"):
+						continue
+					case strings.Contains(err.Error(), "dial tcp 10.244.16.10:6769: getsockopt: connection refused"):
+						continue
+					case strings.Contains(err.Error(), "EOF"):
+						continue
+					default:
 						keyVal["error"] = err.Error()
 						continue
 					}

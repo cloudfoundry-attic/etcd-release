@@ -9,7 +9,7 @@ import (
 	"github.com/pivotal-cf-experimental/destiny/iaas"
 )
 
-func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config) (manifest etcd.Manifest, err error) {
+func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
 	guid, err := NewGUID()
 	if err != nil {
 		return
@@ -54,7 +54,11 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config) (
 		return
 	}
 
-	manifest = etcd.NewManifest(manifestConfig, iaasConfig)
+	if enableSSL {
+		manifest = etcd.NewTLSManifest(manifestConfig, iaasConfig)
+	} else {
+		manifest = etcd.NewManifest(manifestConfig, iaasConfig)
+	}
 
 	manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, count)
 
