@@ -5,7 +5,6 @@ import (
 	"acceptance-tests/testing/helpers"
 	"fmt"
 	"math/rand"
-	"time"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
@@ -45,7 +44,6 @@ var _ = PDescribe("KillVm", func() {
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
 			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
-			spammer = helpers.NewSpammer(etcdClient, 1*time.Second)
 		})
 
 		AfterEach(func() {
