@@ -15,6 +15,10 @@ import (
 )
 
 var _ = Describe("etcd", func() {
+	AfterEach(func() {
+		etcd.ResetBodyReader()
+	})
+
 	Describe("Address", func() {
 		It("returns the client address", func() {
 			client := etcd.NewClient("http://some-address")
@@ -23,10 +27,6 @@ var _ = Describe("etcd", func() {
 	})
 
 	Describe("Get", func() {
-		AfterEach(func() {
-			etcd.ResetBodyReader()
-		})
-
 		It("returns the value with the given key", func() {
 			testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method == "GET" && r.URL.Path == "/kv/some-key" {
