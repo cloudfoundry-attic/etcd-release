@@ -2,7 +2,7 @@ package deploy_test
 
 import (
 	"fmt"
-	"sync"
+	"time"
 
 	etcdclient "acceptance-tests/testing/etcd"
 
@@ -20,6 +20,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 		var (
 			manifest   etcd.Manifest
 			etcdClient etcdclient.Client
+			spammer    *helpers.Spammer
 
 			testKey   string
 			testValue string
@@ -38,6 +39,9 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 			Eventually(func() ([]bosh.VM, error) {
 				return client.DeploymentVMs(manifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+
+			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
+			spammer = helpers.NewSpammer(etcdClient, 1*time.Second)
 		})
 
 		AfterEach(func() {
@@ -48,11 +52,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 		})
 
 		It("persists data throughout the rolling deploy", func() {
-			keyVals := make(map[string]string)
-
 			By("setting a persistent value", func() {
-				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
-
 				err := etcdClient.Set(testKey, testValue)
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -66,10 +66,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 				yaml, err = client.ResolveManifestVersions(yaml)
 				Expect(err).NotTo(HaveOccurred())
 
-				var wg sync.WaitGroup
-				done := make(chan struct{})
-
-				keysChan := helpers.SpamEtcd(done, &wg, etcdClient)
+				spammer.Spam()
 
 				_, err = client.Deploy(yaml)
 				Expect(err).NotTo(HaveOccurred())
@@ -78,13 +75,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 					return client.DeploymentVMs(manifest.Name)
 				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 
-				close(done)
-				wg.Wait()
-				keyVals = <-keysChan
-
-				if err, ok := keyVals["error"]; ok {
-					Fail(err)
-				}
+				spammer.Stop()
 			})
 
 			By("reading the value from etcd", func() {
@@ -92,11 +83,8 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(value).To(Equal(testValue))
 
-				for key, value := range keyVals {
-					v, err := etcdClient.Get(key)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(v).To(Equal(value))
-				}
+				err = spammer.Check()
+				Expect(err).ToNot(HaveOccurred())
 			})
 		})
 	}

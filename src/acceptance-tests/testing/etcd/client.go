@@ -19,6 +19,10 @@ func NewClient(testConsumerURL string) Client {
 	}
 }
 
+func (c Client) Address() string {
+	return c.testConsumerURL
+}
+
 func (c Client) Get(key string) (string, error) {
 	resp, err := http.Get(fmt.Sprintf("%s/kv/%s", c.testConsumerURL, key))
 	if err != nil {

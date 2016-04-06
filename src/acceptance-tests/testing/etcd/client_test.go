@@ -15,6 +15,13 @@ import (
 )
 
 var _ = Describe("etcd", func() {
+	Describe("Address", func() {
+		It("returns the client address", func() {
+			client := etcd.NewClient("http://some-address")
+			Expect(client.Address()).To(Equal("http://some-address"))
+		})
+	})
+
 	Describe("Get", func() {
 		AfterEach(func() {
 			etcd.ResetBodyReader()

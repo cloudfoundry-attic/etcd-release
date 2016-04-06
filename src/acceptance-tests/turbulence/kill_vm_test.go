@@ -5,6 +5,7 @@ import (
 	"acceptance-tests/testing/helpers"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
@@ -42,6 +43,9 @@ var _ = PDescribe("KillVm", func() {
 			Eventually(func() ([]bosh.VM, error) {
 				return client.DeploymentVMs(etcdManifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
+
+			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
+			spammer = helpers.NewSpammer(etcdClient, 1*time.Second)
 		})
 
 		AfterEach(func() {
@@ -55,10 +59,6 @@ var _ = PDescribe("KillVm", func() {
 
 		Context("when a etcd node is killed", func() {
 			It("is still able to function on healthy vms and recover", func() {
-				By("creating an etcd client connection", func() {
-					etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
-				})
-
 				By("setting a persistent value", func() {
 					err := etcdClient.Set(testKey1, testValue1)
 					Expect(err).ToNot(HaveOccurred())

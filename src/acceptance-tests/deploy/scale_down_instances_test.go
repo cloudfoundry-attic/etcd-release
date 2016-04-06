@@ -2,7 +2,6 @@ package deploy_test
 
 import (
 	"fmt"
-	"sync"
 
 	etcdclient "acceptance-tests/testing/etcd"
 	"acceptance-tests/testing/helpers"
@@ -37,6 +36,8 @@ var _ = Describe("Scaling down instances", func() {
 			Eventually(func() ([]bosh.VM, error) {
 				return client.DeploymentVMs(manifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+
+			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
 		})
 
 		AfterEach(func() {
@@ -47,11 +48,7 @@ var _ = Describe("Scaling down instances", func() {
 		})
 
 		It("scales from 3 to 1 nodes", func() {
-			var keyVals map[string]string
-
 			By("setting a persistent value", func() {
-				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
-
 				err := etcdClient.Set(testKey, testValue)
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -65,37 +62,18 @@ var _ = Describe("Scaling down instances", func() {
 				yaml, err := manifest.ToYAML()
 				Expect(err).NotTo(HaveOccurred())
 
-				var wg sync.WaitGroup
-				done := make(chan struct{})
-
-				keysChan := helpers.SpamEtcd(done, &wg, etcdClient)
-
 				_, err = client.Deploy(yaml)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() ([]bosh.VM, error) {
 					return client.DeploymentVMs(manifest.Name)
 				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
-
-				close(done)
-				wg.Wait()
-				keyVals = <-keysChan
-
-				if err, ok := keyVals["error"]; ok {
-					Fail(err)
-				}
 			})
 
 			By("reading the value from etcd", func() {
 				value, err := etcdClient.Get(testKey)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(value).To(Equal(testValue))
-
-				for key, value := range keyVals {
-					v, err := etcdClient.Get(key)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(v).To(Equal(value))
-				}
 			})
 		})
 	}
