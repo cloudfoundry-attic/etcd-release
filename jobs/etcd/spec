@@ -9,6 +9,7 @@ templates:
 packages:
   - etcd-common
   - etcd
+  - check-a-record
 
 properties:
   etcd.heartbeat_interval_in_milliseconds:

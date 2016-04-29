@@ -40,3 +40,6 @@
 [submodule "src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/gomegamatchers"]
 	path = src/acceptance-tests/vendor/github.com/pivotal-cf-experimental/gomegamatchers
 	url = https://github.com/pivotal-cf-experimental/gomegamatchers.git
+[submodule "src/check-a-record"]
+	path = src/check-a-record
+	url = https://github.com/cloudfoundry-incubator/check-a-record.git

@@ -30,8 +30,8 @@ case $1 in
 
     <% if p("etcd.require_ssl") %>
       set +e
-      host -t A <%= p("etcd.dns_health_check_host") %>
-      if [[ "0" != "$?" ]]; then
+      /var/vcap/packages/check-a-record/bin/check-a-record <%= p("etcd.dns_health_check_host") %>
+      if [ "0" != "$?" ]; then
         echo "DNS is not up"
         exit 1
       fi
