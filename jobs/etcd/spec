@@ -9,7 +9,7 @@ templates:
 packages:
   - etcd-common
   - etcd
-  - check-a-record
+  - etcd-dns-checker
 
 properties:
   etcd.heartbeat_interval_in_milliseconds:

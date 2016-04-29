@@ -1,5 +1,5 @@
 ---
-name: check-a-record
+name: etcd-dns-checker
 
 dependencies:
   - golang1.6
