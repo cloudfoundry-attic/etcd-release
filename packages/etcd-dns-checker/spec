@@ -5,4 +5,4 @@ dependencies:
   - golang1.6
 
 files:
-  - check-a-record/**/*.go
+  - etcd-dns-checker/**/*.go
