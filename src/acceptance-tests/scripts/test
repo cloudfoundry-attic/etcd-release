@@ -19,6 +19,7 @@ function main() {
 
     ginkgo \
       -r \
+	  -p \
       -race \
       -randomizeAllSpecs \
       -randomizeSuites \
