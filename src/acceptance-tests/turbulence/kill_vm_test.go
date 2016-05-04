@@ -14,7 +14,7 @@ import (
 )
 
 var _ = PDescribe("KillVm", func() {
-	KillVMTest := func(enableSSL bool, ipOffset int) {
+	KillVMTest := func(enableSSL bool) {
 		var (
 			etcdManifest etcd.Manifest
 			etcdClient   etcdclient.Client
@@ -36,7 +36,7 @@ var _ = PDescribe("KillVm", func() {
 			testKey2 = "etcd-key-2-" + guid
 			testValue2 = "etcd-value-2-" + guid
 
-			etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL, ipOffset)
+			etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
@@ -104,10 +104,10 @@ var _ = PDescribe("KillVm", func() {
 	}
 
 	Context("without TLS", func() {
-		KillVMTest(false, helpers.KillVMWithoutTLSIPOffset)
+		KillVMTest(false)
 	})
 
 	Context("with TLS", func() {
-		KillVMTest(true, helpers.KillVMWithTLSIPOffset)
+		KillVMTest(true)
 	})
 })

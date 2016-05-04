@@ -14,7 +14,7 @@ import (
 )
 
 var _ = Describe("Scaling down instances", func() {
-	ScaleDownInstances := func(enableSSL bool, ipOffset int) {
+	ScaleDownInstances := func(enableSSL bool) {
 		var (
 			manifest   etcd.Manifest
 			etcdClient etcdclient.Client
@@ -30,7 +30,7 @@ var _ = Describe("Scaling down instances", func() {
 			testKey = "etcd-key-" + guid
 			testValue = "etcd-value-" + guid
 
-			manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL, ipOffset)
+			manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
@@ -54,7 +54,7 @@ var _ = Describe("Scaling down instances", func() {
 			})
 
 			By("scaling down to 1 node", func() {
-				manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, 1, ipOffset)
+				manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, 1)
 
 				members := manifest.EtcdMembers()
 				Expect(members).To(HaveLen(1))
@@ -79,10 +79,10 @@ var _ = Describe("Scaling down instances", func() {
 	}
 
 	Context("without TLS", func() {
-		ScaleDownInstances(false, helpers.ScaleDownInstancesWithoutTLSIPOffset)
+		ScaleDownInstances(false)
 	})
 
 	Context("with TLS", func() {
-		ScaleDownInstances(true, helpers.ScaleDownInstancesWithTLSIPOffset)
+		ScaleDownInstances(true)
 	})
 })

@@ -16,7 +16,7 @@ import (
 )
 
 var _ = Describe("Multiple instance rolling deploys", func() {
-	MultipleInstanceRollingDeploy := func(enableSSL bool, ipOffset int) {
+	MultipleInstanceRollingDeploy := func(enableSSL bool) {
 		var (
 			manifest   etcd.Manifest
 			etcdClient etcdclient.Client
@@ -33,7 +33,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 			testKey = "etcd-key-" + guid
 			testValue = "etcd-value-" + guid
 
-			manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL, ipOffset)
+			manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
@@ -90,10 +90,10 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 	}
 
 	Context("without TLS", func() {
-		MultipleInstanceRollingDeploy(false, helpers.MultipleInstanceRollingDeployWithoutTLSIPOffset)
+		MultipleInstanceRollingDeploy(false)
 	})
 
 	Context("with TLS", func() {
-		MultipleInstanceRollingDeploy(true, helpers.MultipleInstanceRollingDeployWithTLSIPOffset)
+		MultipleInstanceRollingDeploy(true)
 	})
 })
