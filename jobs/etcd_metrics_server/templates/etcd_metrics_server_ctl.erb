@@ -1,41 +1,66 @@
-#!/bin/bash
+#!/bin/bash -exu
 
+SCRIPT_NAME=$(basename $0)
 RUN_DIR=/var/vcap/sys/run/etcd_metrics_server
 PIDFILE=$RUN_DIR/etcd_metrics_server.pid
 WORK_DIR=/var/vcap/store/etcd_metrics_server
+LOG_DIR=/var/vcap/sys/log/etcd_metrics_server
+ETCD_COMMON_DIR=/var/vcap/packages/etcd-common
 
-source /var/vcap/packages/etcd-common/utils.sh
+function setup() {
+  set +xu
+  source "${ETCD_COMMON_DIR}/utils.sh"
+  set -xu
+
+  mkdir -p $LOG_DIR
+  chown -R vcap:vcap $LOG_DIR
+
+  mkdir -p $RUN_DIR
+  chown -R vcap:vcap $RUN_DIR
+
+  exec > >(tee -a >(logger -p user.info -t vcap.$SCRIPT_NAME.stdout) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> $LOG_DIR/$SCRIPT_NAME.log)
+  exec 2> >(tee -a >(logger -p user.error -t vcap.$SCRIPT_NAME.stderr) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> $LOG_DIR/$SCRIPT_NAME.err.log)
+}
+
+function start_etcd_metrics_server() {
+  set -exu
+
+  local pidfile
+  pidfile=$1
+
+  local log_dir
+  log_dir=$2
+
+  exec > >(tee -a ${log_dir}/etcd_metrics_server.stdout.log | logger -p user.info -t vcap.etcd_metrics_server)
+  exec 2> >(tee -a ${log_dir}/etcd_metrics_server.stderr.log | logger -p user.error -t vcap.etcd_metrics_server)
+
+  /var/vcap/packages/etcd_metrics_server/bin/etcd-metrics-server \
+      -index=<%= spec.index %> \
+      -etcdAddress=<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %> \
+      -natsAddresses=<%= p("etcd_metrics_server.nats.machines").collect { |addr| "#{addr}:#{p("etcd_metrics_server.nats.port")}" }.join(",") %> \
+      -natsUsername='<%= p("etcd_metrics_server.nats.username") %>' \
+      -natsPassword='<%= p("etcd_metrics_server.nats.password") %>' \
+      -port=<%= p("etcd_metrics_server.status.port") %> \
+      -username=<%= p("etcd_metrics_server.status.username") %> \
+      -password=<%= p("etcd_metrics_server.status.password") %> &
+
+  echo $! > "${pidfile}"
+}
+export -f start_etcd_metrics_server
+
+setup
 
 case $1 in
-
   start)
     pid_guard $PIDFILE "etcd_metrics_server"
-
-    mkdir -p $RUN_DIR
-
-    chown -R vcap:vcap $RUN_DIR
-
-    echo $$ > $PIDFILE
-
-    exec chpst -u vcap:vcap /var/vcap/packages/etcd_metrics_server/bin/etcd-metrics-server \
-        -index=<%= spec.index %> \
-        -etcdAddress=<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %> \
-        -natsAddresses=<%= p("etcd_metrics_server.nats.machines").collect { |addr| "#{addr}:#{p("etcd_metrics_server.nats.port")}" }.join(",") %> \
-        -natsUsername='<%= p("etcd_metrics_server.nats.username") %>' \
-        -natsPassword='<%= p("etcd_metrics_server.nats.password") %>' \
-        -port=<%= p("etcd_metrics_server.status.port") %> \
-        -username=<%= p("etcd_metrics_server.status.username") %> \
-        -password=<%= p("etcd_metrics_server.status.password") %>
+    su vcap -c "start_etcd_metrics_server ${PIDFILE} ${LOG_DIR}" &> /dev/null
     ;;
 
   stop)
     kill_and_wait $PIDFILE
-
     ;;
 
   *)
     echo "Usage: ctl {start|stop}"
-
     ;;
-
 esac
