@@ -1,0 +1,23 @@
+#!/bin/bash -exu
+
+LOG_DIR=/var/vcap/sys/log/etcd
+DATA_DIR=/var/vcap/store/etcd
+RUN_DIR=/var/vcap/sys/run/etcd
+
+function create_directories_and_chown_to_vcap() {
+    mkdir -p ${LOG_DIR}
+    chown -R vcap:vcap ${LOG_DIR}
+
+    mkdir -p ${DATA_DIR}
+    chown -R vcap:vcap ${DATA_DIR}
+
+    # This is here for upgrade purposes to ensure RUN_DIR is owned by vcap
+    mkdir -p ${RUN_DIR}
+    chown -R vcap:vcap ${RUN_DIR}
+}
+
+function main() {
+  create_directories_and_chown_to_vcap
+}
+
+main
