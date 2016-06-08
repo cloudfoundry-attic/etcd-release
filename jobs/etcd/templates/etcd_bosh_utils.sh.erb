@@ -98,10 +98,6 @@ etcd_sec_flags="${etcd_sec_flags} ${etcd_peer_sec_flags}"
 create_cert_files() {
   true
 
-  <% if p("etcd.require_ssl") || p("etcd.peer_require_ssl") %>
-  mkdir -p ${CERT_DIR}
-  <% end %>
-
   <% if p("etcd.require_ssl") %>
   echo -n '<%= p("etcd.ca_cert") %>' > ${ca_cert_file}
   echo -n '<%= p("etcd.server_cert") %>' > ${server_cert_file}
