@@ -5,6 +5,7 @@ description: "The ETCD Metrics Server is meant to be collocated with the ETCD se
 
 templates:
   etcd_metrics_server_ctl.erb: bin/etcd_metrics_server_ctl
+  pre-start.erb: bin/pre-start
 
 packages:
   - etcd-common

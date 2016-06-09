@@ -1,8 +1,8 @@
 #!/bin/bash -exu
 
-SCRIPT_NAME=$(basename $0)
+SCRIPT_NAME=$(basename ${0})
 RUN_DIR=/var/vcap/sys/run/etcd_metrics_server
-PIDFILE=$RUN_DIR/etcd_metrics_server.pid
+PIDFILE=${RUN_DIR}/etcd_metrics_server.pid
 WORK_DIR=/var/vcap/store/etcd_metrics_server
 LOG_DIR=/var/vcap/sys/log/etcd_metrics_server
 ETCD_COMMON_DIR=/var/vcap/packages/etcd-common
@@ -12,28 +12,14 @@ function setup() {
   source "${ETCD_COMMON_DIR}/utils.sh"
   set -xu
 
-  mkdir -p $LOG_DIR
-  chown -R vcap:vcap $LOG_DIR
+  mkdir -p ${RUN_DIR}
+  chown -R vcap:vcap ${RUN_DIR}
 
-  mkdir -p $RUN_DIR
-  chown -R vcap:vcap $RUN_DIR
-
-  exec > >(tee -a >(logger -p user.info -t vcap.$SCRIPT_NAME.stdout) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> $LOG_DIR/$SCRIPT_NAME.log)
-  exec 2> >(tee -a >(logger -p user.error -t vcap.$SCRIPT_NAME.stderr) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> $LOG_DIR/$SCRIPT_NAME.err.log)
+  exec > >(tee -a >(logger -p user.info -t vcap.${SCRIPT_NAME}.stdout) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> ${LOG_DIR}/${SCRIPT_NAME}.log)
+  exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> ${LOG_DIR}/${SCRIPT_NAME}.err.log)
 }
 
 function start_etcd_metrics_server() {
-  set -exu
-
-  local pidfile
-  pidfile=$1
-
-  local log_dir
-  log_dir=$2
-
-  exec > >(tee -a ${log_dir}/etcd_metrics_server.stdout.log | logger -p user.info -t vcap.etcd_metrics_server)
-  exec 2> >(tee -a ${log_dir}/etcd_metrics_server.stderr.log | logger -p user.error -t vcap.etcd_metrics_server)
-
   /var/vcap/packages/etcd_metrics_server/bin/etcd-metrics-server \
       -index=<%= spec.index %> \
       -etcdAddress=<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %> \
@@ -42,22 +28,25 @@ function start_etcd_metrics_server() {
       -natsPassword='<%= p("etcd_metrics_server.nats.password") %>' \
       -port=<%= p("etcd_metrics_server.status.port") %> \
       -username=<%= p("etcd_metrics_server.status.username") %> \
-      -password=<%= p("etcd_metrics_server.status.password") %> &
+      -password=<%= p("etcd_metrics_server.status.password") %> \
+      1> >(tee -a ${LOG_DIR}/etcd_metrics_server.stdout.log | logger -p user.info -t vcap.etcd_metrics_server) \
+      2> >(tee -a ${LOG_DIR}/etcd_metrics_server.stderr.log | logger -p user.error -t vcap.etcd_metrics_server) &
 
-  echo $! > "${pidfile}"
+
+  echo ${!} > "${PIDFILE}"
+  chown -R vcap:vcap ${PIDFILE}
 }
-export -f start_etcd_metrics_server
 
 setup
 
-case $1 in
+case ${1} in
   start)
-    pid_guard $PIDFILE "etcd_metrics_server"
-    su vcap -c "start_etcd_metrics_server ${PIDFILE} ${LOG_DIR}" &> /dev/null
+    pid_guard ${PIDFILE} "etcd_metrics_server"
+    start_etcd_metrics_server
     ;;
 
   stop)
-    kill_and_wait $PIDFILE
+    kill_and_wait ${PIDFILE}
     ;;
 
   *)
