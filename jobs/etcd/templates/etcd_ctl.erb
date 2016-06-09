@@ -60,9 +60,6 @@ function main() {
 
       create_cert_files
 
-      # Allowed number of open file descriptors
-      ulimit -n 100000
-
       prior_member_list=$(member_list)
 
       if [ -z "${prior_member_list}" ]; then
