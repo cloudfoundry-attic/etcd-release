@@ -13,7 +13,6 @@ function setup() {
   set -xu
 
   mkdir -p ${RUN_DIR}
-  chown -R vcap:vcap ${RUN_DIR}
 
   exec > >(tee -a >(logger -p user.info -t vcap.${SCRIPT_NAME}.stdout) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> ${LOG_DIR}/${SCRIPT_NAME}.log)
   exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> ${LOG_DIR}/${SCRIPT_NAME}.err.log)
@@ -34,7 +33,6 @@ function start_etcd_metrics_server() {
 
 
   echo ${!} > "${PIDFILE}"
-  chown -R vcap:vcap ${PIDFILE}
 }
 
 setup

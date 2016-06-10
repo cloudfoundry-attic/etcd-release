@@ -26,13 +26,8 @@ function handle_orphaned_etcd() {
   kill "${etcd_pid}"
 }
 
-function create_run_directory() {
-  mkdir -p ${RUN_DIR}
-  chown -R vcap:vcap ${RUN_DIR}
-}
-
 function main() {
-  create_run_directory
+  mkdir -p ${RUN_DIR}
 
   case $1 in
 
@@ -106,7 +101,6 @@ function main() {
 
       if ${synced}; then
         echo ${etcd_pid} > ${PIDFILE}
-        chown vcap:vcap ${PIDFILE}
       else
         safe_teardown "${prior_member_list}"
         kill -9 ${etcd_pid}
