@@ -6,6 +6,7 @@ PIDFILE=${RUN_DIR}/etcd_metrics_server.pid
 WORK_DIR=/var/vcap/store/etcd_metrics_server
 LOG_DIR=/var/vcap/sys/log/etcd_metrics_server
 ETCD_COMMON_DIR=/var/vcap/packages/etcd-common
+CERTS_DIR=/var/vcap/jobs/etcd_metrics_server/certs
 
 function setup() {
   set +xu
@@ -19,15 +20,26 @@ function setup() {
 }
 
 function start_etcd_metrics_server() {
+  local node_name
+  node_name="<%= name.gsub('_', '-') %>-<%= spec.index %>"
+
   /var/vcap/packages/etcd_metrics_server/bin/etcd-metrics-server \
       -index=<%= spec.index %> \
-      -etcdAddress=<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %> \
       -natsAddresses=<%= p("etcd_metrics_server.nats.machines").collect { |addr| "#{addr}:#{p("etcd_metrics_server.nats.port")}" }.join(",") %> \
       -natsUsername='<%= p("etcd_metrics_server.nats.username") %>' \
       -natsPassword='<%= p("etcd_metrics_server.nats.password") %>' \
       -port=<%= p("etcd_metrics_server.status.port") %> \
-      -username=<%= p("etcd_metrics_server.status.username") %> \
-      -password=<%= p("etcd_metrics_server.status.password") %> \
+      -username='<%= p("etcd_metrics_server.status.username") %>' \
+      -password='<%= p("etcd_metrics_server.status.password") %>' \
+      <% if p("etcd_metrics_server.etcd.require_ssl") %> \
+      -etcdScheme="https" \
+      -cert="${CERTS_DIR}/client.crt" \
+      -key="${CERTS_DIR}/client.key" \
+      -caCert="${CERTS_DIR}/ca.crt" \
+      -etcdAddress="${node_name}.<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %>" \
+      <% else %> \
+      -etcdAddress=<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %> \
+      <% end %> \
       1> >(tee -a ${LOG_DIR}/etcd_metrics_server.stdout.log | logger -p user.info -t vcap.etcd_metrics_server) \
       2> >(tee -a ${LOG_DIR}/etcd_metrics_server.stderr.log | logger -p user.error -t vcap.etcd_metrics_server) &
 

@@ -6,6 +6,9 @@ description: "The ETCD Metrics Server is meant to be collocated with the ETCD se
 templates:
   etcd_metrics_server_ctl.erb: bin/etcd_metrics_server_ctl
   pre-start.erb: bin/pre-start
+  client.crt.erb: certs/client.crt
+  client.key.erb: certs/client.key
+  ca.crt.erb: certs/ca.crt
 
 packages:
   - etcd-common
@@ -44,3 +47,19 @@ properties:
   etcd_metrics_server.status.password:
     description: "basic auth password for metrics server (leave empty for generated)"
     default: ""
+
+  etcd_metrics_server.etcd.ca_cert:
+    description: "PEM-encoded CA certificate"
+    default: ""
+
+  etcd_metrics_server.etcd.client_cert:
+    description: "PEM-encoded client certificate"
+    default: ""
+
+  etcd_metrics_server.etcd.client_key:
+    description: "PEM-encoded client key"
+    default: ""
+
+  etcd_metrics_server.etcd.require_ssl:
+    description: "enable ssl for all communication with etcd"
+    default: false

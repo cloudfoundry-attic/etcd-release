@@ -2,6 +2,7 @@
 
 RUN_DIR=/var/vcap/sys/run/etcd_metrics_server
 LOG_DIR=/var/vcap/sys/log/etcd_metrics_server
+CERTS_DIR=/var/vcap/jobs/etcd_metrics_server/certs
 
 function create_directories_and_chown_to_vcap() {
   mkdir -p ${LOG_DIR}
@@ -10,6 +11,9 @@ function create_directories_and_chown_to_vcap() {
   # This is here for upgrade purposes to ensure RUN_DIR is owned by vcap
   mkdir -p ${RUN_DIR}
   chown -R vcap:vcap ${RUN_DIR}
+
+  mkdir -p ${CERTS_DIR}
+  chown -R vcap:vcap ${CERTS_DIR}
 }
 
 function main() {
