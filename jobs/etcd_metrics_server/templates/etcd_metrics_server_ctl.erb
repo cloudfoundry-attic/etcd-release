@@ -36,7 +36,7 @@ function start_etcd_metrics_server() {
       -cert="${CERTS_DIR}/client.crt" \
       -key="${CERTS_DIR}/client.key" \
       -caCert="${CERTS_DIR}/ca.crt" \
-      -etcdAddress="${node_name}.<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %>" \
+      -etcdAddress="${node_name}.<%= p("etcd_metrics_server.etcd.dns_suffix") %>:<%= p("etcd_metrics_server.etcd.port") %>" \
       <% else %> \
       -etcdAddress=<%= p("etcd_metrics_server.etcd.machine") %>:<%= p("etcd_metrics_server.etcd.port") %> \
       <% end %> \

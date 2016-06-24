@@ -1,7 +1,7 @@
 ---
 name: etcd_metrics_server
 
-description: "The ETCD Metrics Server is meant to be collocated with the ETCD server to collect and expose runtime statistics for the Collector."
+description: "The etcd Metrics Server is meant to be collocated with the etcd server to collect and expose runtime statistics for the Collector."
 
 templates:
   etcd_metrics_server_ctl.erb: bin/etcd_metrics_server_ctl
@@ -16,11 +16,21 @@ packages:
 
 properties:
   etcd_metrics_server.etcd.machine:
-    description: "address of ETCD server to instrument"
+    description: |
+      Address of any etcd server to instrument.
+      Target etcd server does not need to be colocated with this etcd_metrics_server.
+      This address must be an IP or a domain name that resolves to a single etcd server.
+      This property is only used if 'etcd_metrics_server.etcd.require_ssl' is 'false'.
     default: "127.0.0.1"
 
+  etcd_metrics_server.etcd.dns_suffix:
+    description: |
+      DNS suffix of the etcd server to instrument.
+      Target etcd server must be colocated with this etcd_metrics_server.
+      This property is only used if 'etcd_metrics_server.etcd.require_ssl' is 'true'."
+
   etcd_metrics_server.etcd.port:
-    description: "port of ETCD server to instrument"
+    description: "port of etcd server to instrument"
     default: 4001
 
   etcd_metrics_server.nats.machines:
