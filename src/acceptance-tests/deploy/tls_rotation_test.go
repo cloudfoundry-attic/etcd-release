@@ -240,7 +240,7 @@ SqV4zLqA2Vk+crbtUsAyP8qUoaeuoKUIJR7tkiPBg1QrBiUqSEs=
 -----END RSA PRIVATE KEY-----`
 )
 
-var _ = Describe("TLS rotation", func() {
+var _ = PDescribe("TLS rotation", func() {
 	var (
 		manifest   etcd.Manifest
 		etcdClient etcdclient.Client
