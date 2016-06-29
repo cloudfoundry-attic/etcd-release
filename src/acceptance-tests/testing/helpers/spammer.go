@@ -30,6 +30,7 @@ type kv interface {
 
 type Spammer struct {
 	kv                                 kv
+	mutex                              sync.Mutex
 	store                              map[string]string
 	testConsumerConnectionErrorMessage string
 	done                               chan struct{}
@@ -81,7 +82,7 @@ func (s *Spammer) Spam() {
 					}
 					continue
 				}
-				s.store[key] = value
+				s.AddKVToStore(key, value)
 			}
 		}
 	}()
@@ -114,4 +115,18 @@ func (s *Spammer) Check() error {
 	}
 
 	return nil
+}
+
+func (s *Spammer) ResetStore() {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.store = map[string]string{}
+}
+
+func (s *Spammer) AddKVToStore(key, value string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	s.store[key] = value
 }

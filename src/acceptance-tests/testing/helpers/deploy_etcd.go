@@ -9,7 +9,31 @@ import (
 	"github.com/pivotal-cf-experimental/destiny/iaas"
 )
 
-func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
+func ResolveVersionsAndDeploy(manifest etcd.Manifest, client bosh.Client) (err error) {
+	yaml, err := manifest.ToYAML()
+	if err != nil {
+		return
+	}
+
+	yaml, err = client.ResolveManifestVersions(yaml)
+	if err != nil {
+		return
+	}
+
+	manifest, err = etcd.FromYAML(yaml)
+	if err != nil {
+		return
+	}
+
+	_, err = client.Deploy(yaml)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd.Config, iaasConfig iaas.Config, err error) {
 	guid, err := NewGUID()
 	if err != nil {
 		return
@@ -20,12 +44,11 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, e
 		return
 	}
 
-	manifestConfig := etcd.Config{
+	manifestConfig = etcd.Config{
 		DirectorUUID: info.UUID,
 		Name:         fmt.Sprintf("etcd-%s", guid),
 	}
 
-	var iaasConfig iaas.Config
 	switch info.CPI {
 	case "aws_cpi":
 		iaasConfig = iaas.AWSConfig{
@@ -51,6 +74,14 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, e
 		manifestConfig.IPRange = "10.244.16.0/24"
 	default:
 		err = errors.New("unknown infrastructure type")
+	}
+
+	return
+}
+
+func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
+	manifestConfig, iaasConfig, err := buildManifestInputs(config, client)
+	if err != nil {
 		return
 	}
 
@@ -62,24 +93,20 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, e
 
 	manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, count)
 
-	yaml, err := manifest.ToYAML()
+	err = ResolveVersionsAndDeploy(manifest, client)
+
+	return
+}
+
+func NewEtcdManifestWithTLSUpgrade(manifestName string, client bosh.Client, config Config) (manifest etcd.Manifest, err error) {
+	manifestConfig, iaasConfig, err := buildManifestInputs(config, client)
 	if err != nil {
 		return
 	}
 
-	yaml, err = client.ResolveManifestVersions(yaml)
-	if err != nil {
-		return
-	}
-
-	manifest, err = etcd.FromYAML(yaml)
-	if err != nil {
-		return
-	}
-
-	_, err = client.Deploy(yaml)
-	if err != nil {
-		return
+	manifest = etcd.NewTLSUpgradeManifest(manifestConfig, iaasConfig)
+	if manifestName != "" {
+		manifest.Name = manifestName
 	}
 
 	return

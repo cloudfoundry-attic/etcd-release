@@ -273,6 +273,7 @@ var _ = PDescribe("TLS rotation", func() {
 		})
 
 		By("adding new ca certs", func() {
+			manifest.Properties.EtcdTestConsumer.Etcd.CACert = fmt.Sprintf("%s\n%s", manifest.Properties.EtcdTestConsumer.Etcd.CACert, newCACert)
 			manifest.Properties.Etcd.CACert = fmt.Sprintf("%s\n%s", manifest.Properties.Etcd.CACert, newCACert)
 			manifest.Properties.Etcd.PeerCACert = fmt.Sprintf("%s\n%s", manifest.Properties.Etcd.PeerCACert, newPeerCACert)
 		})
@@ -282,6 +283,8 @@ var _ = PDescribe("TLS rotation", func() {
 		})
 
 		By("replacing certs and keys", func() {
+			manifest.Properties.EtcdTestConsumer.Etcd.ClientCert = newClientCert
+			manifest.Properties.EtcdTestConsumer.Etcd.ClientKey = newClientKey
 			manifest.Properties.Etcd.ClientCert = newClientCert
 			manifest.Properties.Etcd.ClientKey = newClientKey
 			manifest.Properties.Etcd.PeerCert = newPeerCert
@@ -295,6 +298,7 @@ var _ = PDescribe("TLS rotation", func() {
 		})
 
 		By("removing old ca certs", func() {
+			manifest.Properties.EtcdTestConsumer.Etcd.CACert = newCACert
 			manifest.Properties.Etcd.CACert = newCACert
 			manifest.Properties.Etcd.PeerCACert = newPeerCACert
 		})

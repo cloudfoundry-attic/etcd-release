@@ -6,6 +6,7 @@ templates:
 
 packages:
   - testconsumer
+  - etcd-dns-checker
 
 properties:
   etcd_testconsumer.etcd.require_ssl:
@@ -26,3 +27,7 @@ properties:
   etcd_testconsumer.etcd.client_key:
     description: "PEM-encoded client key"
     default: ""
+
+  etcd_testconsumer.etcd.dns_health_check_host:
+    description: "Host to ping for confirmation of DNS resolution"
+    default: "consul.service.cf.internal"
