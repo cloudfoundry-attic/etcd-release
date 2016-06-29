@@ -80,6 +80,16 @@ func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd
 }
 
 func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
+	manifest, err = NewEtcdWithInstanceCount(count, client, config, enableSSL)
+	if err != nil {
+		return
+	}
+
+	err = ResolveVersionsAndDeploy(manifest, client)
+	return
+}
+
+func NewEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
 	manifestConfig, iaasConfig, err := buildManifestInputs(config, client)
 	if err != nil {
 		return
@@ -91,11 +101,27 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, e
 		manifest = etcd.NewManifest(manifestConfig, iaasConfig)
 	}
 
-	manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, count)
-
-	err = ResolveVersionsAndDeploy(manifest, client)
+	manifest = SetEtcdInstanceCount(3, manifest)
 
 	return
+}
+
+func SetEtcdInstanceCount(count int, manifest etcd.Manifest) etcd.Manifest {
+	manifest.Jobs[1] = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], count, 0)
+	manifest.Properties = etcd.SetEtcdProperties(manifest.Jobs[1], manifest.Properties)
+
+	return manifest
+}
+
+func SetTestConsumerInstanceCount(count int, manifest etcd.Manifest) (etcd.Manifest, error) {
+	jobIndex, err := FindJobIndexByName(manifest, "testconsumer_z1")
+	if err != nil {
+		return manifest, err
+	}
+
+	manifest.Jobs[jobIndex] = etcd.SetJobInstanceCount(manifest.Jobs[jobIndex], manifest.Networks[0], count, 8)
+
+	return manifest, nil
 }
 
 func NewEtcdManifestWithTLSUpgrade(manifestName string, client bosh.Client, config Config) (manifest etcd.Manifest, err error) {
@@ -110,4 +136,13 @@ func NewEtcdManifestWithTLSUpgrade(manifestName string, client bosh.Client, conf
 	}
 
 	return
+}
+
+func FindJobIndexByName(manifest etcd.Manifest, jobName string) (int, error) {
+	for i, job := range manifest.Jobs {
+		if job.Name == jobName {
+			return i, nil
+		}
+	}
+	return -1, errors.New("job not found")
 }

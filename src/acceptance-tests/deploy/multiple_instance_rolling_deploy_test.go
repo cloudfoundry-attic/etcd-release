@@ -41,7 +41,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 
 			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
-			spammer = helpers.NewSpammer(etcdClient, 1*time.Second)
+			spammer = helpers.NewSpammer(etcdClient, 1*time.Second, "multi-instance-rolling-deploy")
 		})
 
 		AfterEach(func() {

@@ -54,7 +54,7 @@ var _ = Describe("Scaling down instances", func() {
 			})
 
 			By("scaling down to 1 node", func() {
-				manifest.Jobs[1], manifest.Properties = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], manifest.Properties, 1)
+				manifest = helpers.SetEtcdInstanceCount(1, manifest)
 
 				members := manifest.EtcdMembers()
 				Expect(members).To(HaveLen(1))

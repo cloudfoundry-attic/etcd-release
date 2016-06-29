@@ -12,8 +12,9 @@ import (
 
 var _ = Describe("Spammer", func() {
 	var (
-		kv      *fakeKV
-		spammer *helpers.Spammer
+		kv            *fakeKV
+		spammer       *helpers.Spammer
+		spammerPrefix string
 	)
 
 	Context("Check", func() {
@@ -21,7 +22,9 @@ var _ = Describe("Spammer", func() {
 			kv = newFakeKV()
 			kv.AddressCall.Returns.Address = "http://some-address"
 
-			spammer = helpers.NewSpammer(kv, time.Duration(0))
+			spammerPrefix = "some-prefix"
+
+			spammer = helpers.NewSpammer(kv, time.Duration(0), spammerPrefix)
 			spammer.Spam()
 
 			Eventually(func() int {
@@ -37,18 +40,18 @@ var _ = Describe("Spammer", func() {
 		})
 
 		It("returns an error when a key doesn't exist", func() {
-			kv.GetCall.Returns.Error = errors.New("could not find key: some-key-0")
+			kv.GetCall.Returns.Error = errors.New("could not find key: some-prefix-some-key-0")
 
 			err := spammer.Check()
-			Expect(err).To(MatchError(ContainSubstring("could not find key: some-key-0")))
+			Expect(err).To(MatchError(ContainSubstring("could not find key: some-prefix-some-key-0")))
 		})
 
 		It("returns an error when a key doesn't match it's value", func() {
-			Expect(kv.KeyVals).To(HaveKeyWithValue("some-key-0", "some-value-0"))
-			kv.KeyVals["some-key-0"] = "banana"
+			Expect(kv.KeyVals).To(HaveKeyWithValue("some-prefix-some-key-0", "some-prefix-some-value-0"))
+			kv.KeyVals["some-prefix-some-key-0"] = "banana"
 
 			err := spammer.Check()
-			Expect(err).To(MatchError(ContainSubstring("value for key \"some-key-0\" does not match: expected \"some-value-0\", got \"banana\"")))
+			Expect(err).To(MatchError(ContainSubstring("value for key \"some-prefix-some-key-0\" does not match: expected \"some-prefix-some-value-0\", got \"banana\"")))
 		})
 
 		Context("error tolerance", func() {
@@ -60,7 +63,7 @@ var _ = Describe("Spammer", func() {
 			It("returns an error if no keys were written", func() {
 				kv.SetCall.Returns.Error = errors.New("dial tcp some-address: getsockopt: connection refused")
 
-				spammer = helpers.NewSpammer(kv, time.Duration(0))
+				spammer = helpers.NewSpammer(kv, time.Duration(0), "")
 				spammer.Spam()
 
 				Eventually(func() int {
@@ -81,7 +84,7 @@ var _ = Describe("Spammer", func() {
 					return nil
 				}
 
-				spammer = helpers.NewSpammer(kv, time.Duration(0))
+				spammer = helpers.NewSpammer(kv, time.Duration(0), "")
 				spammer.Spam()
 
 				Eventually(func() int {

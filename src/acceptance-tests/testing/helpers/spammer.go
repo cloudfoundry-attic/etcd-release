@@ -38,9 +38,10 @@ type Spammer struct {
 	intervalDuration                   time.Duration
 	errors                             ErrorSet
 	keyWriteAttempts                   int
+	prefix                             string
 }
 
-func NewSpammer(kv kv, spamInterval time.Duration) *Spammer {
+func NewSpammer(kv kv, spamInterval time.Duration, prefix string) *Spammer {
 	address := strings.TrimPrefix(kv.Address(), "http://")
 	message := fmt.Sprintf("dial tcp %s: getsockopt: connection refused", address)
 	return &Spammer{
@@ -50,6 +51,7 @@ func NewSpammer(kv kv, spamInterval time.Duration) *Spammer {
 		done:             make(chan struct{}),
 		intervalDuration: spamInterval,
 		errors:           ErrorSet{},
+		prefix:           prefix,
 	}
 }
 
@@ -68,8 +70,8 @@ func (s *Spammer) Spam() {
 				return
 			case <-time.After(s.intervalDuration):
 				counts.attempts++
-				key := fmt.Sprintf("some-key-%d", counts.attempts-1)
-				value := fmt.Sprintf("some-value-%d", counts.attempts-1)
+				key := fmt.Sprintf("%s-some-key-%d", s.prefix, counts.attempts-1)
+				value := fmt.Sprintf("%s-some-value-%d", s.prefix, counts.attempts-1)
 				err := s.kv.Set(key, value)
 				if err != nil {
 					switch {
