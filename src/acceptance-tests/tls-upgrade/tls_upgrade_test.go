@@ -18,27 +18,15 @@ import (
 const (
 	PUT_ERROR_COUNT_THRESHOLD                  = 10
 	TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT = 1
+	KEY_MISSING_COUNT_THRESHOLD                = 1
 )
 
 var _ = Describe("TLS Upgrade", func() {
 	var (
 		manifest etcd.Manifest
 		spammers []*helpers.Spammer
+		watcher  *helpers.Watcher
 	)
-
-	var getEtcdProxyState = func() (string, error) {
-		vms, err := client.DeploymentVMs(manifest.Name)
-		if err != nil {
-			return "", err
-		}
-		for _, vm := range vms {
-			if vm.JobName == "etcd_z1" && vm.Index == 0 {
-				return vm.State, nil
-			}
-		}
-
-		return "not found", err
-	}
 
 	AfterEach(func() {
 		if !CurrentGinkgoTestDescription().Failed {
@@ -64,6 +52,13 @@ var _ = Describe("TLS Upgrade", func() {
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 		})
 
+		By("saving keys from the non tls cluster", func() {
+			etcdJobIndex, err := helpers.FindJobIndexByName(manifest, "etcd_z1")
+			Expect(err).NotTo(HaveOccurred())
+
+			watcher = helpers.NewEtcdWatcher(manifest.Jobs[etcdJobIndex].Networks[0].StaticIPs)
+		})
+
 		By("spamming the cluster", func() {
 			testConsumerJobIndex, err := helpers.FindJobIndexByName(manifest, "testconsumer_z1")
 			Expect(err).NotTo(HaveOccurred())
@@ -82,29 +77,26 @@ var _ = Describe("TLS Upgrade", func() {
 			manifest, err = helpers.NewEtcdManifestWithTLSUpgrade(manifest.Name, client, config)
 			Expect(err).NotTo(HaveOccurred())
 
-			done := make(chan bool)
-			go func() {
-				err := helpers.ResolveVersionsAndDeploy(manifest, client)
-				Expect(err).NotTo(HaveOccurred())
-				done <- true
-			}()
+			err = helpers.ResolveVersionsAndDeploy(manifest, client)
+			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() (string, error) {
-				return getEtcdProxyState()
-			}, "8m", "5s").Should(Equal("stopped"))
-
-			Eventually(func() (string, error) {
-				return getEtcdProxyState()
-			}, "8m", "5s").Should(Equal("running"))
-
-			for _, spammer := range spammers {
-				spammer.ResetStore()
-			}
-
-			<-done
 			Eventually(func() ([]bosh.VM, error) {
 				return client.DeploymentVMs(manifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+
+		})
+
+		By("migrating the non tls data to the tls cluster", func() {
+			etcdJobIndex, err := helpers.FindJobIndexByName(manifest, "etcd_z1")
+			Expect(err).NotTo(HaveOccurred())
+
+			ip := manifest.Jobs[etcdJobIndex].Networks[0].StaticIPs[0]
+			etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", ip)})
+
+			for key, value := range watcher.Data {
+				err := etcdClient.Set(key, value)
+				Expect(err).NotTo(HaveOccurred())
+			}
 		})
 
 		By("removing the proxy", func() {
@@ -117,7 +109,7 @@ var _ = Describe("TLS Upgrade", func() {
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 		})
 
-		By("stopping the spammer", func() {
+		By("stopping the spammers", func() {
 			for _, spammer := range spammers {
 				spammer.Stop()
 			}
@@ -128,13 +120,15 @@ var _ = Describe("TLS Upgrade", func() {
 				spammerErrors := spammer.Check()
 
 				errorSet := spammerErrors.(helpers.ErrorSet)
-
 				etcdErrorCount := 0
 				testConsumerConnectionResetErrorCount := 0
+				keyMissingCount := 0
 				otherErrors := helpers.ErrorSet{}
 
 				for err, occurrences := range errorSet {
 					switch {
+					case strings.Contains(err, "Key not found"):
+						keyMissingCount++
 					case strings.Contains(err, "last error: Put"):
 						etcdErrorCount += occurrences
 					case strings.Contains(err, "EOF"):
@@ -144,6 +138,7 @@ var _ = Describe("TLS Upgrade", func() {
 					}
 				}
 
+				Expect(keyMissingCount).To(BeNumerically("<=", KEY_MISSING_COUNT_THRESHOLD))
 				Expect(etcdErrorCount).To(BeNumerically("<=", PUT_ERROR_COUNT_THRESHOLD))
 				Expect(testConsumerConnectionResetErrorCount).To(BeNumerically("<=", TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT))
 				Expect(otherErrors).To(HaveLen(0))
