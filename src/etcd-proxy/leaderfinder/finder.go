@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 var (
@@ -48,39 +49,39 @@ func NewFinder(addresses []string, client getter) Finder {
 	}
 }
 
-func (f Finder) Find() (string, error) {
+func (f Finder) Find() (*url.URL, error) {
 	if len(f.addresses) == 0 {
-		return "", NoAddressesProvided
+		return nil, NoAddressesProvided
 	}
 
 	resp, err := f.client.Get(fmt.Sprintf("%s/v2/members", f.addresses[0]))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var members members
 	err = json.NewDecoder(resp.Body).Decode(&members)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if len(members.Members) == 0 {
-		return "", MembersNotFound
+		return nil, MembersNotFound
 	}
 
 	if len(members.Members[0].ClientURLs) == 0 {
-		return "", NoClientURLs
+		return nil, NoClientURLs
 	}
 
 	resp, err = f.client.Get(fmt.Sprintf("%s/v2/stats/self", members.Members[0].ClientURLs[0]))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var self self
 	err = json.NewDecoder(resp.Body).Decode(&self)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	leaderID := self.LeaderInfo.Leader
@@ -90,7 +91,7 @@ func (f Finder) Find() (string, error) {
 	for _, member := range members.Members {
 		if member.ID == leaderID {
 			if len(member.ClientURLs) == 0 {
-				return "", NoClientURLsForLeader
+				return nil, NoClientURLsForLeader
 			}
 
 			leaderURL = member.ClientURLs[0]
@@ -99,8 +100,13 @@ func (f Finder) Find() (string, error) {
 	}
 
 	if leaderURL == "" {
-		return "", LeaderNotFound
+		return nil, LeaderNotFound
 	}
 
-	return leaderURL, nil
+	leader, err := url.Parse(leaderURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return leader, nil
 }

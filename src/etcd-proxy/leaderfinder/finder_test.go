@@ -177,7 +177,7 @@ var _ = Describe("Finder", func() {
 			leader, err := finder.Find()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(leader).To(Equal(node2Server.URL))
+			Expect(leader.String()).To(Equal(node2Server.URL))
 			Expect(getter.GetCall.CallCount).To(Equal(2))
 		})
 
@@ -388,6 +388,52 @@ var _ = Describe("Finder", func() {
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(leaderfinder.LeaderNotFound))
+			})
+
+			It("returns an error when the leader client url is malformed", func() {
+				var server *httptest.Server
+
+				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					switch r.URL.Path {
+					case "/v2/members":
+						w.Write([]byte(fmt.Sprintf(`{
+						  "members": [
+							{
+							  "clientURLs": [
+							  	%q
+							  ],
+							  "name": "etcd-z1-0",
+							  "id": "1b8722e8a026db8e"
+							},
+							{
+							  "clientURLs": [
+							  	"%%somebadurl%%"
+							  ],
+							  "name": "etcd-z1-1",
+							  "id": "2ff908d1599e9e72"
+							}
+						  ]
+						}`, server.URL)))
+						return
+					case "/v2/stats/self":
+						w.Write([]byte(`{
+						  "name": "etcd-z1-0",
+						  "id": "1b8722e8a026db8e",
+						  "state": "StateFollower",
+						  "leaderInfo": {
+							"leader": "2ff908d1599e9e72"
+						  }
+						}`))
+						return
+					}
+
+					w.WriteHeader(http.StatusTeapot)
+				}))
+
+				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+
+				_, err := finder.Find()
+				Expect(err).To(MatchError(ContainSubstring("invalid URL escape")))
 			})
 		})
 	})
