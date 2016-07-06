@@ -17,8 +17,8 @@ var (
 )
 
 type Finder struct {
-	addresses []string
-	client    getter
+	address string
+	client  getter
 }
 
 type members struct {
@@ -42,19 +42,19 @@ type getter interface {
 	Get(url string) (resp *http.Response, err error)
 }
 
-func NewFinder(addresses []string, client getter) Finder {
+func NewFinder(address string, client getter) Finder {
 	return Finder{
-		addresses: addresses,
-		client:    client,
+		address: address,
+		client:  client,
 	}
 }
 
 func (f Finder) Find() (*url.URL, error) {
-	if len(f.addresses) == 0 {
-		return nil, NoAddressesProvided
+	if len(f.address) == 0 {
+		return nil, errors.New("no address provided")
 	}
 
-	resp, err := f.client.Get(fmt.Sprintf("%s/v2/members", f.addresses[0]))
+	resp, err := f.client.Get(fmt.Sprintf("%s/v2/members", f.address))
 	if err != nil {
 		return nil, err
 	}

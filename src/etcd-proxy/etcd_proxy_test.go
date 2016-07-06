@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os/exec"
 	"strings"
 	"time"
@@ -28,16 +29,54 @@ const (
 
 var _ = Describe("provides an http proxy to an etcd cluster", func() {
 	var (
-		session *gexec.Session
-		port    string
-		handler http.HandlerFunc
+		session    *gexec.Session
+		port       string
+		handler    http.HandlerFunc
+		etcdServer *httptest.Server
 	)
 
 	BeforeEach(func() {
 		var err error
 		port, err = openPort()
 		Expect(err).NotTo(HaveOccurred())
+
 		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			if req.URL.Path == "/v2/members" && req.Method == "GET" {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(fmt.Sprintf(`{
+					  "members": [
+						{
+						  "clienturls": [
+						  %q
+						  ],
+						  "name": "etcd-z1-0",
+						  "id": "1b8722e8a026db8e"
+						},
+						{
+						  "clienturls": [
+						  %q
+						  ],
+						  "name": "etcd-z1-1",
+						  "id": "2b8724e8a026db9e"
+						}
+					  ]
+					}`, etcdServer.URL)))
+				return
+			}
+
+			if req.URL.Path == "/v2/stats/self" && req.Method == "GET" {
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{
+					  "name": "etcd-z1-0",
+					  "id": "1b8722e8a026db8e",
+					  "state": "StateFollower",
+					  "leaderInfo": {
+						"leader": "2b8724e8a026db9e"
+					  }
+					}`))
+				return
+			}
+
 			if req.URL.Path == "/v2/keys/some-key" && req.Method == "PUT" {
 				body, err := ioutil.ReadAll(req.Body)
 				Expect(err).NotTo(HaveOccurred())
@@ -67,40 +106,8 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 	})
 
 	Context("main", func() {
-		It("proxies requests to the targeted etcd server", func() {
-			etcdServer := httptest.NewServer(handler)
-
-			command := exec.Command(pathToEtcdProxy,
-				"--etcd-url", etcdServer.URL,
-				"--port", port,
-			)
-
-			var err error
-			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-
-			waitForServerToStart(port)
-
-			value := fmt.Sprintf("some-value-%d", rand.Int())
-			statusCode, body, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/v2/keys/some-key", port), fmt.Sprintf("value=%s", value))
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(statusCode).To(Equal(http.StatusCreated))
-			Expect(body).To(MatchJSON(fmt.Sprintf(`{
-				"action": "set",
-				"node": {
-					"createdIndex": 3,
-					"key": "/some-key",
-					"modifiedIndex": 3,
-					"value": %q
-				}
-			}`, value)))
-
-			Expect(session.Err.Contents()).To(ContainSubstring("RequestURI:/v2/keys/some-key"))
-		})
-
 		It("encrypts traffic to the etcd server", func() {
-			etcdServer := httptest.NewUnstartedServer(handler)
+			etcdServer = httptest.NewUnstartedServer(handler)
 
 			tlsCert, err := tls.LoadX509KeyPair(serverCertFilePath, serverKeyFilePath)
 			Expect(err).NotTo(HaveOccurred())
@@ -125,10 +132,16 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 
 			etcdServer.StartTLS()
 
+			etcdServerURL, err := url.Parse(etcdServer.URL)
+			Expect(err).NotTo(HaveOccurred())
+
+			etcdServerHost := strings.Split(etcdServerURL.Host, ":")[0]
+			etcdServerPort := strings.Split(etcdServerURL.Host, ":")[1]
+
 			command := exec.Command(pathToEtcdProxy,
-				"--etcd-url", etcdServer.URL,
+				"--etcd-dns-suffix", etcdServerHost,
+				"--etcd-port", etcdServerPort,
 				"--port", port,
-				"--require-ssl",
 				"--cacert", caCertFilePath,
 				"--cert", clientCertFilePath,
 				"--key", clientKeyFilePath,
@@ -145,14 +158,14 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(statusCode).To(Equal(http.StatusCreated))
 			Expect(body).To(MatchJSON(fmt.Sprintf(`{
-				"action": "set",
-				"node": {
-					"createdIndex": 3,
-					"key": "/some-key",
-					"modifiedIndex": 3,
-					"value": %q
-				}
-			}`, value)))
+		"action": "set",
+		"node": {
+		"createdIndex": 3,
+		"key": "/some-key",
+		"modifiedIndex": 3,
+		"value": %q
+		}
+		}`, value)))
 
 			Expect(session.Err.Contents()).To(ContainSubstring("RequestURI:/v2/keys/some-key"))
 		})
@@ -170,20 +183,20 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 			Expect(session.Err.Contents()).To(ContainSubstring("flag provided but not defined: -some-unknown-flag"))
 		})
 
-		It("returns an error when a malformed etcd-url is provided", func() {
+		It("returns an error when a malformed etcd dns suffix is provided", func() {
 			var err error
-			command := exec.Command(pathToEtcdProxy, "--etcd-url", "%%%%%")
+			command := exec.Command(pathToEtcdProxy, "--etcd-dns-suffix", "%%%%%")
 			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Eventually(session).Should(gexec.Exit())
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(session.ExitCode()).To(Equal(1))
-			Expect(session.Err.Contents()).To(ContainSubstring("failed to parse etcd-url parse %%%%%: invalid URL escape \"%%%\""))
+			Expect(session.Err.Contents()).To(ContainSubstring("failed to parse etcd-dns-suffix and etcd-port parse https://%%%%%:4001: invalid URL escape \"%%%\""))
 		})
 
 		It("returns an error when the cert file path does not exist", func() {
 			var err error
-			command := exec.Command(pathToEtcdProxy, "--require-ssl", "--cert", "/some/fake/path")
+			command := exec.Command(pathToEtcdProxy, "--cert", "/some/fake/path")
 			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Eventually(session).Should(gexec.Exit())
 
@@ -195,7 +208,6 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 		It("returns an error when the ca cert file path does not exist", func() {
 			var err error
 			args := []string{
-				"--require-ssl",
 				"--cert", clientCertFilePath,
 				"--key", clientKeyFilePath,
 				"--cacert", "/some/fake/path",
@@ -215,7 +227,6 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			args := []string{
-				"--require-ssl",
 				"--cert", clientCertFilePath,
 				"--key", clientKeyFilePath,
 				"--cacert", file.Name(),
@@ -232,7 +243,12 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 
 		It("returns an error when the proxy fails to start", func() {
 			var err error
-			command := exec.Command(pathToEtcdProxy, "--port", "-1")
+			command := exec.Command(pathToEtcdProxy,
+				"--cert", clientCertFilePath,
+				"--key", clientKeyFilePath,
+				"--cacert", caCertFilePath,
+				"--port", "-1",
+			)
 			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Eventually(session).Should(gexec.Exit())
 

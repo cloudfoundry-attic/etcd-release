@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"etcd-proxy/leaderfinder"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -11,37 +12,53 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"time"
 )
 
 type Flags struct {
-	EtcdURL        string
+	EtcdDNSSuffix  string
+	EtcdPort       string
 	Port           string
 	CACertFilePath string
 	CertFilePath   string
 	KeyFilePath    string
-	RequireSSL     bool
 }
 
 func main() {
 	flags := Flags{}
-	flag.StringVar(&flags.EtcdURL, "etcd-url", "", "fully qualified url of the etcd server")
+	flag.StringVar(&flags.EtcdDNSSuffix, "etcd-dns-suffix", "", "domain of etcd cluster")
+	flag.StringVar(&flags.EtcdPort, "etcd-port", "4001", "port that etcd server is running on")
 	flag.StringVar(&flags.Port, "port", "", "port of the proxy server")
 	flag.StringVar(&flags.CACertFilePath, "cacert", "", "path to the etcd ca certificate")
 	flag.StringVar(&flags.CertFilePath, "cert", "", "path to the etcd client certificate")
 	flag.StringVar(&flags.KeyFilePath, "key", "", "path to the etcd client key")
-	flag.BoolVar(&flags.RequireSSL, "require-ssl", false, "require TLS communication to the remote etcd server")
 	flag.Parse()
 
-	proxyUrl, err := url.Parse(flags.EtcdURL)
+	etcdRawURL := fmt.Sprintf("https://%s:%s", flags.EtcdDNSSuffix, flags.EtcdPort)
+	etcdURL, err := url.Parse(etcdRawURL)
 	if err != nil {
-		fail(fmt.Sprintf("failed to parse etcd-url %s", err.Error()))
+		fail(fmt.Sprintf("failed to parse etcd-dns-suffix and etcd-port %s", err.Error()))
 	}
 
-	proxy := httputil.NewSingleHostReverseProxy(proxyUrl)
-	if flags.RequireSSL {
-		proxy.Transport = &http.Transport{
-			TLSClientConfig: buildTLSConfig(flags.CACertFilePath, flags.CertFilePath, flags.KeyFilePath),
-		}
+	httpClient := &http.Client{Timeout: 10 * time.Second}
+	httpClient.Transport = &http.Transport{
+		TLSClientConfig: buildTLSConfig(flags.CACertFilePath, flags.CertFilePath, flags.KeyFilePath),
+	}
+
+	finder := leaderfinder.NewFinder(etcdURL.String(), httpClient)
+
+	manager := leaderfinder.NewManager(etcdURL, finder)
+
+	director := func(req *http.Request) {
+		target := manager.LeaderOrDefault()
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+	}
+
+	proxy := &httputil.ReverseProxy{Director: director}
+
+	proxy.Transport = &http.Transport{
+		TLSClientConfig: buildTLSConfig(flags.CACertFilePath, flags.CertFilePath, flags.KeyFilePath),
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

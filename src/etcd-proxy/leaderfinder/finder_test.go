@@ -172,7 +172,7 @@ var _ = Describe("Finder", func() {
 				w.WriteHeader(http.StatusTeapot)
 			}))
 
-			finder := leaderfinder.NewFinder([]string{node1Server.URL, node2Server.URL, node3Server.URL}, getter)
+			finder := leaderfinder.NewFinder(node1Server.URL, getter)
 
 			leader, err := finder.Find()
 			Expect(err).NotTo(HaveOccurred())
@@ -182,15 +182,15 @@ var _ = Describe("Finder", func() {
 		})
 
 		Context("failure cases", func() {
-			It("returns an address if no addresses have been provided", func() {
-				finder := leaderfinder.NewFinder([]string{}, getter)
+			It("returns an error if no address has been provided", func() {
+				finder := leaderfinder.NewFinder("", getter)
 
 				_, err := finder.Find()
-				Expect(err).To(MatchError("no addresses have been provided"))
+				Expect(err).To(MatchError("no address provided"))
 			})
 
 			It("returns an error when the call to /v2/members fails", func() {
-				finder := leaderfinder.NewFinder([]string{"%%%%%%%"}, getter)
+				finder := leaderfinder.NewFinder("%%%%%%%", getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(ContainSubstring("invalid URL escape \"%%%\"")))
@@ -200,7 +200,7 @@ var _ = Describe("Finder", func() {
 				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.Write([]byte(`%%%%%%%`))
 				}))
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError("invalid character '%' looking for beginning of value"))
@@ -219,7 +219,7 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(leaderfinder.MembersNotFound))
@@ -243,7 +243,7 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(leaderfinder.NoClientURLs))
@@ -270,7 +270,7 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(ContainSubstring("invalid URL escape \"%%%\"")))
@@ -302,7 +302,7 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError("invalid character '%' looking for beginning of value"))
@@ -345,7 +345,7 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(leaderfinder.NoClientURLsForLeader))
@@ -384,7 +384,7 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(leaderfinder.LeaderNotFound))
@@ -430,7 +430,7 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
-				finder := leaderfinder.NewFinder([]string{server.URL}, getter)
+				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
 				Expect(err).To(MatchError(ContainSubstring("invalid URL escape")))
