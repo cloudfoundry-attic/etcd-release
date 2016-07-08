@@ -61,4 +61,12 @@ var _ = Describe("Client", func() {
 			Expect(err).To(MatchError("some etcd error"))
 		})
 	})
+
+	Describe("Close", func() {
+		It("calls close on goetcd client", func() {
+			client := etcd.NewClient(fakeClient)
+			client.Close()
+			Expect(fakeClient.CloseCall.CallCount).To(Equal(1))
+		})
+	})
 })

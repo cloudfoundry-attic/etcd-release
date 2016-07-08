@@ -48,6 +48,7 @@ func (k *KVHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	goEtcdClient.SetConsistency(goetcd.STRONG_CONSISTENCY)
 
 	client := etcd.NewClient(goEtcdClient)
+	defer client.Close()
 
 	switch req.Method {
 	case "GET":

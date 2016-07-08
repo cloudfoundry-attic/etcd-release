@@ -20,6 +20,10 @@ type Client struct {
 			Error error
 		}
 	}
+
+	CloseCall struct {
+		CallCount int
+	}
 }
 
 func NewClient() *Client {
@@ -45,4 +49,8 @@ func (c *Client) Set(key string, value string, ttl uint64) (*etcd.Response, erro
 	c.SetCall.Receives.TTL = ttl
 
 	return nil, c.SetCall.Returns.Error
+}
+
+func (c *Client) Close() {
+	c.CloseCall.CallCount++
 }

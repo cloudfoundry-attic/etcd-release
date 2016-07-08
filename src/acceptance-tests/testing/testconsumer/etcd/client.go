@@ -5,6 +5,7 @@ import goetcd "github.com/coreos/go-etcd/etcd"
 type GoEtcd interface {
 	Get(key string, sort, recursive bool) (*goetcd.Response, error)
 	Set(key string, value string, ttl uint64) (*goetcd.Response, error)
+	Close()
 }
 
 type Client struct {
@@ -33,4 +34,10 @@ func (c Client) Set(key string, value string) error {
 	}
 
 	return nil
+}
+
+func (c Client) Close() {
+	if c.goEtcdClient != nil {
+		c.goEtcdClient.Close()
+	}
 }
