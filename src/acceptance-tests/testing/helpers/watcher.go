@@ -12,40 +12,31 @@ type etcdWatcher interface {
 }
 
 type Watcher struct {
-	Response  chan *goetcd.Response
-	Stop      chan bool
-	stopMutex sync.Mutex
-	dataMutex sync.Mutex
-	data      map[string]string
-	stopped   bool
-	err       error
-	waitIndex uint64
+	Response          chan *goetcd.Response
+	Stop              chan bool
+	stopListening     chan bool
+	stopMutex         sync.Mutex
+	dataMutex         sync.Mutex
+	data              map[string]string
+	stopped           bool
+	lastModifiedIndex uint64
 }
 
 func Watch(watcher etcdWatcher, prefix string) *Watcher {
 	w := &Watcher{
-		data:     map[string]string{},
-		Response: make(chan *goetcd.Response),
-		Stop:     make(chan bool),
+		data:          map[string]string{},
+		Response:      make(chan *goetcd.Response),
+		Stop:          make(chan bool),
+		stopListening: make(chan bool),
 	}
 	go func() {
 		for {
-			go func() {
-				for {
-					r, ok := <-w.Response
-					if !ok {
-						return
-					}
-					if r != nil && r.Node != nil {
-						w.waitIndex = r.Node.ModifiedIndex
-						w.AddData(r.Node.Key, r.Node.Value)
-					}
-				}
-			}()
+			go w.listenForResponses()
 
-			_, err := watcher.Watch(prefix, w.waitIndex+1, true, w.Response, w.Stop)
+			_, err := watcher.Watch(prefix, w.getLastModifiedIndex()+1, true, w.Response, w.Stop)
+			<-w.stopListening
 			if err == nil {
-				w.setStoppedAndError(true, nil)
+				w.setStopped(true)
 				return
 			} else {
 				w.Response = make(chan *goetcd.Response)
@@ -57,12 +48,31 @@ func Watch(watcher etcdWatcher, prefix string) *Watcher {
 	return w
 }
 
-func (w *Watcher) setStoppedAndError(stopped bool, err error) {
+func (w *Watcher) listenForResponses() {
+	for {
+		r, ok := <-w.Response
+		if !ok {
+			w.stopListening <- true
+			return
+		}
+		if r != nil && r.Node != nil {
+			w.AddData(r.Node.Key, r.Node.Value, r.Node.ModifiedIndex)
+		}
+	}
+}
+
+func (w *Watcher) getLastModifiedIndex() uint64 {
+	w.dataMutex.Lock()
+	defer w.dataMutex.Unlock()
+
+	return w.lastModifiedIndex
+}
+
+func (w *Watcher) setStopped(stopped bool) {
 	w.stopMutex.Lock()
 	defer w.stopMutex.Unlock()
 
 	w.stopped = stopped
-	w.err = err
 }
 
 func (w *Watcher) IsStopped() bool {
@@ -72,18 +82,12 @@ func (w *Watcher) IsStopped() bool {
 	return w.stopped
 }
 
-func (w *Watcher) GetEtcdWatchError() error {
-	w.stopMutex.Lock()
-	defer w.stopMutex.Unlock()
-
-	return w.err
-}
-
-func (w *Watcher) AddData(key, value string) {
+func (w *Watcher) AddData(key, value string, modifiedIndex uint64) {
 	w.dataMutex.Lock()
 	defer w.dataMutex.Unlock()
 
 	w.data[key] = value
+	w.lastModifiedIndex = modifiedIndex
 }
 
 func (w *Watcher) Data() map[string]string {
