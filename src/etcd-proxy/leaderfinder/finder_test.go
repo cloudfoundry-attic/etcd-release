@@ -1,11 +1,13 @@
 package leaderfinder_test
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
-	"etcd-proxy/leaderfinder"
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcd-proxy/leaderfinder"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,11 +16,18 @@ import (
 type fakeGetter struct {
 	GetCall struct {
 		CallCount int
+		Returns   struct {
+			Error error
+		}
 	}
 }
 
 func (g *fakeGetter) Get(url string) (resp *http.Response, err error) {
 	g.GetCall.CallCount++
+
+	if g.GetCall.Returns.Error != nil && strings.HasSuffix(url, "/v2/stats/self") {
+		return &http.Response{}, g.GetCall.Returns.Error
+	}
 
 	return http.Get(url)
 }
@@ -36,9 +45,12 @@ var _ = Describe("Finder", func() {
 		It("finds the the leader in an etcd cluster", func() {
 			var (
 				node1Server *httptest.Server
-				node2Server *httptest.Server
-				node3Server *httptest.Server
+				node2URL    string
+				node3URL    string
 			)
+
+			node2URL = "https:\\dummy2:4002"
+			node3URL = "https:\\dummy3:4002"
 
 			node1Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch r.URL.Path {
@@ -67,7 +79,7 @@ var _ = Describe("Finder", func() {
 						  "id": "7be499c93624e6d5"
 						}
 					  ]
-					}`, node1Server.URL, node2Server.URL, node3Server.URL)))
+					}`, node1Server.URL, node2URL, node3URL)))
 					return
 				case "/v2/stats/self":
 					w.Write([]byte(`{
@@ -84,100 +96,12 @@ var _ = Describe("Finder", func() {
 				w.WriteHeader(http.StatusTeapot)
 			}))
 
-			node2Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/v2/members":
-					w.Write([]byte(fmt.Sprintf(`{
-					  "members": [
-						{
-						  "clientURLs": [
-						  %q
-						  ],
-						  "name": "etcd-z1-0",
-						  "id": "1b8722e8a026db8e"
-						},
-						{
-						  "clientURLs": [
-						  %q
-						  ],
-						  "name": "etcd-z1-1",
-						  "id": "2ff908d1599e9e72"
-						},
-						{
-						  "clientURLs": [
-						  %q
-						  ],
-						  "name": "etcd-z1-2",
-						  "id": "7be499c93624e6d5"
-						}
-					  ]
-					}`, node1Server.URL, node2Server.URL, node3Server.URL)))
-					return
-				case "/v2/stats/self":
-					w.Write([]byte(`{
-					  "name": "etcd-z1-1",
-					  "id": "2ff908d1599e9e72",
-					  "state": "StateLeader",
-					  "leaderInfo": {
-						"leader": "2ff908d1599e9e72"
-					  }
-					}`))
-					return
-				}
-
-				w.WriteHeader(http.StatusTeapot)
-			}))
-
-			node3Server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				switch r.URL.Path {
-				case "/v2/members":
-					w.Write([]byte(fmt.Sprintf(`{
-					  "members": [
-						{
-						  "clientURLs": [
-						  %q
-						  ],
-						  "name": "etcd-z1-0",
-						  "id": "1b8722e8a026db8e"
-						},
-						{
-						  "clientURLs": [
-						  %q
-						  ],
-						  "name": "etcd-z1-1",
-						  "id": "2ff908d1599e9e72"
-						},
-						{
-						  "clientURLs": [
-						  %q
-						  ],
-						  "name": "etcd-z1-2",
-						  "id": "7be499c93624e6d5"
-						}
-					  ]
-					}`, node1Server.URL, node2Server.URL, node3Server.URL)))
-					return
-				case "/v2/stats/self":
-					w.Write([]byte(`{
-					  "name": "etcd-z1-2",
-					  "id": "7be499c93624e6d5",
-					  "state": "StateFollower",
-					  "leaderInfo": {
-						"leader": "2ff908d1599e9e72"
-					  }
-					}`))
-					return
-				}
-
-				w.WriteHeader(http.StatusTeapot)
-			}))
-
 			finder := leaderfinder.NewFinder(node1Server.URL, getter)
 
 			leader, err := finder.Find()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(leader.String()).To(Equal(node2Server.URL))
+			Expect(leader.String()).To(Equal(node2URL))
 			Expect(getter.GetCall.CallCount).To(Equal(2))
 		})
 
@@ -238,6 +162,16 @@ var _ = Describe("Finder", func() {
 						  ]
 						}`))
 						return
+					case "/v2/stats/self":
+						w.Write([]byte(`{
+					  "name": "etcd-z1-0",
+					  "id": "1b8722e8a026db8e",
+					  "state": "StateFollower",
+					  "leaderInfo": {
+						"leader": "1b8722e8a026db8e"
+					  }
+					}`))
+						return
 					}
 
 					w.WriteHeader(http.StatusTeapot)
@@ -246,7 +180,7 @@ var _ = Describe("Finder", func() {
 				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
-				Expect(err).To(MatchError(leaderfinder.NoClientURLs))
+				Expect(err).To(MatchError(leaderfinder.NoClientURLsForLeader))
 			})
 
 			It("returns an error when the call to /v2/stats/self fails", func() {
@@ -270,10 +204,12 @@ var _ = Describe("Finder", func() {
 					w.WriteHeader(http.StatusTeapot)
 				}))
 
+				getter.GetCall.Returns.Error = errors.New("some http error")
+
 				finder := leaderfinder.NewFinder(server.URL, getter)
 
 				_, err := finder.Find()
-				Expect(err).To(MatchError(ContainSubstring("invalid URL escape \"%%%\"")))
+				Expect(err).To(MatchError("some http error"))
 			})
 
 			It("returns an error when the call to /v2/stats/self returns malformed json", func() {

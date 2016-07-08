@@ -69,11 +69,12 @@ func (f Finder) Find() (*url.URL, error) {
 		return nil, MembersNotFound
 	}
 
-	if len(members.Members[0].ClientURLs) == 0 {
-		return nil, NoClientURLs
-	}
+	// fixme remove
+	//if len(members.Members[0].ClientURLs) == 0 {
+	//return nil, NoClientURLs
+	//}
 
-	resp, err = f.client.Get(fmt.Sprintf("%s/v2/stats/self", members.Members[0].ClientURLs[0]))
+	resp, err = f.client.Get(fmt.Sprintf("%s/v2/stats/self", f.address))
 	if err != nil {
 		return nil, err
 	}

@@ -26,21 +26,15 @@ function create_cert_files() {
 }
 
 function start_etcd_proxy() {
-  local sec_flags
-  sec_flags=""
-
-  <% if p("etcd_proxy.require_ssl") %>
   create_cert_files
-  sec_flags=" \
-  -require-ssl \
+
+  /var/vcap/packages/etcd_proxy/bin/etcd-proxy \
+  -etcd-dns-suffix=<%= p("etcd_proxy.etcd.dns_suffix") %> \
+  -etcd-port=<%= p("etcd_proxy.etcd.port") %> \
+  -port=<%= p("etcd_proxy.port") %> \
   -cacert=${CERTS_DIR}/ca.crt \
   -cert=${CERTS_DIR}/client.crt \
-  -key=${CERTS_DIR}/client.key"
-  <% end %>
-
-  /var/vcap/packages/etcd_proxy/bin/etcd-proxy ${sec_flags} \
-  -etcd-url=<%= p("etcd_proxy.etcd.url") %> \
-  -port=<%= p("etcd_proxy.port") %> \
+  -key=${CERTS_DIR}/client.key \
   1> >(tee -a ${LOG_DIR}/etcd_proxy.stdout.log | logger -p user.info -t vcap.etcd_proxy) \
   2> >(tee -a ${LOG_DIR}/etcd_proxy.stderr.log | logger -p user.error -t vcap.etcd_proxy) &
 

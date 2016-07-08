@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"etcd-proxy/leaderfinder"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -13,6 +12,8 @@ import (
 	"net/url"
 	"os"
 	"time"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcd-proxy/leaderfinder"
 )
 
 type Flags struct {

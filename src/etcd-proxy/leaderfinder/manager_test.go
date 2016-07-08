@@ -2,8 +2,9 @@ package leaderfinder_test
 
 import (
 	"errors"
-	"etcd-proxy/leaderfinder"
 	"net/url"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcd-proxy/leaderfinder"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

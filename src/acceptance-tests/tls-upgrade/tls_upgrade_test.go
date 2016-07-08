@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	PUT_ERROR_COUNT_THRESHOLD                  = 10
+	PUT_ERROR_COUNT_THRESHOLD                  = 8
 	TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT = 1
-	KEY_MISSING_COUNT_THRESHOLD                = 1
 )
 
 var _ = Describe("TLS Upgrade", func() {
@@ -93,7 +92,7 @@ var _ = Describe("TLS Upgrade", func() {
 			ip := manifest.Jobs[etcdJobIndex].Networks[0].StaticIPs[0]
 			etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", ip)})
 
-			for key, value := range watcher.Data {
+			for key, value := range watcher.Data() {
 				err := etcdClient.Set(key, value)
 				Expect(err).NotTo(HaveOccurred())
 			}
@@ -122,15 +121,14 @@ var _ = Describe("TLS Upgrade", func() {
 				errorSet := spammerErrors.(helpers.ErrorSet)
 				etcdErrorCount := 0
 				testConsumerConnectionResetErrorCount := 0
-				keyMissingCount := 0
 				otherErrors := helpers.ErrorSet{}
 
 				for err, occurrences := range errorSet {
 					switch {
-					case strings.Contains(err, "Key not found"):
-						keyMissingCount++
+					// This happens when the etcd server is down during etcd->etcd_proxy roll
 					case strings.Contains(err, "last error: Put"):
 						etcdErrorCount += occurrences
+					// This happens when a connection is severed by the etcd server
 					case strings.Contains(err, "EOF"):
 						testConsumerConnectionResetErrorCount += occurrences
 					default:
@@ -138,7 +136,6 @@ var _ = Describe("TLS Upgrade", func() {
 					}
 				}
 
-				Expect(keyMissingCount).To(BeNumerically("<=", KEY_MISSING_COUNT_THRESHOLD))
 				Expect(etcdErrorCount).To(BeNumerically("<=", PUT_ERROR_COUNT_THRESHOLD))
 				Expect(testConsumerConnectionResetErrorCount).To(BeNumerically("<=", TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT))
 				Expect(otherErrors).To(HaveLen(0))

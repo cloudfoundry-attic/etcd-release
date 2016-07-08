@@ -103,12 +103,12 @@ func (s *Spammer) Check() error {
 		value, err := s.kv.Get(k)
 		if err != nil {
 			s.errors.Add(err)
-			break
+			continue
 		}
 
 		if v != value {
 			s.errors.Add(fmt.Errorf("value for key %q does not match: expected %q, got %q", k, v, value))
-			break
+			continue
 		}
 	}
 

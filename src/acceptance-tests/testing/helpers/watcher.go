@@ -1,6 +1,10 @@
 package helpers
 
-import goetcd "github.com/coreos/go-etcd/etcd"
+import (
+	"sync"
+
+	goetcd "github.com/coreos/go-etcd/etcd"
+)
 
 type etcdWatcher interface {
 	Watch(prefix string, waitIndex uint64, recursive bool,
@@ -8,26 +12,21 @@ type etcdWatcher interface {
 }
 
 type Watcher struct {
-	Data     map[string]string
-	Response chan *goetcd.Response
-	Stop     chan bool
-	Stopped  bool
-	Error    error
+	Response  chan *goetcd.Response
+	Stop      chan bool
+	stopMutex sync.Mutex
+	dataMutex sync.Mutex
+	data      map[string]string
+	stopped   bool
+	err       error
 }
 
 func Watch(watcher etcdWatcher, prefix string) *Watcher {
 	w := &Watcher{
-		Data:     map[string]string{},
+		data:     map[string]string{},
 		Response: make(chan *goetcd.Response),
 		Stop:     make(chan bool),
 	}
-
-	go func() {
-		_, err := watcher.Watch(prefix, 0, true, w.Response, w.Stop)
-		w.Stopped = true
-		w.Error = err
-	}()
-
 	go func() {
 		for {
 			r, ok := <-w.Response
@@ -35,10 +34,51 @@ func Watch(watcher etcdWatcher, prefix string) *Watcher {
 				return
 			}
 			if r != nil && r.Node != nil {
-				w.Data[r.Node.Key] = r.Node.Value
+				w.AddData(r.Node.Key, r.Node.Value)
 			}
 		}
 	}()
 
+	go func() {
+		_, err := watcher.Watch(prefix, 0, true, w.Response, w.Stop)
+		w.setStoppedAndError(true, err)
+	}()
+
 	return w
+}
+
+func (w *Watcher) setStoppedAndError(stopped bool, err error) {
+	w.stopMutex.Lock()
+	defer w.stopMutex.Unlock()
+
+	w.stopped = stopped
+	w.err = err
+}
+
+func (w *Watcher) IsStopped() bool {
+	w.stopMutex.Lock()
+	defer w.stopMutex.Unlock()
+
+	return w.stopped
+}
+
+func (w *Watcher) GetEtcdWatchError() error {
+	w.stopMutex.Lock()
+	defer w.stopMutex.Unlock()
+
+	return w.err
+}
+
+func (w *Watcher) AddData(key, value string) {
+	w.dataMutex.Lock()
+	defer w.dataMutex.Unlock()
+
+	w.data[key] = value
+}
+
+func (w *Watcher) Data() map[string]string {
+	w.dataMutex.Lock()
+	defer w.dataMutex.Unlock()
+
+	return w.data
 }

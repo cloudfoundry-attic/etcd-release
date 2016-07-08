@@ -66,7 +66,8 @@ var _ = Describe("Watcher", func() {
 			watcher.Stop <- true
 		}()
 
-		Eventually(watcher.Data, "10s", "1s").Should(Equal(map[string]string{
+		Eventually(watcher.IsStopped, "10s", "1s").Should(BeTrue())
+		Expect(watcher.Data()).To(Equal(map[string]string{
 			"key1": "value1",
 			"key2": "value2",
 			"key3": "value3",
@@ -77,20 +78,20 @@ var _ = Describe("Watcher", func() {
 	It("does not panic when the watcher has been closed", func() {
 		watcher.Stop <- true
 
-		Expect(watcher.Stopped).To(BeTrue())
-		Expect(watcher.Error).To(BeNil())
+		Eventually(watcher.IsStopped, "2s", "1s").Should(BeTrue())
+		Expect(watcher.GetEtcdWatchError()).To(BeNil())
 	})
 
 	It("does not panic when the response is nil", func() {
 		watcher.Response <- nil
-		Expect(watcher.Stopped).To(BeFalse())
-		Expect(watcher.Data).To(Equal(map[string]string{}))
+		Expect(watcher.IsStopped()).To(BeFalse())
+		Expect(watcher.Data()).To(Equal(map[string]string{}))
 	})
 
 	It("does not panic when the response node is nil", func() {
 		watcher.Response <- &goetcd.Response{Node: nil}
-		Expect(watcher.Stopped).To(BeFalse())
-		Expect(watcher.Data).To(Equal(map[string]string{}))
+		Expect(watcher.IsStopped()).To(BeFalse())
+		Expect(watcher.Data()).To(Equal(map[string]string{}))
 	})
 
 	Context("failure cases", func() {
@@ -98,8 +99,8 @@ var _ = Describe("Watcher", func() {
 			fakeWatcher.WatchCall.Returns.Error = errors.New("something bad happened")
 			watcher.Stop <- true
 
-			Expect(watcher.Stopped).To(BeTrue())
-			Expect(watcher.Error).To(MatchError("something bad happened"))
+			Eventually(watcher.IsStopped, "10s", "1s").Should(BeTrue())
+			Expect(watcher.GetEtcdWatchError()).To(MatchError("something bad happened"))
 		})
 	})
 })
