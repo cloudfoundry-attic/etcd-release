@@ -86,6 +86,8 @@ var _ = Describe("TLS Upgrade", func() {
 		})
 
 		By("migrating the non tls data to the tls cluster", func() {
+			watcher.Stop <- true
+
 			etcdJobIndex, err := helpers.FindJobIndexByName(manifest, "etcd_z1")
 			Expect(err).NotTo(HaveOccurred())
 

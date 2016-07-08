@@ -94,5 +94,10 @@ func (w *Watcher) Data() map[string]string {
 	w.dataMutex.Lock()
 	defer w.dataMutex.Unlock()
 
-	return w.data
+	data := map[string]string{}
+	for k, v := range w.data {
+		data[k] = v
+	}
+
+	return data
 }
