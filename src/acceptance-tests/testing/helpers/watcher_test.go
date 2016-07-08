@@ -13,6 +13,7 @@ import (
 
 type fakeEtcdWatcher struct {
 	WatchCall struct {
+		Started  chan bool
 		Receives struct {
 			Prefix    string
 			WaitIndex uint64
@@ -37,6 +38,7 @@ func (w *fakeEtcdWatcher) Watch(prefix string, waitIndex uint64, recursive bool,
 
 	defer close(w.WatchCall.Receives.Receiver)
 
+	w.WatchCall.Started <- true
 	<-w.WatchCall.Receives.Stop
 
 	return w.WatchCall.Returns.Response, w.WatchCall.Returns.Error
@@ -50,7 +52,9 @@ var _ = Describe("Watcher", func() {
 
 	BeforeEach(func() {
 		fakeWatcher = &fakeEtcdWatcher{}
+		fakeWatcher.WatchCall.Started = make(chan bool, 2)
 		watcher = helpers.Watch(fakeWatcher, "/")
+		<-fakeWatcher.WatchCall.Started
 	})
 
 	It("watches and records key changes", func() {
@@ -75,6 +79,43 @@ var _ = Describe("Watcher", func() {
 		}))
 	})
 
+	It("starts the watcher up if it is prematurely closed", func() {
+		watcher.Response <- &goetcd.Response{
+			Node: &goetcd.Node{
+				Value:         "value1",
+				Key:           "key1",
+				ModifiedIndex: 1,
+			},
+		}
+		fakeWatcher.WatchCall.Returns.Error = errors.New("EOF")
+		fakeWatcher.WatchCall.Receives.Stop <- true
+		<-fakeWatcher.WatchCall.Started
+		watcher.Response <- &goetcd.Response{
+			Node: &goetcd.Node{
+				Value:         "value2",
+				Key:           "key2",
+				ModifiedIndex: 2,
+			},
+		}
+		watcher.Response <- &goetcd.Response{
+			Node: &goetcd.Node{
+				Value:         "value3",
+				Key:           "key3",
+				ModifiedIndex: 3,
+			},
+		}
+		fakeWatcher.WatchCall.Returns.Error = nil
+		watcher.Stop <- true
+
+		Eventually(watcher.IsStopped, "10s", "1s").Should(BeTrue())
+		Expect(fakeWatcher.WatchCall.Receives.WaitIndex).To(Equal(uint64(2)))
+		Expect(watcher.Data()).To(Equal(map[string]string{
+			"key1": "value1",
+			"key2": "value2",
+			"key3": "value3",
+		}))
+	})
+
 	It("does not panic when the watcher has been closed", func() {
 		watcher.Stop <- true
 
@@ -92,15 +133,5 @@ var _ = Describe("Watcher", func() {
 		watcher.Response <- &goetcd.Response{Node: nil}
 		Expect(watcher.IsStopped()).To(BeFalse())
 		Expect(watcher.Data()).To(Equal(map[string]string{}))
-	})
-
-	Context("failure cases", func() {
-		It("assigns an error", func() {
-			fakeWatcher.WatchCall.Returns.Error = errors.New("something bad happened")
-			watcher.Stop <- true
-
-			Eventually(watcher.IsStopped, "10s", "1s").Should(BeTrue())
-			Expect(watcher.GetEtcdWatchError()).To(MatchError("something bad happened"))
-		})
 	})
 })

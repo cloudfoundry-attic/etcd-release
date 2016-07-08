@@ -19,6 +19,7 @@ type Watcher struct {
 	data      map[string]string
 	stopped   bool
 	err       error
+	waitIndex uint64
 }
 
 func Watch(watcher etcdWatcher, prefix string) *Watcher {
@@ -29,19 +30,28 @@ func Watch(watcher etcdWatcher, prefix string) *Watcher {
 	}
 	go func() {
 		for {
-			r, ok := <-w.Response
-			if !ok {
+			go func() {
+				for {
+					r, ok := <-w.Response
+					if !ok {
+						return
+					}
+					if r != nil && r.Node != nil {
+						w.waitIndex = r.Node.ModifiedIndex
+						w.AddData(r.Node.Key, r.Node.Value)
+					}
+				}
+			}()
+
+			_, err := watcher.Watch(prefix, w.waitIndex+1, true, w.Response, w.Stop)
+			if err == nil {
+				w.setStoppedAndError(true, nil)
 				return
-			}
-			if r != nil && r.Node != nil {
-				w.AddData(r.Node.Key, r.Node.Value)
+			} else {
+				w.Response = make(chan *goetcd.Response)
+				w.Stop = make(chan bool)
 			}
 		}
-	}()
-
-	go func() {
-		_, err := watcher.Watch(prefix, 0, true, w.Response, w.Stop)
-		w.setStoppedAndError(true, err)
 	}()
 
 	return w
