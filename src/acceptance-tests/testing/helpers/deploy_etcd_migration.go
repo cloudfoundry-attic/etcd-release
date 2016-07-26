@@ -244,11 +244,11 @@ var jobsWithConsulAgent = []string{
 	"loggregator_trafficcontroller_z1", "loggregator_trafficcontroller_z2",
 }
 
-func CreateCFTLSMigrationManifest(manifestContent string) (string, error) {
+func CreateCFTLSMigrationManifest(manifestContent []byte) ([]byte, error) {
 	var manifest Manifest
-	err := yaml.Unmarshal([]byte(manifestContent), &manifest)
+	err := yaml.Unmarshal(manifestContent, &manifest)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var etcdz1Index int
@@ -330,10 +330,10 @@ func CreateCFTLSMigrationManifest(manifestContent string) (string, error) {
 
 	result, err := yaml.Marshal(manifest)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(result), nil
+	return result, nil
 }
 
 func etcdConsumerProperties(addMachines bool) map[interface{}]interface{} {

@@ -2,6 +2,8 @@ package logspammer
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"os"
@@ -75,13 +77,26 @@ func (s *Spammer) Start() error {
 				resp, err := http.Get(fmt.Sprintf("%s/log/%s-%d-", s.appURL, s.prefix, s.logWritten))
 				if err != nil {
 					s.errors.Add(err)
-				} else {
-					err = resp.Body.Close()
-					if err != nil {
-						s.errors.Add(err)
-					}
-					s.logWritten++
+					continue
 				}
+
+				_, err = io.Copy(ioutil.Discard, res.Body)
+				if err != nil {
+					s.errors.Add(err)
+				}
+
+				err = res.Body.Close()
+				if err != nil {
+					s.errors.Add(err)
+					continue
+				}
+
+				if resp.StatusCode != http.StatusOK {
+					s.errors.Add(fmt.Errorf("Invalid status code %d", resp.StatusCode))
+					continue
+				}
+
+				s.logWritten++
 			}
 		}
 	}()

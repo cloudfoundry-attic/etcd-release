@@ -18,11 +18,11 @@ func GetVMsFromManifest(manifest etcd.Manifest) []bosh.VM {
 	return vms
 }
 
-func GetVMsFromRawManifest(rawManifest string) ([]bosh.VM, error) {
+func GetVMsFromRawManifest(rawManifest []byte) ([]bosh.VM, error) {
 	var vms []bosh.VM
 
 	var manifest Manifest
-	err := yaml.Unmarshal([]byte(rawManifest), &manifest)
+	err := yaml.Unmarshal(rawManifest, &manifest)
 	if err != nil {
 		return nil, err
 	}
