@@ -1,0 +1,7 @@
+---
+applications:
+- name: logspinner
+  memory: 256M
+  env:
+    GOVERSION: go1.6
+    GOPACKAGENAME: main

@@ -25,6 +25,7 @@ function main() {
       -failFast \
       -succinct \
       -skipPackage precheck \
+      -skipPackage cf-tls-upgrade \
       -slowSpecThreshold 300 \
       "$@"
   popd > /dev/null
