@@ -36,7 +36,8 @@ var _ = Describe("configuration", func() {
 						"target": "some-bosh-target",
 						"username": "some-bosh-username",
 						"password": "some-bosh-password",
-						"director_ca_cert": "some-ca-cert"
+						"director_ca_cert": "some-ca-cert",
+						"deployment_name": "some-bosh-deployment-name"
 					},
 					"aws": {
 						"subnet": "some-awssubnet",
@@ -51,6 +52,11 @@ var _ = Describe("configuration", func() {
 						"port": 12345,
 						"username": "some-registry-username",
 						"password": "some-registry-password"
+					},
+					"cf" : {
+						"domain": "api.some.domain.com",
+						"username": "cf_username",
+						"password": "cf_password"
 					}
 				}`)
 				Expect(err).NotTo(HaveOccurred())
@@ -70,6 +76,7 @@ var _ = Describe("configuration", func() {
 						Username:       "some-bosh-username",
 						Password:       "some-bosh-password",
 						DirectorCACert: "some-ca-cert",
+						DeploymentName: "some-bosh-deployment-name",
 					},
 					AWS: helpers.ConfigAWS{
 						Subnet:                "some-awssubnet",
@@ -86,6 +93,11 @@ var _ = Describe("configuration", func() {
 						Password: "some-registry-password",
 					},
 					TurbulenceReleaseName: "turbulence",
+					CF: helpers.ConfigCF{
+						Domain:   "api.some.domain.com",
+						Username: "cf_username",
+						Password: "cf_password",
+					},
 				}))
 			})
 		})

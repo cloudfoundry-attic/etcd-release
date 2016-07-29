@@ -18,7 +18,7 @@ func GetVMsFromManifest(manifest etcd.Manifest) []bosh.VM {
 	return vms
 }
 
-func GetVMsFromRawManifest(rawManifest []byte) ([]bosh.VM, error) {
+func GetNonErrandVMsFromRawManifest(rawManifest []byte) ([]bosh.VM, error) {
 	var vms []bosh.VM
 
 	var manifest Manifest
@@ -27,10 +27,11 @@ func GetVMsFromRawManifest(rawManifest []byte) ([]bosh.VM, error) {
 		return nil, err
 	}
 
-	// FIXME refactor. duplicate login in GetVMsFromManifest.
 	for _, job := range manifest.Jobs {
 		for i := 0; i < job.Instances; i++ {
-			vms = append(vms, bosh.VM{JobName: job.Name, Index: i, State: "running"})
+			if job.Lifecycle != "errand" {
+				vms = append(vms, bosh.VM{JobName: job.Name, Index: i, State: "running"})
+			}
 		}
 	}
 
@@ -60,7 +61,7 @@ type Job struct {
 	Networks           []Network        `yaml:"networks"`
 	Update             *Update          `yaml:"update,omitempty"`
 	Properties         *JobProperties   `yaml:"properties,omitempty"`
-	Lifecycle          interface{}      `yaml:"lifecycle,omitempty"`
+	Lifecycle          string           `yaml:"lifecycle,omitempty"`
 	Templates          []Template       `yaml:"templates"`
 }
 

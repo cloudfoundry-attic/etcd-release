@@ -1,8 +1,8 @@
 package logspammer
 
 import (
+	"acceptance-tests/testing/helpers"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -12,20 +12,6 @@ import (
 
 	"github.com/cloudfoundry/sonde-go/events"
 )
-
-type ErrorSet map[string]int
-
-func (e ErrorSet) Error() string {
-	message := "The following errors occurred:\n"
-	for key, val := range e {
-		message += fmt.Sprintf("  %s : %d\n", key, val)
-	}
-	return message
-}
-
-func (e ErrorSet) Add(err error) {
-	e[err.Error()] = e[err.Error()] + 1
-}
 
 type Spammer struct {
 	sync.Mutex
@@ -37,7 +23,7 @@ type Spammer struct {
 	logMessages []string
 	logWritten  int
 	msgChan     <-chan *events.Envelope
-	errors      ErrorSet
+	errors      helpers.ErrorSet
 	prefix      string
 }
 
@@ -48,7 +34,7 @@ func NewSpammer(appURL string, msgChan <-chan *events.Envelope, frequency time.D
 		doneGet:     make(chan struct{}),
 		doneMsg:     make(chan struct{}),
 		msgChan:     msgChan,
-		errors:      ErrorSet{},
+		errors:      helpers.ErrorSet{},
 		prefix:      fmt.Sprintf("spammer-%d", rand.Int()),
 		logMessages: []string{},
 	}
@@ -80,12 +66,12 @@ func (s *Spammer) Start() error {
 					continue
 				}
 
-				_, err = io.Copy(ioutil.Discard, res.Body)
+				_, err = io.Copy(ioutil.Discard, resp.Body)
 				if err != nil {
 					s.errors.Add(err)
 				}
 
-				err = res.Body.Close()
+				err = resp.Body.Close()
 				if err != nil {
 					s.errors.Add(err)
 					continue

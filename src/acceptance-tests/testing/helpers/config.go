@@ -13,6 +13,7 @@ type Config struct {
 	AWS                   ConfigAWS      `json:"aws"`
 	Registry              ConfigRegistry `json:"registry"`
 	TurbulenceReleaseName string
+	CF                    ConfigCF `json:"cf"`
 }
 
 type ConfigBOSH struct {
@@ -20,6 +21,7 @@ type ConfigBOSH struct {
 	Username       string `json:"username"`
 	Password       string `json:"password"`
 	DirectorCACert string `json:"director_ca_cert"`
+	DeploymentName string `json:"deployment_name"`
 }
 
 type ConfigAWS struct {
@@ -34,6 +36,12 @@ type ConfigAWS struct {
 type ConfigRegistry struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type ConfigCF struct {
+	Domain   string `json:"domain"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
