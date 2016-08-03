@@ -13,5 +13,12 @@ func (e ErrorSet) Error() string {
 }
 
 func (e ErrorSet) Add(err error) {
-	e[err.Error()] = e[err.Error()] + 1
+	switch err.(type) {
+	case ErrorSet:
+		for k, v := range err.(ErrorSet) {
+			e[k] += v
+		}
+	default:
+		e[err.Error()] += 1
+	}
 }

@@ -2,9 +2,13 @@ package cf_tls_upgrade_test
 
 import (
 	"acceptance-tests/cf-tls-upgrade/logspammer"
+	"acceptance-tests/cf-tls-upgrade/syslogchecker"
 	"acceptance-tests/testing/helpers"
 	"crypto/tls"
 	"fmt"
+	"math/rand"
+	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +26,18 @@ const (
 	DEFAULT_TIMEOUT = 30 * time.Second
 )
 
+type gen struct{}
+
+func (gen) Generate() string {
+	return strconv.Itoa(rand.Int())
+}
+
+type runner struct{}
+
+func (runner) Run(args ...string) ([]byte, error) {
+	return exec.Command("cf", args...).CombinedOutput()
+}
+
 var _ = Describe("CF TLS Upgrade Test", func() {
 	It("successfully upgrades etcd cluster to use TLS", func() {
 		var (
@@ -29,6 +45,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			err               error
 			appName           string
 			spammer           *logspammer.Spammer
+			checker           syslogchecker.Checker
 		)
 
 		var getToken = func() string {
@@ -75,16 +92,28 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			appName = generator.PrefixedRandomName("EATS-APP-")
 			Eventually(cf.Cf(
 				"push", appName,
-				"-p", "assets/logspinner",
 				"-f", "assets/logspinner/manifest.yml",
-				"-i", "2",
-				"-b", "go_buildpack",
 				"--no-start"),
 				CF_PUSH_TIMEOUT).Should(gexec.Exit(0))
 
 			enableDiego(appName)
 
 			Eventually(cf.Cf("start", appName), CF_PUSH_TIMEOUT).Should(gexec.Exit(0))
+		})
+
+		By("starting the syslog-drain process", func() {
+			syslogAppName := generator.PrefixedRandomName("syslog-source-app-")
+			Eventually(cf.Cf(
+				"push", syslogAppName,
+				"-f", "assets/logspinner/manifest.yml",
+				"--no-start"),
+				CF_PUSH_TIMEOUT).Should(gexec.Exit(0))
+
+			enableDiego(syslogAppName)
+
+			Eventually(cf.Cf("start", syslogAppName), CF_PUSH_TIMEOUT).Should(gexec.Exit(0))
+			checker = syslogchecker.New("syslog-drainer", gen{}, 1*time.Millisecond, runner{})
+			checker.Start(syslogAppName, fmt.Sprintf("http://%s.%s", syslogAppName, config.CF.Domain))
 		})
 
 		By("spamming logs", func() {
@@ -119,6 +148,11 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			}, "1m", "10s").Should(ConsistOf(expectedVMs))
 		})
 
+		By("running a couple iterations of the syslog-drain checker", func() {
+			count := checker.GetIterationCount()
+			Eventually(checker.GetIterationCount, "5m", "10s").Should(BeNumerically(">", count+2))
+		})
+
 		By("stopping spammer and checking for errors", func() {
 			err = spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
@@ -127,5 +161,12 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
+		By("stopping syslogchecker and checking for errors", func() {
+			err = checker.Stop()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = checker.Check()
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 })

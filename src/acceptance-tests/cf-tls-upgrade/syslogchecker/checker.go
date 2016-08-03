@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"sync/atomic"
 	"time"
-
-	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 )
 
 type GuidGenerator interface {
@@ -23,41 +24,47 @@ type Checker struct {
 	errors          helpers.ErrorSet
 	doneChn         chan struct{}
 	retryAfter      time.Duration
+	runner          cfRunner
+	iterationCount  *int32
 }
 
-func New(syslogAppPrefix string, guidGenerator GuidGenerator, retryAfter time.Duration) Checker {
+type cfRunner interface {
+	Run(...string) ([]byte, error)
+}
+
+func New(syslogAppPrefix string, guidGenerator GuidGenerator, retryAfter time.Duration, runner cfRunner) Checker {
 	return Checker{
 		syslogAppPrefix: syslogAppPrefix,
 		guidGenerator:   guidGenerator,
 		errors:          helpers.ErrorSet{},
 		doneChn:         make(chan struct{}),
 		retryAfter:      retryAfter,
+		runner:          runner,
+		iterationCount:  new(int32),
 	}
 }
 
-func (c Checker) Start(logSpinnerApp string, logSpinnerAppURL string) chan bool {
-	watcher := make(chan bool)
-
+func (c Checker) Start(logSpinnerApp string, logSpinnerAppURL string) error {
 	go func() {
-		timer := time.After(0 * time.Second)
 		for {
 			select {
 			case <-c.doneChn:
-				close(watcher)
 				return
-			case <-timer:
-				err := c.deploySyslogAndValidate(logSpinnerApp, logSpinnerAppURL)
-				if err != nil {
+			case <-time.After(c.retryAfter):
+				syslogDrainAppName := fmt.Sprintf("%s-%s", c.syslogAppPrefix, c.guidGenerator.Generate())
+				if err := c.deploySyslogAndValidate(syslogDrainAppName, logSpinnerApp, logSpinnerAppURL); err != nil {
 					c.errors.Add(err)
 				}
-				watcher <- true
 
-				timer = time.After(c.retryAfter)
+				if err := c.cleanup(logSpinnerApp, syslogDrainAppName); err != nil {
+					c.errors.Add(err)
+				}
 			}
+			atomic.AddInt32(c.iterationCount, 1)
 		}
 	}()
 
-	return watcher
+	return nil
 }
 
 func (c Checker) Stop() error {
@@ -65,92 +72,103 @@ func (c Checker) Stop() error {
 	return nil
 }
 
-func (c Checker) deploySyslogAndValidate(logSpinnerApp string, logSpinnerAppURL string) error {
-	syslogDrainAppName := fmt.Sprintf("%s-%s", c.syslogAppPrefix, c.guidGenerator.Generate())
+func (c Checker) GetIterationCount() int32 {
+	return *c.iterationCount
+}
 
-	err := setupSyslogDrainerApp(syslogDrainAppName)
+func (c Checker) deploySyslogAndValidate(syslogDrainAppName, logSpinnerApp, logSpinnerAppURL string) error {
+	err := c.setupSyslogDrainerApp(syslogDrainAppName)
 	if err != nil {
 		return err
 	}
 
-	session := cf.Cf("logs", syslogDrainAppName, "--recent").Wait()
-	if session.ExitCode() != 0 {
-		panic("could not start the syslog-drainer")
+	output, err := c.runner.Run("logs", syslogDrainAppName, "--recent")
+	if err != nil {
+		return fmt.Errorf("could not retrieve the logs from syslog-drainer app: %s", output)
 	}
 
-	address := getSyslogAddress(session.Out.Contents())
-
-	session = cf.Cf("cups", fmt.Sprintf("%s-service", syslogDrainAppName), "-l", fmt.Sprintf("syslog://%s", address)).Wait()
-	if session.ExitCode() != 0 {
-		panic("could not create the logger service")
+	address, err := getSyslogAddress(output)
+	if err != nil {
+		return err
 	}
 
-	session = cf.Cf("bind-service", logSpinnerApp, fmt.Sprintf("%s-service", syslogDrainAppName)).Wait()
-	if session.ExitCode() != 0 {
-		panic("could not bind the logger to the application")
+	output, err = c.runner.Run("cups", fmt.Sprintf("%s-service", syslogDrainAppName), "-l", fmt.Sprintf("syslog://%s", address))
+	if err != nil {
+		return fmt.Errorf("could not create the logger service: %s", output)
 	}
 
-	session = cf.Cf("restage", logSpinnerApp).Wait()
-	if session.ExitCode() != 0 {
-		panic("could not restage the app")
+	output, err = c.runner.Run("bind-service", logSpinnerApp, fmt.Sprintf("%s-service", syslogDrainAppName))
+	if err != nil {
+		return fmt.Errorf("could not bind the logger to the application: %s", output)
+	}
+
+	output, err = c.runner.Run("restage", logSpinnerApp)
+	if err != nil {
+		return fmt.Errorf("could not restage the app: %s", output)
 	}
 
 	guid := c.guidGenerator.Generate()
-	err = sendGetRequestToApp(fmt.Sprintf("%s/log/%s", logSpinnerAppURL, guid))
-	if err != nil {
+	if err := sendGetRequestToApp(fmt.Sprintf("%s/log/%s", logSpinnerAppURL, guid)); err != nil {
 		return err
 	}
 
-	session = cf.Cf("logs", syslogDrainAppName, "--recent").Wait()
-	if session.ExitCode() != 0 {
-		panic("could not get the logs for syslog drainer app")
+	output, err = c.runner.Run("logs", syslogDrainAppName, "--recent")
+	if err != nil {
+		return fmt.Errorf("could not get the logs for syslog drainer app: %s", output)
 	}
 
-	err = validateDrainerGotGuid(string(session.Out.Contents()), guid)
-	if err != nil {
+	if err := validateDrainerGotGuid(string(output), guid); err != nil {
 		return err
-	}
-
-	err = cleanup(logSpinnerApp, syslogDrainAppName)
-	if err != nil {
-		panic(err)
 	}
 
 	return nil
 }
 
-func cleanup(logSpinnerApp, appName string) error {
-	session := cf.Cf("unbind-service", logSpinnerApp, fmt.Sprintf("%s-service", appName)).Wait()
-	if session.ExitCode() != 0 {
-		panic(errors.New("could not unbind the logger to the application"))
+func (c Checker) cleanup(logSpinnerApp, appName string) error {
+	errs := make(helpers.ErrorSet)
+	output, err := c.runner.Run("unbind-service", logSpinnerApp, fmt.Sprintf("%s-service", appName))
+	if err != nil {
+		errs.Add(fmt.Errorf("could not unbind the logger from the application: %s", output))
 	}
 
-	session = cf.Cf("delete-service", fmt.Sprintf("%s-service", appName), "-f").Wait()
-	if session.ExitCode() != 0 {
-		panic(errors.New("could not delete the service"))
+	output, err = c.runner.Run("delete-service", fmt.Sprintf("%s-service", appName), "-f")
+	if err != nil {
+		errs.Add(fmt.Errorf("could not delete the service: %s", output))
 	}
 
-	session = cf.Cf("delete", appName, "-f", "-r").Wait()
-	if session.ExitCode() != 0 {
-		panic(errors.New("could not delete the syslog drainer app"))
+	output, err = c.runner.Run("delete", appName, "-f", "-r")
+	if err != nil {
+		errs.Add(fmt.Errorf("could not delete the syslog drainer app: %s", output))
 	}
+
+	if len(errs) > 0 {
+		return errs
+	}
+
 	return nil
 }
 
-func setupSyslogDrainerApp(syslogDrainerAppName string) error {
-	session := cf.Cf("push", syslogDrainerAppName, "-f", "assets/syslog-drainer/manifest.yml", "--no-start").Wait()
-	if session.ExitCode() != 0 {
-		return errors.New("syslog drainer application push failed")
+func (c Checker) setupSyslogDrainerApp(syslogDrainerAppName string) error {
+	output, err := c.runner.Run("push", syslogDrainerAppName,
+		"-f", filepath.Join(os.Getenv("GOPATH"), "src/acceptance-tests/cf-tls-upgrade/syslogchecker/assets/manifest.yml"),
+		"--no-start")
+	if err != nil {
+		return fmt.Errorf("syslog drainer application push failed: %s", output)
 	}
 
-	session = cf.Cf("enable-diego", syslogDrainerAppName).Wait()
-	if session.ExitCode() != 0 {
-		panic(errors.New("could not enable diego for the syslog-drainer app"))
+	output, err = c.runner.Run("app", syslogDrainerAppName, "--guid")
+	if err != nil {
+		return fmt.Errorf("failed to get the guid for the app %q: %s", syslogDrainerAppName, output)
 	}
 
-	session = cf.Cf("start", syslogDrainerAppName).Wait()
-	if session.ExitCode() != 0 {
-		panic(errors.New("could not start the syslog-drainer app"))
+	output, err = c.runner.Run("curl", fmt.Sprintf("/v2/apps/%s", output), "-X", "PUT", "-d", `{"diego": true}`)
+	if err != nil {
+		return fmt.Errorf("failed to get enable diego for the app %q: %s", syslogDrainerAppName, output)
+	}
+
+	output, err = c.runner.Run("start", syslogDrainerAppName)
+	if err != nil {
+		return fmt.Errorf("could not start the syslog-drainer app: %s", output)
 	}
 	return nil
 }
@@ -162,14 +180,18 @@ func (c Checker) Check() error {
 	return nil
 }
 
-func getSyslogAddress(output []byte) string {
-	re, err := regexp.Compile("ADDRESS: \\|(.*)\\|")
+func getSyslogAddress(output []byte) (string, error) {
+	re, err := regexp.Compile("ADDRESS: \\|([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\:[0-9]+)\\|")
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	address := re.FindSubmatch(output)[1]
 
-	return string(address)
+	matches := re.FindSubmatch(output)
+	if len(matches) < 2 {
+		return "", errors.New("could not parse the IP address of syslog-drain app")
+	}
+
+	return string(matches[1]), nil
 }
 
 func sendGetRequestToApp(url string) error {
@@ -192,9 +214,8 @@ func sendGetRequestToApp(url string) error {
 }
 
 func validateDrainerGotGuid(logContents string, guid string) error {
-	if !strings.Contains(logContents, guid) {
+	if !strings.Contains(logContents, fmt.Sprintf("log %s", guid)) {
 		return errors.New("could not validate the guid on syslog")
 	}
-
 	return nil
 }

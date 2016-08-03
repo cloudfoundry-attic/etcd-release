@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -41,7 +40,20 @@ func NewSpammer(appURL string, msgChan <-chan *events.Envelope, frequency time.D
 }
 
 func (s *Spammer) CheckStream() bool {
-	http.Get(fmt.Sprintf("%s/log/TEST", s.appURL))
+	resp, err := http.Get(fmt.Sprintf("%s/log/TEST", s.appURL))
+	if err != nil {
+		return false
+	}
+
+	_, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return false
+	}
+
+	err = resp.Body.Close()
+	if err != nil {
+		return false
+	}
 
 	select {
 	case <-s.msgChan:
@@ -60,15 +72,17 @@ func (s *Spammer) Start() error {
 				s.wg.Done()
 				return
 			case <-time.After(s.frequency):
+				now := time.Now()
 				resp, err := http.Get(fmt.Sprintf("%s/log/%s-%d-", s.appURL, s.prefix, s.logWritten))
 				if err != nil {
 					s.errors.Add(err)
 					continue
 				}
 
-				_, err = io.Copy(ioutil.Discard, resp.Body)
+				body, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
 					s.errors.Add(err)
+					continue
 				}
 
 				err = resp.Body.Close()
@@ -78,7 +92,9 @@ func (s *Spammer) Start() error {
 				}
 
 				if resp.StatusCode != http.StatusOK {
-					s.errors.Add(fmt.Errorf("Invalid status code %d", resp.StatusCode))
+					if resp.Status != "503 Service Unavailable: Back-end server is at capacity" {
+						s.errors.Add(fmt.Errorf("%v -- %+v -- %v", now, resp, string(body)))
+					}
 					continue
 				}
 
@@ -120,7 +136,6 @@ func (s *Spammer) Stop() error {
 func (s *Spammer) Check() error {
 	diff := s.logWritten - len(s.LogMessages())
 	if diff > 0 {
-		fmt.Fprintf(os.Stderr, "written messages are: %d\n", s.logWritten)
 		s.errors["missing log lines"] = diff
 	}
 

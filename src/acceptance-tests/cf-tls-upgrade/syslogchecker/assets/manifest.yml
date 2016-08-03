@@ -1,6 +1,10 @@
 ---
 applications:
 - name: syslog-drain-listener
+  buildpack: go_buildpack
+  path: .
+  instance: 1
+  disk: 128M
   env:
     GOVERSION: go1.6
     GOPACKAGENAME: main

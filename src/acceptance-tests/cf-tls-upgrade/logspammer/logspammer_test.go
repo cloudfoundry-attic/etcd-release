@@ -1,6 +1,8 @@
 package logspammer_test
 
 import (
+	"acceptance-tests/cf-tls-upgrade/logspammer"
+
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -8,8 +10,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"cf-tls-upgrade/logspammer"
 
 	"github.com/cloudfoundry/sonde-go/events"
 

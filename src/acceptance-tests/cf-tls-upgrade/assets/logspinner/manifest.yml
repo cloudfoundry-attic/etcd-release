@@ -2,6 +2,9 @@
 applications:
 - name: logspinner
   memory: 256M
+  buildpack: go_buildpack
+  instance: 2
+  path: .
   env:
     GOVERSION: go1.6
     GOPACKAGENAME: main

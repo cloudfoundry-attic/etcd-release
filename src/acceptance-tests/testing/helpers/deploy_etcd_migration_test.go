@@ -22,7 +22,7 @@ var _ = Describe("DeployCFEtcdMigration", func() {
 			nonTLSCFManifest, err = ioutil.ReadFile("fixtures/non-tls-cf-manifest.yml")
 			Expect(err).NotTo(HaveOccurred())
 
-			expectedTLSCFManifest, err = ioutil.ReadFile("fixtures/tls-cf-manifest.yml")
+			expectedTLSCFManifest, err = ioutil.ReadFile("fixtures/tls-cf-manifest-insecure-clients.yml")
 			Expect(err).NotTo(HaveOccurred())
 		})
 

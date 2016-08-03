@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("RemoveEtcdProxy", func() {
+var _ = PDescribe("RemoveEtcdProxy", func() {
 	var (
 		tlsManifestWithProxy    string
 		tlsManifestWithoutProxy string

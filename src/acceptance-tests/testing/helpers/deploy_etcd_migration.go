@@ -262,12 +262,6 @@ func CreateCFTLSMigrationManifest(manifestContent []byte) ([]byte, error) {
 			manifest.Jobs[jobIdx].Networks[0].StaticIPs = &[]string{}
 		}
 
-		for _, jobName := range jobsWithConsulAgent {
-			if job.Name == jobName {
-				manifest.Jobs[jobIdx].Templates = prependConsulAgentToTemplate(job.Templates)
-			}
-		}
-
 	}
 
 	manifest.Jobs = insertTLSEtcdJobsInfo(manifest.Jobs, etcdz1Index)
@@ -278,12 +272,7 @@ func CreateCFTLSMigrationManifest(manifestContent []byte) ([]byte, error) {
 			continue
 		}
 
-		if jobName == "doppler" {
-			jobEtcdProps := getEtcdCertAndKey()
-			jobEtcdProps["ca_cert"] = etcdCACert
-			jobEtcdProps["require_ssl"] = true
-			globalProperties["etcd"] = jobEtcdProps
-		} else if jobName == "etcd" {
+		if jobName == "etcd" {
 			globalProperties["advertise_urls_dns_suffix"] = "cf-etcd.service.cf.internal"
 			globalProperties["machines"] = []string{"cf-etcd.service.cf.internal"}
 			globalProperties["peer_require_ssl"] = true
@@ -300,9 +289,6 @@ func CreateCFTLSMigrationManifest(manifestContent []byte) ([]byte, error) {
 				{"instances": 2, "name": "etcd_tls_z1"},
 				{"instances": 1, "name": "etcd_tls_z2"},
 			}
-		} else if jobName == "hm9000" || jobName == "loggregator" ||
-			jobName == "metron_agent" || jobName == "traffic_controller" {
-			globalProperties["etcd"] = etcdConsumerProperties(true)
 		} else if jobName == "etcd_metrics_server" {
 			globalProperties["etcd"] = etcdConsumerProperties(false)
 			etcdProps, ok := globalProperties["etcd"].(map[interface{}]interface{})
@@ -322,10 +308,6 @@ func CreateCFTLSMigrationManifest(manifestContent []byte) ([]byte, error) {
 	manifest.Properties["etcd_proxy"] = map[interface{}]interface{}{
 		"etcd": etcdProxyEtcdProperties,
 		"port": 4001,
-	}
-
-	manifest.Properties["syslog_drain_binder"] = map[interface{}]interface{}{
-		"etcd": etcdConsumerProperties(true),
 	}
 
 	result, err := yaml.Marshal(manifest)
