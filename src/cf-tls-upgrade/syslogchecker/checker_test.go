@@ -1,8 +1,8 @@
 package syslogchecker_test
 
 import (
-	"acceptance-tests/cf-tls-upgrade/syslogchecker"
-	"acceptance-tests/cf-tls-upgrade/syslogchecker/fakes"
+	"cf-tls-upgrade/syslogchecker"
+	"cf-tls-upgrade/syslogchecker/fakes"
 	"fmt"
 	"math/rand"
 	"net/http"

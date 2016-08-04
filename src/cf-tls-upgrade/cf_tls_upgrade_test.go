@@ -1,9 +1,9 @@
 package cf_tls_upgrade_test
 
 import (
-	"acceptance-tests/cf-tls-upgrade/logspammer"
-	"acceptance-tests/cf-tls-upgrade/syslogchecker"
 	"acceptance-tests/testing/helpers"
+	"cf-tls-upgrade/logspammer"
+	"cf-tls-upgrade/syslogchecker"
 	"crypto/tls"
 	"fmt"
 	"math/rand"

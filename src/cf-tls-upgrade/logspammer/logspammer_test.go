@@ -1,7 +1,7 @@
 package logspammer_test
 
 import (
-	"acceptance-tests/cf-tls-upgrade/logspammer"
+	"cf-tls-upgrade/logspammer"
 
 	"fmt"
 	"net/http"
