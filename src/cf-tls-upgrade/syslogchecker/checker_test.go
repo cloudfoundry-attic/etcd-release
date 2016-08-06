@@ -16,11 +16,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	. "github.com/pivotal-cf-experimental/gomegamatchers"
+	"github.com/pivotal-cf-experimental/gomegamatchers"
 )
 
 const (
-	SYSLOG_MANIFEST_PATH = "/fake/go/path/src/acceptance-tests/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
+	SYSLOG_MANIFEST_PATH = "/fake/go/path/src/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
 	APP_GUID             = "37911525-ae36-46c5-aa4c-951551f192e6"
 )
 
@@ -129,7 +129,7 @@ var _ = Describe("Checker", func() {
 			err := checker.Stop()
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(runner.RunCommand.Commands).Should(ContainSequence([][]string{
+			Eventually(runner.RunCommand.Commands).Should(gomegamatchers.ContainSequence([][]string{
 				{"push", sysLogAppName, "-f", SYSLOG_MANIFEST_PATH, "--no-start"},
 				{"app", sysLogAppName, "--guid"},
 				{"curl", fmt.Sprintf("/v2/apps/%s", APP_GUID), "-X", "PUT", "-d", `{"diego": true}`},
@@ -164,7 +164,7 @@ var _ = Describe("Checker", func() {
 				err := checker.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(runner.RunCommand.Commands).Should(ContainSequence([][]string{
+				Eventually(runner.RunCommand.Commands).Should(gomegamatchers.ContainSequence([][]string{
 					{"logs", sysLogAppName, "--recent"},
 					{"unbind-service", logSpinnerAppName, fmt.Sprintf("%s-service", sysLogAppName)},
 					{"delete-service", fmt.Sprintf("%s-service", sysLogAppName), "-f"},
@@ -199,7 +199,7 @@ var _ = Describe("Checker", func() {
 				err := checker.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(runner.RunCommand.Commands).Should(ContainSequence([][]string{
+				Eventually(runner.RunCommand.Commands).Should(gomegamatchers.ContainSequence([][]string{
 					{"push", sysLogAppName, "-f", SYSLOG_MANIFEST_PATH, "--no-start"},
 					{"app", sysLogAppName, "--guid"},
 					{"curl", fmt.Sprintf("/v2/apps/%s", APP_GUID), "-X", "PUT", "-d", `{"diego": true}`},
@@ -238,7 +238,7 @@ var _ = Describe("Checker", func() {
 					err := checker.Stop()
 					Expect(err).NotTo(HaveOccurred())
 
-					Expect(runner.RunCommand.Commands).To(ContainSequence(expectedCommands))
+					Expect(runner.RunCommand.Commands).To(gomegamatchers.ContainSequence(expectedCommands))
 
 					Expect(runner.RunCommand.Commands).NotTo(ContainElement(unexpectedCommands))
 
@@ -346,7 +346,7 @@ var _ = Describe("Checker", func() {
 				err := checker.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(runner.RunCommand.Commands).Should(ContainSequence([][]string{
+				Eventually(runner.RunCommand.Commands).Should(gomegamatchers.ContainSequence([][]string{
 					{"push", sysLogAppName, "-f", SYSLOG_MANIFEST_PATH, "--no-start"},
 					{"app", sysLogAppName, "--guid"},
 					{"curl", fmt.Sprintf("/v2/apps/%s", APP_GUID), "-X", "PUT", "-d", `{"diego": true}`},
@@ -368,7 +368,7 @@ var _ = Describe("Checker", func() {
 					return len(runner.RunCommand.Commands)
 				}).Should(BeNumerically(">", 6))
 
-				Eventually(runner.RunCommand.Commands).Should(ContainSequence([][]string{
+				Eventually(runner.RunCommand.Commands).Should(gomegamatchers.ContainSequence([][]string{
 					{"push", sysLogAppName, "-f", SYSLOG_MANIFEST_PATH, "--no-start"},
 					{"app", sysLogAppName, "--guid"},
 					{"curl", fmt.Sprintf("/v2/apps/%s", APP_GUID), "-X", "PUT", "-d", `{"diego": true}`},
@@ -404,7 +404,7 @@ var _ = Describe("Checker", func() {
 				err := checker.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(runner.RunCommand.Commands).Should(ContainSequence([][]string{
+				Eventually(runner.RunCommand.Commands).Should(gomegamatchers.ContainSequence([][]string{
 					{"logs", sysLogAppName, "--recent"},
 					{"unbind-service", logSpinnerAppName, fmt.Sprintf("%s-service", sysLogAppName)},
 					{"delete-service", fmt.Sprintf("%s-service", sysLogAppName), "-f"},

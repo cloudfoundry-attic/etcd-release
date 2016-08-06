@@ -15,10 +15,12 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	"github.com/cloudfoundry/noaa/consumer"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
+	"gopkg.in/yaml.v2"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 const (
@@ -30,6 +32,26 @@ type gen struct{}
 
 func (gen) Generate() string {
 	return strconv.Itoa(rand.Int())
+}
+
+func getNonErrandVMsFromRawManifest(rawManifest []byte) ([]bosh.VM, error) {
+	var vms []bosh.VM
+
+	var manifest helpers.Manifest
+	err := yaml.Unmarshal(rawManifest, &manifest)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, job := range manifest.Jobs {
+		for i := 0; i < job.Instances; i++ {
+			if job.Lifecycle != "errand" {
+				vms = append(vms, bosh.VM{JobName: job.Name, Index: i, State: "running"})
+			}
+		}
+	}
+
+	return vms, nil
 }
 
 type runner struct{}
@@ -140,7 +162,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 		})
 
 		By("checking if expected VMs are running", func() {
-			expectedVMs, err := helpers.GetNonErrandVMsFromRawManifest(migrationManifest)
+			expectedVMs, err := getNonErrandVMsFromRawManifest(migrationManifest)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
@@ -150,22 +172,16 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 
 		By("running a couple iterations of the syslog-drain checker", func() {
 			count := checker.GetIterationCount()
-			Eventually(checker.GetIterationCount, "5m", "10s").Should(BeNumerically(">", count+2))
+			Eventually(checker.GetIterationCount, "10m", "10s").Should(BeNumerically(">", count+2))
 		})
 
-		By("stopping spammer and checking for errors", func() {
+		By("stopping spammer", func() {
 			err = spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
-
-			err = spammer.Check()
-			Expect(err).NotTo(HaveOccurred())
 		})
 
-		By("stopping syslogchecker and checking for errors", func() {
+		By("stopping syslogchecker", func() {
 			err = checker.Stop()
-			Expect(err).NotTo(HaveOccurred())
-
-			err = checker.Check()
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})
