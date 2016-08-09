@@ -72,7 +72,6 @@ func (s *Spammer) Start() error {
 				s.wg.Done()
 				return
 			case <-time.After(s.frequency):
-				now := time.Now()
 				resp, err := http.Get(fmt.Sprintf("%s/log/%s-%d-", s.appURL, s.prefix, s.logWritten))
 				if err != nil {
 					s.errors.Add(err)
@@ -92,9 +91,7 @@ func (s *Spammer) Start() error {
 				}
 
 				if resp.StatusCode != http.StatusOK {
-					if resp.Status != "503 Service Unavailable: Back-end server is at capacity" {
-						s.errors.Add(fmt.Errorf("%v -- %+v -- %v", now, resp, string(body)))
-					}
+					s.errors.Add(fmt.Errorf("%+v -- %v", resp, string(body)))
 					continue
 				}
 

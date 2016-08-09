@@ -200,14 +200,15 @@ func sendGetRequestToApp(url string) error {
 		return err
 	}
 
-	_, err = ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 
-	err = resp.Body.Close()
-	if err != nil {
-		return err
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("error sending get request to listener app: %d - %s", resp.StatusCode, string(body))
 	}
 
 	return nil

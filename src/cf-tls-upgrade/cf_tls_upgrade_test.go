@@ -175,13 +175,19 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			Eventually(checker.GetIterationCount, "10m", "10s").Should(BeNumerically(">", count+2))
 		})
 
-		By("stopping spammer", func() {
+		By("stopping spammer and checking for errors", func() {
 			err = spammer.Stop()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = spammer.Check()
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		By("stopping syslogchecker", func() {
+		By("stopping syslogchecker and checking for errors", func() {
 			err = checker.Stop()
+			Expect(err).NotTo(HaveOccurred())
+
+			err = checker.Check()
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

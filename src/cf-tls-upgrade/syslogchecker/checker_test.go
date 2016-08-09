@@ -148,6 +148,29 @@ var _ = Describe("Checker", func() {
 		})
 
 		Context("failure cases", func() {
+			It("records an error when the request to the logger app fails", func() {
+
+				logspinnerServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+					if strings.HasPrefix(req.URL.Path, "/log") && req.Method == "GET" {
+						w.WriteHeader(http.StatusNotFound)
+						w.Write([]byte("app not found"))
+						return
+					}
+					w.WriteHeader(http.StatusTeapot)
+				}))
+
+				checker.Start(logSpinnerAppName, logspinnerServer.URL)
+
+				Eventually(func() int {
+					return len(runner.RunCommand.Commands)
+				}).Should(BeNumerically(">", 12))
+
+				err := checker.Stop()
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(checker.Check()).To(HaveKey("error sending get request to listener app: 404 - app not found"))
+			})
+
 			It("records an error when the syslog listener fails to validate it got the guid", func() {
 				sysLogAppName := "syslog-app-some-guid"
 				logOutput = []string{
