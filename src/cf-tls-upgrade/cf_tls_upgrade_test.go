@@ -170,6 +170,25 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			}, "1m", "10s").Should(ConsistOf(expectedVMs))
 		})
 
+		By("deploy diego to switch clients to tls etcd", func() {
+			deploymentName := fmt.Sprintf("%s-diego", config.BOSH.DeploymentName)
+			rawManifest, err := client.DownloadManifest(deploymentName)
+			Expect(err).NotTo(HaveOccurred())
+
+			manifest, err := helpers.CreateDiegoTLSMigrationManifest(rawManifest)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = client.Deploy(manifest)
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedVMs, err := getNonErrandVMsFromRawManifest(manifest)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() ([]bosh.VM, error) {
+				return client.DeploymentVMs(deploymentName)
+			}, "1m", "10s").Should(ConsistOf(expectedVMs))
+		})
+
 		By("running a couple iterations of the syslog-drain checker", func() {
 			count := checker.GetIterationCount()
 			Eventually(checker.GetIterationCount, "10m", "10s").Should(BeNumerically(">", count+2))

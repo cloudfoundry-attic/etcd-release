@@ -2,11 +2,11 @@ package helpers
 
 import "gopkg.in/yaml.v2"
 
-func CreateDiegoTLSMigrationManifest(nonTLSDiegoManifest string) (string, error) {
+func CreateDiegoTLSMigrationManifest(nonTLSDiegoManifest []byte) ([]byte, error) {
 	var manifest Manifest
-	err := yaml.Unmarshal([]byte(nonTLSDiegoManifest), &manifest)
+	err := yaml.Unmarshal(nonTLSDiegoManifest, &manifest)
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
 
 	for jobName, manifestProperties := range manifest.Properties {
@@ -23,8 +23,8 @@ func CreateDiegoTLSMigrationManifest(nonTLSDiegoManifest string) (string, error)
 
 	result, err := yaml.Marshal(manifest)
 	if err != nil {
-		return "", err
+		return []byte{}, err
 	}
 
-	return string(result), nil
+	return result, nil
 }

@@ -12,20 +12,18 @@ import (
 
 var _ = Describe("CreateDiegoTLSMigrationManifest", func() {
 	var (
-		nonTLSDiegoManifest      string
-		expectedTLSDiegoManifest string
+		nonTLSDiegoManifest      []byte
+		expectedTLSDiegoManifest []byte
 	)
 
 	BeforeEach(func() {
-		rawContents, err := ioutil.ReadFile("fixtures/non-tls-diego-manifest.yml")
+		var err error
+
+		nonTLSDiegoManifest, err = ioutil.ReadFile("fixtures/non-tls-diego-manifest.yml")
 		Expect(err).NotTo(HaveOccurred())
 
-		nonTLSDiegoManifest = string(rawContents)
-
-		rawContents, err = ioutil.ReadFile("fixtures/tls-diego-manifest.yml")
+		expectedTLSDiegoManifest, err = ioutil.ReadFile("fixtures/tls-diego-manifest.yml")
 		Expect(err).NotTo(HaveOccurred())
-
-		expectedTLSDiegoManifest = string(rawContents)
 	})
 
 	Context("given a non-tls diego deployment", func() {
@@ -38,7 +36,7 @@ var _ = Describe("CreateDiegoTLSMigrationManifest", func() {
 
 	Context("failure cases", func() {
 		It("returns an error when bad yaml is passed in", func() {
-			_, err := helpers.CreateDiegoTLSMigrationManifest("%%%%%%%")
+			_, err := helpers.CreateDiegoTLSMigrationManifest([]byte("%%%%%%%"))
 			Expect(err).To(MatchError("yaml: could not find expected directive name"))
 		})
 	})
