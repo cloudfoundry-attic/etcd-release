@@ -24,8 +24,9 @@ import (
 )
 
 const (
-	CF_PUSH_TIMEOUT = 2 * time.Minute
-	DEFAULT_TIMEOUT = 30 * time.Second
+	CF_PUSH_TIMEOUT                = 2 * time.Minute
+	DEFAULT_TIMEOUT                = 30 * time.Second
+	GUID_NOT_FOUND_ERROR_THRESHOLD = 1
 )
 
 type gen struct{}
@@ -206,8 +207,21 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			err = checker.Stop()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = checker.Check()
-			Expect(err).NotTo(HaveOccurred())
+			spammerErrs := checker.Check()
+
+			var errorSet helpers.ErrorSet
+
+			switch spammerErrs.(type) {
+			case helpers.ErrorSet:
+				errorSet = spammerErrs.(helpers.ErrorSet)
+			default:
+				Fail(spammerErrs.Error())
+			}
+
+			Expect(errorSet["could not validate the guid on syslog"]).To(BeNumerically("<=", GUID_NOT_FOUND_ERROR_THRESHOLD))
+			delete(errorSet, "could not validate the guid on syslog")
+
+			Expect(errorSet).To(HaveLen(0))
 		})
 	})
 })
