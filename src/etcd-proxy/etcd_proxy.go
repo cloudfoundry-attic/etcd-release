@@ -48,6 +48,11 @@ func main() {
 
 	finder := leaderfinder.NewFinder(etcdURL.String(), httpClient)
 
+	_, err = finder.Find()
+	if err != nil {
+		fail(fmt.Sprintf("failed to reach etcd-cluster: %s", err.Error()))
+	}
+
 	manager := leaderfinder.NewManager(etcdURL, finder)
 
 	director := func(req *http.Request) {
