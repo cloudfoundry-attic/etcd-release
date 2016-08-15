@@ -138,6 +138,8 @@ jobs:
       zone: z1
   resource_pool: medium_z1
   templates:
+  - name: consul_agent
+    release: cf
   - name: nats
     release: cf
   - name: nats_stream_forwarder
@@ -157,6 +159,8 @@ jobs:
       zone: z2
   resource_pool: medium_z2
   templates:
+  - name: consul_agent
+    release: cf
   - name: nats
     release: cf
   - name: nats_stream_forwarder
@@ -278,6 +282,8 @@ jobs:
       zone: z1
   resource_pool: small_z1
   templates:
+  - name: consul_agent
+    release: cf
   - name: collector
     release: cf
   - name: metron_agent
@@ -367,6 +373,8 @@ jobs:
       zone: z1
   resource_pool: medium_z1
   templates:
+  - name: consul_agent
+    release: cf
   - name: postgres
     release: cf
   - name: metron_agent

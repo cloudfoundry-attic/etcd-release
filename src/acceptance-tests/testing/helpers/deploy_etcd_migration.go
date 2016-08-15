@@ -242,6 +242,7 @@ var jobsWithConsulAgent = []string{
 	"loggregator_z1", "loggregator_z2",
 	"doppler_z1", "doppler_z2",
 	"loggregator_trafficcontroller_z1", "loggregator_trafficcontroller_z2",
+	"nats_z1", "nats_z2", "stats_z1", "postgres_z1",
 }
 
 func CreateCFTLSMigrationManifest(manifestContent []byte) ([]byte, error) {
