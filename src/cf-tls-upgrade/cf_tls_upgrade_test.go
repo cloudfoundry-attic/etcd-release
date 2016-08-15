@@ -209,6 +209,10 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 
 			spammerErrs := checker.Check()
 
+			if spammerErrs == nil {
+				return
+			}
+
 			var errorSet helpers.ErrorSet
 
 			switch spammerErrs.(type) {
