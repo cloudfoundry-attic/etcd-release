@@ -28,8 +28,6 @@ jobs:
   templates:
   - name: consul_agent
     release: cf
-  - name: metron_agent
-    release: cf
   update:
     max_in_flight: 1
     serial: true
@@ -50,8 +48,6 @@ jobs:
   resource_pool: small_z2
   templates:
   - name: consul_agent
-    release: cf
-  - name: metron_agent
     release: cf
   update:
     max_in_flight: 1
@@ -179,6 +175,8 @@ jobs:
       zone: z1
   resource_pool: medium_z1
   templates:
+  - name: consul_agent
+    release: cf
   - name: etcd
     release: etcd
   - name: etcd_metrics_server
@@ -202,6 +200,8 @@ jobs:
       zone: z2
   resource_pool: medium_z2
   templates:
+  - name: consul_agent
+    release: cf
   - name: etcd
     release: etcd
   - name: etcd_metrics_server
@@ -312,8 +312,6 @@ jobs:
   resource_pool: medium_z1
   templates:
   - name: postgres
-    release: cf
-  - name: metron_agent
     release: cf
   update: {}
 - default_networks:

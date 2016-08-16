@@ -238,11 +238,17 @@ lJ9b6dTbzS8niDOqIjVUo7oiIrUtUWSiZmTuEqmFclMcA4+QfXyQ
 `
 )
 
+//
+// postgres does not have a metron or consul_agent for this specific test run due to HA related errors
+// consul servers do not have metron agents due to a random routing 404 error
+//
+// postgres and consul servers should not have metron agents on them
+//
 var jobsWithConsulAgent = []string{
 	"loggregator_z1", "loggregator_z2",
 	"doppler_z1", "doppler_z2",
 	"loggregator_trafficcontroller_z1", "loggregator_trafficcontroller_z2",
-	"nats_z1", "nats_z2", "stats_z1", "postgres_z1",
+	"nats_z1", "nats_z2", "stats_z1",
 }
 
 func CreateCFTLSMigrationManifest(manifestContent []byte) ([]byte, error) {
@@ -346,11 +352,24 @@ func etcdConsumerProperties(addMachines bool) map[interface{}]interface{} {
 }
 
 func prependConsulAgentToTemplate(templates []Template) []Template {
-	return append([]Template{
-		{
-			Name:    "consul_agent",
-			Release: "cf",
-		}}, templates...)
+	needConsul := true
+
+	for _, template := range templates {
+		if template.Name == "consul_agent" {
+			needConsul = false
+			break
+		}
+	}
+
+	if needConsul {
+		templates = append([]Template{
+			{
+				Name:    "consul_agent",
+				Release: "cf",
+			}}, templates...)
+	}
+
+	return templates
 }
 
 func getEtcdCertAndKey() map[interface{}]interface{} {
