@@ -1,7 +1,9 @@
 package deploy_test
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	etcdclient "acceptance-tests/testing/etcd"
@@ -15,6 +17,11 @@ import (
 )
 
 const (
+	// there are three seperate deployments required for a TLS rotation
+	TCP_ERROR_COUNT_THRESHOLD = 3
+	// there are three seperate deployments required for a TLS rotation and each can error up to three times
+	UNEXPECTED_HTTP_STATUS_ERROR_COUNT_THRESHOLD = 9
+
 	newCACert = `-----BEGIN CERTIFICATE-----
 MIIFAzCCAuugAwIBAgIBATANBgkqhkiG9w0BAQsFADARMQ8wDQYDVQQDEwZldGNk
 Q0EwHhcNMTYwNjEwMjExNTAxWhcNMjYwNjEwMjExNTA2WjARMQ8wDQYDVQQDEwZl
@@ -240,7 +247,7 @@ SqV4zLqA2Vk+crbtUsAyP8qUoaeuoKUIJR7tkiPBg1QrBiUqSEs=
 -----END RSA PRIVATE KEY-----`
 )
 
-var _ = PDescribe("TLS rotation", func() {
+var _ = Describe("TLS rotation", func() {
 	var (
 		manifest   etcd.Manifest
 		etcdClient etcdclient.Client
@@ -312,8 +319,39 @@ var _ = PDescribe("TLS rotation", func() {
 		})
 
 		By("reading from the cluster", func() {
-			err := spammer.Check()
-			Expect(err).NotTo(HaveOccurred())
+			spammerErrs := spammer.Check()
+
+			var errorSet helpers.ErrorSet
+
+			switch spammerErrs.(type) {
+			case helpers.ErrorSet:
+				errorSet = spammerErrs.(helpers.ErrorSet)
+			case nil:
+				return
+			default:
+				Fail(spammerErrs.Error())
+			}
+
+			tcpErrCount := 0
+			unexpectedErrCount := 0
+			otherErrors := helpers.ErrorSet{}
+
+			for err, occurrences := range errorSet {
+				switch {
+				// This happens when the consul_agent gets rolled when a request is sent to the testconsumer
+				case strings.Contains(err, "dial tcp: lookup etcd.service.cf.internal on"):
+					tcpErrCount += occurrences
+				// This happens when the etcd leader is killed and a request is issued while an election is happening
+				case strings.Contains(err, "Unexpected HTTP status code"):
+					unexpectedErrCount += occurrences
+				default:
+					otherErrors.Add(errors.New(err))
+				}
+			}
+
+			Expect(otherErrors).To(HaveLen(0))
+			Expect(tcpErrCount).To(BeNumerically("<=", TCP_ERROR_COUNT_THRESHOLD))
+			Expect(unexpectedErrCount).To(BeNumerically("<=", UNEXPECTED_HTTP_STATUS_ERROR_COUNT_THRESHOLD))
 		})
 	})
 })
