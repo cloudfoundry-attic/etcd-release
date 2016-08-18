@@ -1,5 +1,6 @@
 #!/bin/bash -eux
 
+consul_release_version="0"
 etcd_release_version="99999+dev.$(date +%s)"
 warden_cpi_version="29"
 turbulence_version="0.4"
@@ -30,6 +31,7 @@ function main() {
   scripts_dir=$(cd "$(dirname "${0}")" && pwd)
 
   upload_releases "${scripts_dir}"
+  force_compilation "${scripts_dir}"
   bash -c "${scripts_dir}/../src/acceptance-tests/scripts/test $@"
 }
 
@@ -54,8 +56,16 @@ function upload_releases() {
   releases_dir="/tmp/eats/releases"
   mkdir -p "${releases_dir}"
 
+  local latest_consul_release
+  latest_consul_release=$(curl -k http://bosh.io/api/v1/releases/github.com/cloudfoundry-incubator/consul-release | jq .[0])
+
+  local consul_release_url
+  consul_release_url=$(echo ${latest_consul_release} | jq -r .url)
+
+  consul_release_version=$(echo ${latest_consul_release} | jq -r .version)
+
   upload_release "${releases_dir}/bosh-warden-cpi-release.tgz" "http://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=${warden_cpi_version}"
-  upload_release "${releases_dir}/consul-release.tgz" "http://bosh.io/d/github.com/cloudfoundry-incubator/consul-release"
+  upload_release "${releases_dir}/consul-release-${consul_release_version}.tgz" "${consul_release_url}"
   upload_release "${releases_dir}/turbulence-release.tgz" "http://bosh.io/d/github.com/cppforlife/turbulence-release?v=${turbulence_version}"
 }
 
@@ -76,9 +86,36 @@ function cleanup_releases() {
   set +e
   bosh -t "${BOSH_DIRECTOR}" -n delete release turbulence "${turbulence_version}"
   bosh -t "${BOSH_DIRECTOR}" -n delete release bosh-warden-cpi "${warden_cpi_version}"
-  bosh -t "${BOSH_DIRECTOR}" -n delete release consul
+  bosh -t "${BOSH_DIRECTOR}" -n delete release consul "${consul_release_version}"
   bosh -t "${BOSH_DIRECTOR}" -n delete release etcd "${etcd_release_version}"
   set -e
+}
+
+function force_compilation() {
+  local scripts_dir
+  scripts_dir="${1}"
+
+  set +x
+  local stemcell_version
+  stemcell_version=$(curl -k https://${BOSH_USER}:${BOSH_PASSWORD}@${BOSH_DIRECTOR}:25555/stemcells | jq -r .[0].version)
+  set -x
+
+  pushd /tmp > /dev/null
+    sed "s/REPLACE_ME_DIRECTOR_UUID/$(bosh status --uuid)/g" "${scripts_dir}/fixtures/etcd_compilation.yml" > "etcd_compilation.yml"
+
+    if [[ -n $(bosh cloud-config) ]]; then
+      echo "cloud config exists...skipping update cloud-config"
+    else
+      bosh -t "${BOSH_DIRECTOR}" -n update cloud-config "${scripts_dir}/fixtures/cloud_config.yml"
+    fi
+
+    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" -n deploy
+    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "etcd/${etcd_release_version}" "ubuntu-trusty/${stemcell_version}"
+    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "consul/${consul_release_version}" "ubuntu-trusty/${stemcell_version}"
+    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "turbulence/${turbulence_version}" "ubuntu-trusty/${stemcell_version}"
+    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "bosh-warden-cpi/${warden_cpi_version}" "ubuntu-trusty/${stemcell_version}"
+    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" -n delete deployment etcd-compilation
+  popd > /dev/null
 }
 
 check_dependencies
