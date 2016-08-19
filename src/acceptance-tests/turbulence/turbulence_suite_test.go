@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
+	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
 	"github.com/pivotal-cf-experimental/destiny/core"
 	"github.com/pivotal-cf-experimental/destiny/iaas"
 	"github.com/pivotal-cf-experimental/destiny/turbulence"
