@@ -2,14 +2,14 @@ package turbulence_test
 
 import (
 	"acceptance-tests/testing/helpers"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
+	"github.com/pivotal-cf-experimental/destiny/core"
 	"github.com/pivotal-cf-experimental/destiny/iaas"
 	"github.com/pivotal-cf-experimental/destiny/turbulence"
-
-	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,8 +23,8 @@ func TestTurbulence(t *testing.T) {
 }
 
 var (
-	config helpers.Config
-	client bosh.Client
+	config     helpers.Config
+	boshClient bosh.Client
 
 	turbulenceManifest turbulence.Manifest
 	turbulenceClient   turbulenceclient.Client
@@ -37,7 +37,7 @@ var _ = BeforeSuite(func() {
 	config, err = helpers.LoadConfig(configPath)
 	Expect(err).NotTo(HaveOccurred())
 
-	client = bosh.NewClient(bosh.Config{
+	boshClient = bosh.NewClient(bosh.Config{
 		URL:              fmt.Sprintf("https://%s:25555", config.BOSH.Target),
 		Username:         config.BOSH.Username,
 		Password:         config.BOSH.Password,
@@ -65,23 +65,33 @@ var _ = BeforeSuite(func() {
 		var iaasConfig iaas.Config
 		switch info.CPI {
 		case "aws_cpi":
-			if config.AWS.Subnet == "" {
-				Fail("aws.subnet is required for AWS IAAS deployment")
-			}
-
 			manifestConfig.IPRange = "10.0.16.0/24"
-			iaasConfig = iaas.AWSConfig{
+			awsConfig := iaas.AWSConfig{
 				AccessKeyID:           config.AWS.AccessKeyID,
 				SecretAccessKey:       config.AWS.SecretAccessKey,
 				DefaultKeyName:        config.AWS.DefaultKeyName,
 				DefaultSecurityGroups: config.AWS.DefaultSecurityGroups,
 				Region:                config.AWS.Region,
-				Subnet:                config.AWS.Subnet,
 				RegistryHost:          config.Registry.Host,
 				RegistryPassword:      config.Registry.Password,
 				RegistryPort:          config.Registry.Port,
 				RegistryUsername:      config.Registry.Username,
 			}
+			if config.AWS.Subnet == "" {
+				err = errors.New("AWSSubnet is required for AWS IAAS deployment")
+				return
+			}
+			var cidrBlock string
+			cidrPool := core.NewCIDRPool("10.0.16.0", 24, 27)
+			cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode)
+			if err != nil {
+				return
+			}
+
+			manifestConfig.IPRange = cidrBlock
+			awsConfig.Subnets = []iaas.AWSConfigSubnet{{ID: config.AWS.Subnet, Range: cidrBlock, AZ: "us-east-1a"}}
+
+			iaasConfig = awsConfig
 		case "warden_cpi":
 			iaasConfig = iaas.NewWardenConfig()
 			manifestConfig.IPRange = "10.244.16.0/24"
@@ -89,7 +99,8 @@ var _ = BeforeSuite(func() {
 			Fail("unknown infrastructure type")
 		}
 
-		turbulenceManifest = turbulence.NewManifest(manifestConfig, iaasConfig)
+		turbulenceManifest, err = turbulence.NewManifest(manifestConfig, iaasConfig)
+		Expect(err).NotTo(HaveOccurred())
 
 		yaml, err := turbulenceManifest.ToYAML()
 		Expect(err).NotTo(HaveOccurred())

@@ -129,7 +129,7 @@ func NewEtcdWithInstanceCount(count int, client bosh.Client, config Config, enab
 	return
 }
 
-func SetEtcdInstanceCount(count int, manifest etcd.Manifest) etcd.Manifest {
+func SetEtcdInstanceCount(count int, manifest etcd.Manifest) (etcd.Manifest, error) {
 	var err error
 	manifest.Jobs[1], err = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], count, 0)
 	if err != nil {
@@ -137,7 +137,7 @@ func SetEtcdInstanceCount(count int, manifest etcd.Manifest) etcd.Manifest {
 	}
 	manifest.Properties = etcd.SetEtcdProperties(manifest.Jobs[1], manifest.Properties)
 
-	return manifest
+	return manifest, nil
 }
 
 func SetTestConsumerInstanceCount(count int, manifest etcd.Manifest) (etcd.Manifest, error) {

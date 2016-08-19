@@ -55,7 +55,8 @@ var _ = Describe("Scaling up instances", func() {
 			})
 
 			By("scaling up to 3 nodes", func() {
-				manifest = helpers.SetEtcdInstanceCount(3, manifest)
+				var err error
+				manifest, err = helpers.SetEtcdInstanceCount(3, manifest)
 
 				members := manifest.EtcdMembers()
 				Expect(members).To(HaveLen(3))

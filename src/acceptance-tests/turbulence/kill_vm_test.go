@@ -8,6 +8,9 @@ import (
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
+	"github.com/pivotal-cf-experimental/destiny/turbulence"
+
+	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,6 +19,9 @@ import (
 var _ = PDescribe("KillVm", func() {
 	KillVMTest := func(enableSSL bool) {
 		var (
+			turbulenceManifest turbulence.Manifest
+			turbulenceClient   turbulenceclient.Client
+
 			etcdManifest etcd.Manifest
 			etcdClient   etcdclient.Client
 
@@ -27,6 +33,16 @@ var _ = PDescribe("KillVm", func() {
 		)
 
 		BeforeEach(func() {
+			var err error
+			turbulenceManifest, err = helpers.DeployTurbulence(boshClient, config)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() ([]bosh.VM, error) {
+				return boshClient.DeploymentVMs(turbulenceManifest.Name)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetTurbulenceVMsFromManifest(turbulenceManifest)))
+
+			turbulenceClient = helpers.NewTurbulenceClient(turbulenceManifest)
+
 			guid, err := helpers.NewGUID()
 			Expect(err).NotTo(HaveOccurred())
 
@@ -36,11 +52,11 @@ var _ = PDescribe("KillVm", func() {
 			testKey2 = "etcd-key-2-" + guid
 			testValue2 = "etcd-value-2-" + guid
 
-			etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
+			etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, boshClient, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return client.DeploymentVMs(etcdManifest.Name)
+				return boshClient.DeploymentVMs(etcdManifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
 			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
@@ -49,7 +65,7 @@ var _ = PDescribe("KillVm", func() {
 		AfterEach(func() {
 			By("deleting the deployment", func() {
 				if !CurrentGinkgoTestDescription().Failed {
-					err := client.DeleteDeployment(etcdManifest.Name)
+					err := boshClient.DeleteDeployment(etcdManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
 				}
 			})
@@ -82,11 +98,11 @@ var _ = PDescribe("KillVm", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					err = client.ScanAndFix(yaml)
+					err = boshClient.ScanAndFix(yaml)
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return client.DeploymentVMs(etcdManifest.Name)
+						return boshClient.DeploymentVMs(etcdManifest.Name)
 					}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 				})
 
