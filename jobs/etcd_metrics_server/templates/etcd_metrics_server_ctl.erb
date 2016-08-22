@@ -25,9 +25,6 @@ function start_etcd_metrics_server() {
 
   /var/vcap/packages/etcd_metrics_server/bin/etcd-metrics-server \
       -index=<%= spec.index %> \
-      -natsAddresses=<%= p("etcd_metrics_server.nats.machines").collect { |addr| "#{addr}:#{p("etcd_metrics_server.nats.port")}" }.join(",") %> \
-      -natsUsername='<%= p("etcd_metrics_server.nats.username") %>' \
-      -natsPassword='<%= p("etcd_metrics_server.nats.password") %>' \
       -port=<%= p("etcd_metrics_server.status.port") %> \
       -username='<%= p("etcd_metrics_server.status.username") %>' \
       -password='<%= p("etcd_metrics_server.status.password") %>' \
