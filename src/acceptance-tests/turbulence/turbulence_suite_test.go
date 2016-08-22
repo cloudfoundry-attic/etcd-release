@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	ginkgoConfig "github.com/onsi/ginkgo/config"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
 	"github.com/pivotal-cf-experimental/destiny/core"
@@ -46,7 +47,7 @@ var _ = BeforeSuite(func() {
 	})
 
 	By("deploying turbulence", func() {
-		info, err := client.Info()
+		info, err := boshClient.Info()
 		Expect(err).NotTo(HaveOccurred())
 
 		guid, err := helpers.NewGUID()
@@ -106,17 +107,17 @@ var _ = BeforeSuite(func() {
 		yaml, err := turbulenceManifest.ToYAML()
 		Expect(err).NotTo(HaveOccurred())
 
-		yaml, err = client.ResolveManifestVersions(yaml)
+		yaml, err = boshClient.ResolveManifestVersions(yaml)
 		Expect(err).NotTo(HaveOccurred())
 
 		turbulenceManifest, err = turbulence.FromYAML(yaml)
 		Expect(err).NotTo(HaveOccurred())
 
-		_, err = client.Deploy(yaml)
+		_, err = boshClient.Deploy(yaml)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() ([]bosh.VM, error) {
-			return client.DeploymentVMs(turbulenceManifest.Name)
+			return boshClient.DeploymentVMs(turbulenceManifest.Name)
 		}, "1m", "10s").Should(ConsistOf([]bosh.VM{
 			{Index: 0, JobName: "api", State: "running"},
 		}))
@@ -134,7 +135,7 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("deleting the turbulence deployment", func() {
 		if !CurrentGinkgoTestDescription().Failed {
-			err := client.DeleteDeployment(turbulenceManifest.Name)
+			err := boshClient.DeleteDeployment(turbulenceManifest.Name)
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
