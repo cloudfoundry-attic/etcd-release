@@ -1,4 +1,4 @@
-package tls_upgrade_test
+package deploy_test
 
 import (
 	etcdclient "acceptance-tests/testing/etcd"
