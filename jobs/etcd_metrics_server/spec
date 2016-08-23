@@ -33,19 +33,6 @@ properties:
     description: "port of etcd server to instrument"
     default: 4001
 
-  etcd_metrics_server.nats.machines:
-    description: "array of NATS addresses"
-
-  etcd_metrics_server.nats.port:
-    description: "NATS server port"
-    default: 4222
-
-  etcd_metrics_server.nats.username:
-    description: "NATS server username"
-
-  etcd_metrics_server.nats.password:
-    description: "NATS server password"
-
   etcd_metrics_server.status.port:
     description: "listening port for metrics server"
     default: 5678
