@@ -124,6 +124,22 @@ The full set of config parameters is explained below:
 * `registry.username` Username for the BOSH registry
 * `registry.password` Password for the BOSH registry
 
+### Running acceptance tests as an errand
+
+The acceptance tests can also be run as a bosh errand. An example manifest is included to run against bosh-lite.
+
+```
+bosh upload stemcell https://bosh.io/d/stemcells/bosh-warden-boshlite-ubuntu-trusty-go_agent --skip-if-exists
+bosh upload release https://bosh.io/d/github.com/cloudfoundry-incubator/consul-release
+bosh upload release https://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release
+bosh upload release https://bosh.io/d/github.com/cppforlife/turbulence-release
+bosh create release --force
+bosh upload release
+bosh update cloud-config manifests/bosh-lite/cloud-config.yml
+bosh -n -d manifests/bosh-lite/eats.yml deploy
+bosh run errand acceptance-tests
+```
+
 ## Encryption
 
 ### Encrypting Traffic
