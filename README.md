@@ -137,7 +137,7 @@ bosh create release --force
 bosh upload release
 bosh update cloud-config manifests/bosh-lite/cloud-config.yml
 bosh -n -d manifests/bosh-lite/eats.yml deploy
-bosh run errand acceptance-tests
+bosh -d manifests/bosh-lite/eats.yml run errand acceptance-tests
 ```
 
 ## Encryption
