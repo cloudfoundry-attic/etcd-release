@@ -1,5 +1,4 @@
 # etcd-release
----
 
 This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/etcd).
 
@@ -13,7 +12,7 @@ This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/et
 * [Contributing](#contributing)
 * [Running Tests](#running-tests)
 * [Encryption](#encryption)
-* [Disaster Recovery](#disaster-recovery)
+* [Failure Recovery](#failure-recovery)
 
 ## Using Etcd
 
@@ -253,8 +252,21 @@ The server certificate must have the common name `etcd.service.consul` and
 must specify `etcd.service.consul` and `*.etcd.service.consul` as Subject
 Alternative Names (SANs).
 
-## Disaster Recovery
+## Failure Recovery
 
+### TLS Certificate Issues
+
+A common source of failure is TLS certification configuration.  If you have a failed
+deploy and see errors related to certificates, authorities, "crypto", etc. it's a good
+idea to confirm that:
+
+* all etcd-related certificates and keys in your manifest are correctly PEM-encoded;
+* certificates match their corresponding keys;
+* certificates have been signed by the appropriate CA certificate; and
+* the YAML syntax of your manifest is correct.
+
+### Failed Deploys, Upgrades, Split-Brain Scenarios, etc.
+ 
 In the event that the etcd cluster ends up in a bad state that is difficult
 to debug, you have the option of stopping etcd on each node, removing its
 data store, and then restarting the process:
@@ -268,4 +280,11 @@ monit start etcd (one-by-one on each node in etcd cluster)
 There are often more graceful ways to solve specific issues, but it is hard
 to document all of the possible failure modes and recovery steps. As long as
 your etcd cluster does not contain critical data that cannot be repopulated,
-this option is safe and will probably get you unstuck.
+this option is safe and will probably get you unstuck. If you are debugging
+an etcd server cluster in the context of a Cloud Foundry and/or Diego
+deployment, it should be safe to follow the above steps.
+
+CAVEAT: There is currently a known issue with the new TCP Routing feature in
+Cloud Foundry where the Routing API stores non-ephemeral data pertaining to
+Router Groups in etcd.  At the time of this writing, there is work in progress
+for the Routing API to store such data outside of etcd.
