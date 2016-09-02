@@ -80,8 +80,9 @@ type JobProperties struct {
 }
 
 type Template struct {
-	Name    string `yaml:"name"`
-	Release string `yaml:"release"`
+	Name     string      `yaml:"name"`
+	Release  string      `yaml:"release"`
+	Consumes interface{} `yaml:"consumes,omitempty"`
 }
 
 type DefaultNetwork struct {
