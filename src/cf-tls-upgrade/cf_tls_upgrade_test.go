@@ -5,6 +5,7 @@ import (
 	"cf-tls-upgrade/logspammer"
 	"cf-tls-upgrade/syslogchecker"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os/exec"
@@ -24,9 +25,11 @@ import (
 )
 
 const (
-	CF_PUSH_TIMEOUT                = 2 * time.Minute
-	DEFAULT_TIMEOUT                = 30 * time.Second
-	GUID_NOT_FOUND_ERROR_THRESHOLD = 1
+	CF_PUSH_TIMEOUT                       = 2 * time.Minute
+	DEFAULT_TIMEOUT                       = 30 * time.Second
+	GUID_NOT_FOUND_ERROR_THRESHOLD        = 1
+	GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD = 2
+	BAD_GATEWAY_ERROR_COUNT_THRESHOLD     = 2
 )
 
 type gen struct{}
@@ -199,27 +202,57 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			err = spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = spammer.Check()
-			Expect(err).NotTo(HaveOccurred())
-		})
-
-		By("stopping syslogchecker and checking for errors", func() {
-			err = checker.Stop()
-			Expect(err).NotTo(HaveOccurred())
-
-			spammerErrs := checker.Check()
-
-			if spammerErrs == nil {
-				return
-			}
+			spammerErrs := spammer.Check()
 
 			var errorSet helpers.ErrorSet
 
 			switch spammerErrs.(type) {
 			case helpers.ErrorSet:
 				errorSet = spammerErrs.(helpers.ErrorSet)
+			case nil:
 			default:
 				Fail(spammerErrs.Error())
+			}
+
+			badGatewayErrCount := 0
+			gatewayTimeoutErrCount := 0
+			otherErrors := helpers.ErrorSet{}
+
+			for err, occurrences := range errorSet {
+				switch {
+				// This typically happens when an active connection to a cell is interrupted during a cell evacuation
+				case strings.Contains(err, "504 GATEWAY_TIMEOUT"):
+					gatewayTimeoutErrCount += occurrences
+				// This typically happens when an active connection to a cell is interrupted during a cell evacuation
+				case strings.Contains(err, "502 Bad Gateway"):
+					badGatewayErrCount += occurrences
+				default:
+					otherErrors.Add(errors.New(err))
+				}
+			}
+
+			Expect(otherErrors).To(HaveLen(0))
+			Expect(gatewayTimeoutErrCount).To(BeNumerically("<=", GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD))
+			Expect(badGatewayErrCount).To(BeNumerically("<=", BAD_GATEWAY_ERROR_COUNT_THRESHOLD))
+		})
+
+		By("stopping syslogchecker and checking for errors", func() {
+			err = checker.Stop()
+			Expect(err).NotTo(HaveOccurred())
+
+			checkerErrs := checker.Check()
+
+			if checkerErrs == nil {
+				return
+			}
+
+			var errorSet helpers.ErrorSet
+
+			switch checkerErrs.(type) {
+			case helpers.ErrorSet:
+				errorSet = checkerErrs.(helpers.ErrorSet)
+			default:
+				Fail(checkerErrs.Error())
 			}
 
 			Expect(errorSet["could not validate the guid on syslog"]).To(BeNumerically("<=", GUID_NOT_FOUND_ERROR_THRESHOLD))
