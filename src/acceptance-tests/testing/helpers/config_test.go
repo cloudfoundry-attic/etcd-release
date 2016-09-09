@@ -313,6 +313,30 @@ var _ = Describe("configuration", func() {
 		})
 	})
 
+	Describe("EtcdDevReleaseVersion", func() {
+		var releaseVersion string
+
+		BeforeEach(func() {
+			releaseVersion = os.Getenv("ETCD_RELEASE_VERSION")
+		})
+
+		AfterEach(func() {
+			os.Setenv("ETCD_RELEASE_VERSION", releaseVersion)
+		})
+
+		It("retrieves the consul release version number from the env", func() {
+			os.Setenv("ETCD_RELEASE_VERSION", "some-release-number")
+			version := helpers.EtcdDevReleaseVersion()
+			Expect(version).To(Equal("some-release-number"))
+		})
+
+		It("returns 'latest' if the env is not set", func() {
+			os.Setenv("ETCD_RELEASE_VERSION", "")
+			version := helpers.EtcdDevReleaseVersion()
+			Expect(version).To(Equal("latest"))
+		})
+	})
+
 	Describe("ConfigPath", func() {
 		var configPath string
 

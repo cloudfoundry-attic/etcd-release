@@ -106,3 +106,12 @@ func ConfigPath() (string, error) {
 
 	return path, nil
 }
+
+func EtcdDevReleaseVersion() string {
+	version := os.Getenv("ETCD_RELEASE_VERSION")
+	if version == "" {
+		version = "latest"
+	}
+
+	return version
+}

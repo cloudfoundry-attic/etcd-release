@@ -96,6 +96,22 @@ func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd
 	return
 }
 
+func DeployEtcdWithInstanceCountAndReleaseVersion(count int, client bosh.Client, config Config, enableSSL bool, releaseVersion string) (manifest etcd.Manifest, err error) {
+	manifest, err = NewEtcdWithInstanceCount(count, client, config, enableSSL)
+	if err != nil {
+		return
+	}
+
+	for i := range manifest.Releases {
+		if manifest.Releases[i].Name == "etcd" {
+			manifest.Releases[i].Version = releaseVersion
+		}
+	}
+
+	err = ResolveVersionsAndDeploy(manifest, client)
+	return
+}
+
 func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
 	manifest, err = NewEtcdWithInstanceCount(count, client, config, enableSSL)
 	if err != nil {
@@ -175,4 +191,28 @@ func FindJobIndexByName(manifest etcd.Manifest, jobName string) (int, error) {
 		}
 	}
 	return -1, errors.New("job not found")
+}
+
+func VerifyDeploymentRelease(client bosh.Client, deploymentName string, releaseVersion string) (err error) {
+	deployments, err := client.Deployments()
+	if err != nil {
+		return
+	}
+
+	for _, deployment := range deployments {
+		if deployment.Name == deploymentName {
+			for _, release := range deployment.Releases {
+				if release.Name == "etcd" {
+					switch {
+					case len(release.Versions) > 1:
+						err = errors.New("too many releases")
+					case len(release.Versions) == 1 && release.Versions[0] != releaseVersion:
+						err = fmt.Errorf("expected etcd-release version %q but got %q", releaseVersion, release.Versions[0])
+					}
+				}
+			}
+		}
+	}
+
+	return
 }

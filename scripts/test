@@ -1,7 +1,8 @@
 #!/bin/bash -eux
 
+export ETCD_RELEASE_VERSION="99999+dev.$(date +%s)"
+
 consul_release_version="0"
-etcd_release_version="99999+dev.$(date +%s)"
 warden_cpi_version="29"
 turbulence_version="0.4"
 
@@ -48,7 +49,7 @@ function upload_releases() {
   scripts_dir="${1}"
 
   pushd "${scripts_dir}/.." > /dev/null
-    bosh -t "${BOSH_DIRECTOR}" create release --force --version "${etcd_release_version}"
+    bosh -t "${BOSH_DIRECTOR}" create release --force --version "${ETCD_RELEASE_VERSION}"
     bosh -t "${BOSH_DIRECTOR}" upload release
   popd > /dev/null
 
@@ -87,7 +88,7 @@ function cleanup_releases() {
   bosh -t "${BOSH_DIRECTOR}" -n delete release turbulence "${turbulence_version}"
   bosh -t "${BOSH_DIRECTOR}" -n delete release bosh-warden-cpi "${warden_cpi_version}"
   bosh -t "${BOSH_DIRECTOR}" -n delete release consul "${consul_release_version}"
-  bosh -t "${BOSH_DIRECTOR}" -n delete release etcd "${etcd_release_version}"
+  bosh -t "${BOSH_DIRECTOR}" -n delete release etcd "${ETCD_RELEASE_VERSION}"
   set -e
 }
 
@@ -110,7 +111,7 @@ function force_compilation() {
     fi
 
     bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" -n deploy
-    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "etcd/${etcd_release_version}" "ubuntu-trusty/${stemcell_version}"
+    bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "etcd/${ETCD_RELEASE_VERSION}" "ubuntu-trusty/${stemcell_version}"
     bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "consul/${consul_release_version}" "ubuntu-trusty/${stemcell_version}"
     bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "turbulence/${turbulence_version}" "ubuntu-trusty/${stemcell_version}"
     bosh -t "${BOSH_DIRECTOR}" -d "etcd_compilation.yml" export release "bosh-warden-cpi/${warden_cpi_version}" "ubuntu-trusty/${stemcell_version}"
