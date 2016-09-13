@@ -119,15 +119,15 @@ create_cert_files() {
 }
 
 member_list() {
-  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -C '<%= cluster_members %>' member list || echo ""
+  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C '<%= cluster_members %>' member list || echo ""
 }
 
 member_remove() {
-  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -C '<%= cluster_members %>' member remove $1
+  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C '<%= cluster_members %>' member remove $1
 }
 
 member_add() {
-  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -C '<%= cluster_members %>' member add ${node_name} ${advertise_peer_url}
+  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C '<%= cluster_members %>' member add ${node_name} ${advertise_peer_url}
 }
 
 extract_cluster_from_member_list() {

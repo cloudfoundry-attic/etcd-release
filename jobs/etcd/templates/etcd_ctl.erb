@@ -13,7 +13,7 @@ exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W 
 
 function wait_for_this_node_to_synchronize() {
   for i in $(seq 55); do
-    if /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -C ${advertise_client_url} ls; then
+    if /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C ${advertise_client_url} ls; then
       synced=true
       break
     fi
