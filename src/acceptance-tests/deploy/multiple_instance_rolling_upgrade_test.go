@@ -69,12 +69,9 @@ var _ = Describe("Multiple instance rolling upgrade", func() {
 				}
 			}
 
-			yaml, err := manifest.ToYAML()
-			Expect(err).NotTo(HaveOccurred())
-
 			spammer.Spam()
 
-			_, err = client.Deploy(yaml)
+			err := helpers.ResolveVersionsAndDeploy(manifest, client)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
