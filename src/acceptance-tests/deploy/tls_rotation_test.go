@@ -21,6 +21,8 @@ const (
 	TCP_ERROR_COUNT_THRESHOLD = 3
 	// there are three seperate deployments required for a TLS rotation and each can error up to three times
 	UNEXPECTED_HTTP_STATUS_ERROR_COUNT_THRESHOLD = 9
+	// the cert files are recreated twice
+	NO_CERT_ERR_COUNT_THRESHOLD = 2
 
 	newCACert = `-----BEGIN CERTIFICATE-----
 MIIFAzCCAuugAwIBAgIBATANBgkqhkiG9w0BAQsFADARMQ8wDQYDVQQDEwZldGNk
@@ -334,6 +336,7 @@ var _ = Describe("TLS rotation", func() {
 
 			tcpErrCount := 0
 			unexpectedErrCount := 0
+			noCertErrCount := 0
 			otherErrors := helpers.ErrorSet{}
 
 			for err, occurrences := range errorSet {
@@ -344,6 +347,9 @@ var _ = Describe("TLS rotation", func() {
 				// This happens when the etcd leader is killed and a request is issued while an election is happening
 				case strings.Contains(err, "Unexpected HTTP status code"):
 					unexpectedErrCount += occurrences
+				// This happens when a request is made right when the certificate files are getting rolled
+				case strings.Contains(err, "no such file or directory"):
+					noCertErrCount += occurrences
 				default:
 					otherErrors.Add(errors.New(err))
 				}
@@ -352,6 +358,7 @@ var _ = Describe("TLS rotation", func() {
 			Expect(otherErrors).To(HaveLen(0))
 			Expect(tcpErrCount).To(BeNumerically("<=", TCP_ERROR_COUNT_THRESHOLD))
 			Expect(unexpectedErrCount).To(BeNumerically("<=", UNEXPECTED_HTTP_STATUS_ERROR_COUNT_THRESHOLD))
+			Expect(noCertErrCount).To(BeNumerically("<=", NO_CERT_ERR_COUNT_THRESHOLD))
 		})
 	})
 })

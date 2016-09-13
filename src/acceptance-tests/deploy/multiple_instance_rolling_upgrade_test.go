@@ -1,7 +1,9 @@
 package deploy_test
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	etcdclient "acceptance-tests/testing/etcd"
@@ -89,8 +91,34 @@ var _ = Describe("Multiple instance rolling upgrade", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(value).To(Equal(testValue))
 
-			err = spammer.Check()
-			Expect(err).NotTo(HaveOccurred())
+			spammerErrs := spammer.Check()
+
+			var errorSet helpers.ErrorSet
+
+			switch spammerErrs.(type) {
+			case helpers.ErrorSet:
+				errorSet = spammerErrs.(helpers.ErrorSet)
+			case nil:
+				return
+			default:
+				Fail(spammerErrs.Error())
+			}
+			tcpErrorCountThreshold := 1
+			tcpErrCount := 0
+			otherErrors := helpers.ErrorSet{}
+
+			for err, occurrences := range errorSet {
+				switch {
+				// This happens when the consul_agent gets rolled when a request is sent to the testconsumer
+				case strings.Contains(err, "dial tcp: lookup etcd.service.cf.internal on"):
+					tcpErrCount += occurrences
+				default:
+					otherErrors.Add(errors.New(err))
+				}
+			}
+
+			Expect(otherErrors).To(HaveLen(0))
+			Expect(tcpErrCount).To(BeNumerically("<=", tcpErrorCountThreshold))
 		})
 	})
 })
