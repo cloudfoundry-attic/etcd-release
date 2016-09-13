@@ -113,7 +113,7 @@ func DeployEtcdWithInstanceCountAndReleaseVersion(count int, client bosh.Client,
 }
 
 func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
-	manifest, err = NewEtcdWithInstanceCount(count, client, config, enableSSL)
+	manifest, err = DeployEtcdWithInstanceCountAndReleaseVersion(count, client, config, enableSSL, EtcdDevReleaseVersion())
 	if err != nil {
 		return
 	}
