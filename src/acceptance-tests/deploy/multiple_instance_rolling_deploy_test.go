@@ -1,7 +1,9 @@
 package deploy_test
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	etcdclient "acceptance-tests/testing/etcd"
@@ -83,8 +85,39 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(value).To(Equal(testValue))
 
-				err = spammer.Check()
-				Expect(err).ToNot(HaveOccurred())
+				spammerErrs := spammer.Check()
+				var errorSet helpers.ErrorSet
+
+				switch spammerErrs.(type) {
+				case helpers.ErrorSet:
+					errorSet = spammerErrs.(helpers.ErrorSet)
+				case nil:
+					return
+				default:
+					Fail(spammerErrs.Error())
+				}
+
+				tcpErrCount := 0
+				unexpectedErrCount := 0
+				otherErrors := helpers.ErrorSet{}
+
+				for err, occurrences := range errorSet {
+					switch {
+					// This happens when the etcd leader is killed and a request is issued while an election is happening
+					case strings.Contains(err, "Unexpected HTTP status code"):
+						unexpectedErrCount += occurrences
+					// This happens when the consul_agent gets rolled when a request is sent to the testconsumer
+					case strings.Contains(err, "dial tcp: lookup etcd.service.cf.internal on"):
+						tcpErrCount += occurrences
+					default:
+						otherErrors.Add(errors.New(err))
+					}
+				}
+
+				Expect(otherErrors).To(HaveLen(0))
+				Expect(unexpectedErrCount).To(BeNumerically("<=", 3))
+				Expect(tcpErrCount).To(BeNumerically("<=", 1))
+
 			})
 		})
 	}
