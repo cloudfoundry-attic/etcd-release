@@ -99,6 +99,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 
 				tcpErrCount := 0
 				unexpectedErrCount := 0
+				testConsumerConnectionResetErrorCount := 0
 				otherErrors := helpers.ErrorSet{}
 
 				for err, occurrences := range errorSet {
@@ -109,6 +110,9 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 					// This happens when the consul_agent gets rolled when a request is sent to the testconsumer
 					case strings.Contains(err, "dial tcp: lookup etcd.service.cf.internal on"):
 						tcpErrCount += occurrences
+					// This happens when a connection is severed by the etcd server
+					case strings.Contains(err, "EOF"):
+						testConsumerConnectionResetErrorCount += occurrences
 					default:
 						otherErrors.Add(errors.New(err))
 					}
@@ -117,6 +121,7 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 				Expect(otherErrors).To(HaveLen(0))
 				Expect(unexpectedErrCount).To(BeNumerically("<=", 3))
 				Expect(tcpErrCount).To(BeNumerically("<=", 1))
+				Expect(testConsumerConnectionResetErrorCount).To(BeNumerically("<=", 1))
 
 			})
 		})

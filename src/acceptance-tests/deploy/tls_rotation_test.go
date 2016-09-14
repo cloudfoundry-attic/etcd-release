@@ -337,6 +337,7 @@ var _ = Describe("TLS rotation", func() {
 			tcpErrCount := 0
 			unexpectedErrCount := 0
 			noCertErrCount := 0
+			testConsumerConnectionResetErrorCount := 0
 			otherErrors := helpers.ErrorSet{}
 
 			for err, occurrences := range errorSet {
@@ -350,12 +351,16 @@ var _ = Describe("TLS rotation", func() {
 				// This happens when a request is made right when the certificate files are getting rolled
 				case strings.Contains(err, "no such file or directory"):
 					noCertErrCount += occurrences
+				// This happens when a connection is severed by the etcd server
+				case strings.Contains(err, "EOF"):
+					testConsumerConnectionResetErrorCount += occurrences
 				default:
 					otherErrors.Add(errors.New(err))
 				}
 			}
 
 			Expect(otherErrors).To(HaveLen(0))
+			Expect(testConsumerConnectionResetErrorCount).To(BeNumerically("<=", 1))
 			Expect(tcpErrCount).To(BeNumerically("<=", TCP_ERROR_COUNT_THRESHOLD))
 			Expect(unexpectedErrCount).To(BeNumerically("<=", UNEXPECTED_HTTP_STATUS_ERROR_COUNT_THRESHOLD))
 			Expect(noCertErrCount).To(BeNumerically("<=", NO_CERT_ERR_COUNT_THRESHOLD))
