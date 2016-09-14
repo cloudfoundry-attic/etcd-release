@@ -6,6 +6,19 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+func DeploymentVMs(boshClient bosh.Client, deploymentName string) ([]bosh.VM, error) {
+	vms, err := boshClient.DeploymentVMs(deploymentName)
+	if err != nil {
+		return nil, err
+	}
+
+	for index := range vms {
+		vms[index].IPs = nil
+	}
+
+	return vms, nil
+}
+
 func GetVMsFromManifest(manifest etcd.Manifest) []bosh.VM {
 	var vms []bosh.VM
 

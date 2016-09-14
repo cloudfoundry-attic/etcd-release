@@ -38,7 +38,7 @@ var _ = PDescribe("KillVm", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return boshClient.DeploymentVMs(turbulenceManifest.Name)
+				return helpers.DeploymentVMs(boshClient, turbulenceManifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetTurbulenceVMsFromManifest(turbulenceManifest)))
 
 			turbulenceClient = helpers.NewTurbulenceClient(turbulenceManifest)
@@ -56,7 +56,7 @@ var _ = PDescribe("KillVm", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return boshClient.DeploymentVMs(etcdManifest.Name)
+				return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
 			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
@@ -98,11 +98,11 @@ var _ = PDescribe("KillVm", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					err = boshClient.ScanAndFix(yaml)
+					err = boshClient.ScanAndFixAll(yaml)
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return boshClient.DeploymentVMs(etcdManifest.Name)
+						return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
 					}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 				})
 

@@ -34,7 +34,7 @@ var _ = Describe("Scaling down instances", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return client.DeploymentVMs(manifest.Name)
+				return helpers.DeploymentVMs(client, manifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 
 			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
@@ -67,7 +67,7 @@ var _ = Describe("Scaling down instances", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() ([]bosh.VM, error) {
-					return client.DeploymentVMs(manifest.Name)
+					return helpers.DeploymentVMs(client, manifest.Name)
 				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 			})
 
