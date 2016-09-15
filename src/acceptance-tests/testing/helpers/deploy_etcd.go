@@ -140,7 +140,7 @@ func NewEtcdWithInstanceCount(count int, client bosh.Client, config Config, enab
 		}
 	}
 
-	manifest, err = SetEtcdInstanceCount(3, manifest)
+	manifest, err = SetEtcdInstanceCount(count, manifest)
 
 	return
 }
