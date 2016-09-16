@@ -37,7 +37,7 @@ node_name="<%= name.gsub('_', '-') %>-<%= spec.index %>"
     end.flatten.join(",")
   else
     my_ip = discover_external_ip
-    cluster_members = p("etcd.machines").map { |m| "http://#{m}:4001" }.join(",")
+    cluster_members = p("etcd.machines").map { |m| "http://#{m}:4001" }.join(" ")
   end
 %>
 
@@ -119,15 +119,42 @@ create_cert_files() {
 }
 
 member_list() {
-  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C '<%= cluster_members %>' member list || echo ""
+  for cluster_member in <%= cluster_members %>
+  do
+    set +e
+    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member list
+    local exitstatus=$?
+    set -e
+    if [ $exitstatus -eq 0 ]; then
+      return
+    fi
+  done
 }
 
 member_remove() {
-  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C '<%= cluster_members %>' member remove $1
+  for cluster_member in <%= cluster_members %>
+  do
+    set +e
+    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member remove $1
+    local exitstatus=$?
+    set -e
+    if [ $exitstatus -eq 0 ]; then
+      return
+    fi
+  done
 }
 
 member_add() {
-  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C '<%= cluster_members %>' member add ${node_name} ${advertise_peer_url}
+  for cluster_member in <%= cluster_members %>
+  do
+    set +e
+    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member add ${node_name} ${advertise_peer_url}
+    local exitstatus=$?
+    set -e
+    if [ $exitstatus -eq 0 ]; then
+      return
+    fi
+  done
 }
 
 extract_cluster_from_member_list() {
