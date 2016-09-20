@@ -88,15 +88,15 @@ func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, e
 
 		iaasConfig = awsConfig
 	case "warden_cpi":
+		iaasConfig = iaas.NewWardenConfig()
+
 		var cidrBlock string
-		cidrPool := NewCIDRPool("10.244.4.0", 24, 27)
-		cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode - 1)
+		cidrPool := core.NewCIDRPool("10.244.16.0", 24, 27)
+		cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode)
 		if err != nil {
 			return turbulence.Manifest{}, err
 		}
-
 		manifestConfig.IPRange = cidrBlock
-		iaasConfig = iaas.NewWardenConfig()
 	default:
 		return turbulence.Manifest{}, errors.New("unknown infrastructure type")
 	}

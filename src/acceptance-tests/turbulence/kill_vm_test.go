@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = PDescribe("KillVm", func() {
+var _ = Describe("KillVm", func() {
 	KillVMTest := func(enableSSL bool) {
 		var (
 			turbulenceManifest turbulence.Manifest
@@ -65,7 +65,17 @@ var _ = PDescribe("KillVm", func() {
 		AfterEach(func() {
 			By("deleting the deployment", func() {
 				if !CurrentGinkgoTestDescription().Failed {
-					err := boshClient.DeleteDeployment(etcdManifest.Name)
+					yaml, err := etcdManifest.ToYAML()
+					Expect(err).NotTo(HaveOccurred())
+
+					Eventually(func() error {
+						return boshClient.ScanAndFixAll(yaml)
+					}, "5m", "1m").ShouldNot(HaveOccurred())
+
+					err = boshClient.DeleteDeployment(etcdManifest.Name)
+					Expect(err).NotTo(HaveOccurred())
+
+					err = boshClient.DeleteDeployment(turbulenceManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
 				}
 			})
@@ -98,8 +108,9 @@ var _ = PDescribe("KillVm", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					err = boshClient.ScanAndFixAll(yaml)
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						return boshClient.ScanAndFixAll(yaml)
+					}, "5m", "1m").ShouldNot(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
