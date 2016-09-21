@@ -28,10 +28,63 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 		port, err = openPort()
 		Expect(err).NotTo(HaveOccurred())
 		handler = http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			switch req.Method {
-			case "GET":
-				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`{
+			switch req.URL.Path {
+			case "/v2/stats/self":
+				if req.Method == "GET" {
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(`{
+						"leaderInfo": {
+							"startTime": "2016-09-20T20:41:29.990832596Z",
+							"uptime": "20m3.379868254s",
+							"leader": "a63914b93e51e236"
+						}
+					}`))
+					return
+				}
+			case "/v2/members":
+				if req.Method == "GET" {
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(`{
+					"members": [
+						{
+						  "clientURLs": [
+							"https://etcd-z1-0.etcd.service.cf.internal:4001"
+						  ],
+						  "peerURLs": [
+							"https://etcd-z1-0.etcd.service.cf.internal:7001"
+						  ],
+						  "name": "etcd-z1-0",
+						  "id": "1b8722e8a026db8e"
+						},
+						{
+						  "clientURLs": [
+							"https://etcd-z1-1.etcd.service.cf.internal:4001"
+						  ],
+						  "peerURLs": [
+							"https://etcd-z1-1.etcd.service.cf.internal:7001"
+						  ],
+						  "name": "etcd-z1-1",
+						  "id": "9aac0801933fa6e0"
+						},
+						{
+						  "clientURLs": [
+							"https://etcd-z1-2.etcd.service.cf.internal:4001"
+						  ],
+						  "peerURLs": [
+							"https://etcd-z1-2.etcd.service.cf.internal:7001"
+						  ],
+						  "name": "etcd-z1-2",
+						  "id": "a63914b93e51e236"
+						}
+					]
+					}`))
+					return
+				}
+			case "/v2/keys/some-key":
+				switch req.Method {
+				case "GET":
+					w.WriteHeader(http.StatusOK)
+					w.Write([]byte(`{
 						"action": "get",
 						"node": {
 							"createdIndex": 2,
@@ -40,10 +93,10 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 							"value": "some-value"
 						}
 					}`))
-				return
-			case "PUT":
-				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte(`{
+					return
+				case "PUT":
+					w.WriteHeader(http.StatusCreated)
+					w.Write([]byte(`{
 						"action": "set",
 						"node": {
 							"createdIndex": 2,
@@ -52,8 +105,12 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 							"value": "some-value"
 						}
 					}`))
+				default:
+					w.WriteHeader(http.StatusMethodNotAllowed)
+					return
+				}
 			default:
-				w.WriteHeader(http.StatusMethodNotAllowed)
+				w.WriteHeader(http.StatusTeapot)
 				return
 			}
 		})
@@ -114,6 +171,74 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 		})
 	})
 
+	Context("leader_name", func() {
+		Context("etcd ssl mode", func() {
+			BeforeEach(func() {
+				var err error
+				etcdServer := httptest.NewUnstartedServer(handler)
+				etcdServer.TLS = &tls.Config{}
+				etcdServer.TLS.Certificates = make([]tls.Certificate, 1)
+				etcdServer.TLS.Certificates[0], err = tls.LoadX509KeyPair("fixtures/server.crt", "fixtures/server.key")
+				Expect(err).NotTo(HaveOccurred())
+
+				etcdServer.StartTLS()
+
+				command := exec.Command(pathToConsumer,
+					"--port", port,
+					"--etcd-service", etcdServer.URL,
+					"--ca-cert-file", "fixtures/ca.crt",
+					"--client-ssl-cert-file", "fixtures/client.crt",
+					"--client-ssl-key-file", "fixtures/client.key",
+				)
+
+				session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				waitForServerToStart(port)
+			})
+
+			Context("GET", func() {
+				It("the leader node name", func() {
+					status, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/leader_name", port), "")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(status).To(Equal(http.StatusOK))
+					Expect(body).To(Equal("etcd-z1-2"))
+				})
+			})
+		})
+
+		Context("etcd non-ssl mode", func() {
+			BeforeEach(func() {
+				etcdServer := httptest.NewServer(handler)
+
+				command := exec.Command(pathToConsumer, "--port", port, "--etcd-service", etcdServer.URL)
+
+				var err error
+				session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+
+				waitForServerToStart(port)
+			})
+
+			Context("GET", func() {
+				It("returns a value with the given key", func() {
+					status, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(status).To(Equal(http.StatusOK))
+					Expect(body).To(Equal("some-value"))
+				})
+			})
+
+			Context("PUT", func() {
+				It("sets a value with the given key", func() {
+					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "some-value")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(status).To(Equal(http.StatusCreated))
+				})
+			})
+		})
+	})
+
 	Context("kv", func() {
 		Context("etcd ssl mode", func() {
 			BeforeEach(func() {
@@ -148,14 +273,6 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 					Expect(body).To(Equal("some-value"))
 				})
 			})
-
-			Context("PUT", func() {
-				It("sets a value with the given key", func() {
-					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "some-value")
-					Expect(err).NotTo(HaveOccurred())
-					Expect(status).To(Equal(http.StatusCreated))
-				})
-			})
 		})
 
 		Context("etcd non-ssl mode", func() {
@@ -177,14 +294,6 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(status).To(Equal(http.StatusOK))
 					Expect(body).To(Equal("some-value"))
-				})
-			})
-
-			Context("PUT", func() {
-				It("sets a value with the given key", func() {
-					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "some-value")
-					Expect(err).NotTo(HaveOccurred())
-					Expect(status).To(Equal(http.StatusCreated))
 				})
 			})
 		})

@@ -76,7 +76,7 @@ var _ = Describe("KVHandler", func() {
 			})
 
 			It("sets a value given a key", func() {
-				request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("some-value"))
+				request, err := http.NewRequest("PUT", "/kv/some-key", strings.NewReader("some-value"))
 				Expect(err).NotTo(HaveOccurred())
 
 				handler = handlers.NewKVHandler([]string{etcdServer.URL}, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
@@ -88,7 +88,7 @@ var _ = Describe("KVHandler", func() {
 			})
 
 			It("gets a value given a key", func() {
-				request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
+				request, err := http.NewRequest("GET", "/kv/some-key", strings.NewReader(""))
 				Expect(err).NotTo(HaveOccurred())
 				handler = handlers.NewKVHandler([]string{etcdServer.URL}, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
 
@@ -101,7 +101,7 @@ var _ = Describe("KVHandler", func() {
 
 			Context("failure cases", func() {
 				It("returns a 500 when the provided cert is not a valid path", func() {
-					request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
+					request, err := http.NewRequest("GET", "/kv/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
 					fakePath := "/some/fake/path"
 					handler = handlers.NewKVHandler([]string{etcdServer.URL}, fakePath, fakePath, fakePath)
@@ -126,7 +126,7 @@ var _ = Describe("KVHandler", func() {
 					}
 				}))
 
-				request, err := http.NewRequest("DELETE", "/v2/keys/some-key", strings.NewReader(""))
+				request, err := http.NewRequest("DELETE", "/kv/some-key", strings.NewReader(""))
 				Expect(err).NotTo(HaveOccurred())
 				handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
@@ -159,7 +159,7 @@ var _ = Describe("KVHandler", func() {
 						}
 					}))
 
-					request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
+					request, err := http.NewRequest("GET", "/kv/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
 					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
@@ -185,7 +185,7 @@ var _ = Describe("KVHandler", func() {
 						}
 					}))
 
-					request, err := http.NewRequest("GET", "/v2/keys/", strings.NewReader(""))
+					request, err := http.NewRequest("GET", "/", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
 					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
@@ -211,7 +211,7 @@ var _ = Describe("KVHandler", func() {
 						}
 					}))
 
-					request, err := http.NewRequest("GET", "/v2/keys/some-key", strings.NewReader(""))
+					request, err := http.NewRequest("GET", "/kv/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
 					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
 
@@ -250,7 +250,7 @@ var _ = Describe("KVHandler", func() {
 						w.WriteHeader(http.StatusTeapot)
 					}))
 
-					request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader("some-value"))
+					request, err := http.NewRequest("PUT", "/kv/some-key", strings.NewReader("some-value"))
 					Expect(err).NotTo(HaveOccurred())
 
 					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
@@ -278,7 +278,7 @@ var _ = Describe("KVHandler", func() {
 						w.WriteHeader(http.StatusTeapot)
 					}))
 
-					request, err := http.NewRequest("PUT", "/v2/keys/some-key", strings.NewReader(""))
+					request, err := http.NewRequest("PUT", "/kv/some-key", strings.NewReader(""))
 					Expect(err).NotTo(HaveOccurred())
 
 					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
@@ -294,7 +294,7 @@ var _ = Describe("KVHandler", func() {
 					etcdServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					}))
 
-					request, err := http.NewRequest("PUT", "/v2/keys/some-key", badReader{})
+					request, err := http.NewRequest("PUT", "/kv/some-key", badReader{})
 					Expect(err).NotTo(HaveOccurred())
 
 					handler = handlers.NewKVHandler([]string{etcdServer.URL}, "", "", "")
