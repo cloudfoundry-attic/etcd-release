@@ -34,7 +34,7 @@ node_name="<%= name.gsub('_', '-') %>-<%= spec.index %>"
         result << "#{client_protocol}://#{zone["name"].gsub('_', '-')}-#{i}.#{p("etcd.advertise_urls_dns_suffix")}:4001"
       end
       result
-    end.flatten.join(",")
+    end.flatten.join(" ")
   else
     my_ip = discover_external_ip
     cluster_members = p("etcd.machines").map { |m| "http://#{m}:4001" }.join(" ")
@@ -44,6 +44,7 @@ node_name="<%= name.gsub('_', '-') %>-<%= spec.index %>"
 client_protocol=<%= client_protocol %>
 peer_protocol=<%= peer_protocol %>
 listen_peer_url="${peer_protocol}://0.0.0.0:7001"
+cluster_members=<%= cluster_members.gsub(" ", ",") %>
 
 <% if p("etcd.require_ssl") || p("etcd.peer_require_ssl") %>
 advertise_peer_url="${peer_protocol}://${node_name}.<%= p("etcd.advertise_urls_dns_suffix") %>:7001"

@@ -6,11 +6,13 @@ templates:
   drain: bin/drain
   etcd_bosh_utils.sh.erb: bin/etcd_bosh_utils.sh
   etcd_ctl.erb: bin/etcd_ctl
+  etcd_consistency_checker_ctl.sh.erb: bin/etcd_consistency_checker_ctl
 
 packages:
   - etcd-common
   - etcd
   - etcd-dns-checker
+  - etcd-consistency-checker
 
 properties:
   etcd.heartbeat_interval_in_milliseconds:

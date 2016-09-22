@@ -4,3 +4,10 @@ check process etcd
     as uid vcap and gid vcap with timeout 60 seconds
   stop program "/var/vcap/jobs/etcd/bin/etcd_ctl stop"
   group vcap
+
+check process etcd_consistency_checker
+  with pidfile /var/vcap/sys/run/etcd/etcd_consistency_checker.pid
+  start program "/var/vcap/jobs/etcd/bin/etcd_consistency_checker_ctl start"
+    as uid vcap and gid vcap with timeout 60 seconds
+  stop program "/var/vcap/jobs/etcd/bin/etcd_consistency_checker_ctl stop"
+  group vcap
