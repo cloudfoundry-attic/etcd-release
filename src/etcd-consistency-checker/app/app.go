@@ -95,7 +95,6 @@ func newHttpClient(ca, cert, key string) (*http.Client, error) {
 }
 
 func leaderInfo(client *http.Client, url string) (bool, error) {
-	fmt.Println("here")
 	resp, err := client.Get(fmt.Sprintf("%s/v2/stats/leader", url))
 	if err != nil {
 		switch {
