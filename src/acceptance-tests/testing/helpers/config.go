@@ -13,6 +13,7 @@ type Config struct {
 	AWS                   ConfigAWS      `json:"aws"`
 	Registry              ConfigRegistry `json:"registry"`
 	TurbulenceReleaseName string
+	TurbulenceHost        string
 	CF                    ConfigCF `json:"cf"`
 }
 

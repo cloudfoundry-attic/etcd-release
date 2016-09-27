@@ -13,11 +13,8 @@ import (
 
 	etcdclient "acceptance-tests/testing/etcd"
 
-	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
-
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
-	"github.com/pivotal-cf-experimental/destiny/turbulence"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,24 +23,12 @@ import (
 var _ = Describe("quorum loss", func() {
 	QuorumLossTest := func(enableSSL bool) {
 		var (
-			turbulenceManifest turbulence.Manifest
-			turbulenceClient   turbulenceclient.Client
-
 			etcdManifest etcd.Manifest
 			etcdClient   etcdclient.Client
 		)
 
 		BeforeEach(func() {
 			var err error
-			turbulenceManifest, err = helpers.DeployTurbulence(client, config)
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMs(client, turbulenceManifest.Name)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetTurbulenceVMsFromManifest(turbulenceManifest)))
-
-			turbulenceClient = helpers.NewTurbulenceClient(turbulenceManifest)
-
 			etcdManifest, err = helpers.DeployEtcdWithInstanceCount(5, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -74,13 +59,6 @@ var _ = Describe("quorum loss", func() {
 					}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
 					err = client.DeleteDeployment(etcdManifest.Name)
-					Expect(err).NotTo(HaveOccurred())
-				}
-			})
-
-			By("deleting the turbulence deployment", func() {
-				if !CurrentGinkgoTestDescription().Failed {
-					err := client.DeleteDeployment(turbulenceManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
 				}
 			})

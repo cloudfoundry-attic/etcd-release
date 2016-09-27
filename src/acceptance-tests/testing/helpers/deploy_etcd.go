@@ -47,8 +47,9 @@ func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd
 	}
 
 	manifestConfig = etcd.Config{
-		DirectorUUID: info.UUID,
-		Name:         fmt.Sprintf("etcd-%s", guid),
+		DirectorUUID:   info.UUID,
+		Name:           fmt.Sprintf("etcd-%s", guid),
+		TurbulenceHost: config.TurbulenceHost,
 	}
 
 	switch info.CPI {

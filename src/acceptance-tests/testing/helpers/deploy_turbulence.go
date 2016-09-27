@@ -10,7 +10,6 @@ import (
 	"github.com/pivotal-cf-experimental/destiny/iaas"
 	"github.com/pivotal-cf-experimental/destiny/turbulence"
 
-	ginkgoConfig "github.com/onsi/ginkgo/config"
 	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
 )
 
@@ -20,7 +19,6 @@ func GetTurbulenceVMsFromManifest(manifest turbulence.Manifest) []bosh.VM {
 	for _, job := range manifest.Jobs {
 		for i := 0; i < job.Instances; i++ {
 			vms = append(vms, bosh.VM{JobName: job.Name, Index: i, State: "running"})
-
 		}
 	}
 
@@ -78,10 +76,7 @@ func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, e
 		}
 		var cidrBlock string
 		cidrPool := core.NewCIDRPool("10.0.16.0", 24, 27)
-		cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode)
-		if err != nil {
-			return turbulence.Manifest{}, err
-		}
+		cidrBlock = cidrPool.Last()
 
 		manifestConfig.IPRange = cidrBlock
 		awsConfig.Subnets = []iaas.AWSConfigSubnet{{ID: config.AWS.Subnet, Range: cidrBlock, AZ: "us-east-1a"}}
@@ -91,11 +86,9 @@ func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, e
 		iaasConfig = iaas.NewWardenConfig()
 
 		var cidrBlock string
-		cidrPool := core.NewCIDRPool("10.244.16.0", 24, 27)
-		cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode)
-		if err != nil {
-			return turbulence.Manifest{}, err
-		}
+		cidrPool := core.NewCIDRPool("10.244.4.0", 24, 27)
+		cidrBlock = cidrPool.Last()
+
 		manifestConfig.IPRange = cidrBlock
 	default:
 		return turbulence.Manifest{}, errors.New("unknown infrastructure type")
