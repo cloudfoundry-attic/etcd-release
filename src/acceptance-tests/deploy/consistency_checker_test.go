@@ -25,10 +25,12 @@ var _ = Describe("consistency checker", func() {
 			)
 
 			By("deploying etcd cluster", func() {
-				config.IPTablesAgent = true
+				configCopy := config
+				configCopy.IPTablesAgent = true
+				Expect(config.IPTablesAgent).To(BeFalse())
 
 				var err error
-				etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
+				etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, configCopy, enableSSL)
 				Expect(err).NotTo(HaveOccurred())
 			})
 

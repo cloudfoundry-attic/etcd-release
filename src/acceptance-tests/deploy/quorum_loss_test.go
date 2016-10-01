@@ -36,7 +36,9 @@ var _ = Describe("quorum loss", func() {
 				return helpers.DeploymentVMs(client, etcdManifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
-			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
+			testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")
+			Expect(err).NotTo(HaveOccurred())
+			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
 		})
 
 		AfterEach(func() {
@@ -86,7 +88,9 @@ var _ = Describe("quorum loss", func() {
 						Expect(err).NotTo(HaveOccurred())
 					}
 
-					leader, err := jobIndexOfLeader(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[2].Networks[0].StaticIPs[0]))
+					testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")
+					Expect(err).NotTo(HaveOccurred())
+					leader, err := jobIndexOfLeader(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
 					Expect(err).NotTo(HaveOccurred())
 
 					rand.Seed(time.Now().Unix())

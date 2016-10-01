@@ -42,7 +42,9 @@ var _ = Describe("Multiple instance rolling deploys", func() {
 				return helpers.DeploymentVMs(client, manifest.Name)
 			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 
-			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
+			testConsumerIndex, err := helpers.FindJobIndexByName(manifest, "testconsumer_z1")
+			Expect(err).NotTo(HaveOccurred())
+			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
 			spammer = helpers.NewSpammer(etcdClient, 1*time.Second, "multi-instance-rolling-deploy")
 		})
 

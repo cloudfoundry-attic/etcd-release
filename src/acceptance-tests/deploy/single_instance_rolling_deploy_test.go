@@ -47,9 +47,11 @@ var _ = Describe("Single instance rolling deploys", func() {
 
 		It("persists data throughout the rolling deploy", func() {
 			By("setting a persistent value", func() {
-				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[2].Networks[0].StaticIPs[0]))
+				testConsumerIndex, err := helpers.FindJobIndexByName(manifest, "testconsumer_z1")
+				Expect(err).NotTo(HaveOccurred())
+				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
 
-				err := etcdClient.Set(testKey, testValue)
+				err = etcdClient.Set(testKey, testValue)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
