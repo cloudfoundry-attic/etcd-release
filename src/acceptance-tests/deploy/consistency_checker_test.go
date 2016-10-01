@@ -83,17 +83,6 @@ var _ = Describe("consistency checker", func() {
 				}, "1m", "10s").Should(ConsistOf(vms))
 			})
 
-			//By("restarting the partition node", func() {
-			//err := client.Restart(etcdManifest.Name, "etcd_z1", partitionedJobIndex)
-			//Expect(err).NotTo(HaveOccurred())
-			//})
-
-			//By("checking if etcd consistency check reports no split brain", func() {
-			//Eventually(func() ([]bosh.VM, error) {
-			//return helpers.DeploymentVMs(client, etcdManifest.Name)
-			//}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
-			//})
-
 			By("deleting the deployment", func() {
 				err := client.DeleteDeployment(etcdManifest.Name)
 				Expect(err).NotTo(HaveOccurred())
