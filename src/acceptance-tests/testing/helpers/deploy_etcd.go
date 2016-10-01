@@ -47,9 +47,9 @@ func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd
 	}
 
 	manifestConfig = etcd.Config{
-		DirectorUUID:   info.UUID,
-		Name:           fmt.Sprintf("etcd-%s", guid),
-		TurbulenceHost: config.TurbulenceHost,
+		DirectorUUID:  info.UUID,
+		Name:          fmt.Sprintf("etcd-%s", guid),
+		IPTablesAgent: config.IPTablesAgent,
 	}
 
 	switch info.CPI {
@@ -147,23 +147,22 @@ func NewEtcdWithInstanceCount(count int, client bosh.Client, config Config, enab
 }
 
 func SetEtcdInstanceCount(count int, manifest etcd.Manifest) (etcd.Manifest, error) {
-	var err error
-	manifest.Jobs[1], err = etcd.SetJobInstanceCount(manifest.Jobs[1], manifest.Networks[0], count, 0)
+	manifest, err := manifest.SetJobInstanceCount("etcd_z1", count)
 	if err != nil {
 		return manifest, err
 	}
-	manifest.Properties = etcd.SetEtcdProperties(manifest.Jobs[1], manifest.Properties)
+	jobIndex, err := FindJobIndexByName(manifest, "etcd_z1")
+	if err != nil {
+		return manifest, err
+	}
+
+	manifest.Properties = etcd.SetEtcdProperties(manifest.Jobs[jobIndex], manifest.Properties)
 
 	return manifest, nil
 }
 
 func SetTestConsumerInstanceCount(count int, manifest etcd.Manifest) (etcd.Manifest, error) {
-	jobIndex, err := FindJobIndexByName(manifest, "testconsumer_z1")
-	if err != nil {
-		return manifest, err
-	}
-
-	manifest.Jobs[jobIndex], err = etcd.SetJobInstanceCount(manifest.Jobs[jobIndex], manifest.Networks[0], count, 8)
+	manifest, err := manifest.SetJobInstanceCount("testconsumer_z1", count)
 	if err != nil {
 		return manifest, err
 	}

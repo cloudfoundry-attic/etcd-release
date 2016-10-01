@@ -1,0 +1,8 @@
+---
+name: iptables-agent
+
+dependencies:
+  - golang1.6
+
+files:
+ - acceptance-tests/**/*

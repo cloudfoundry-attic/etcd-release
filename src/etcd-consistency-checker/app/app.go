@@ -7,7 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -22,12 +24,14 @@ type Config struct {
 type App struct {
 	config  Config
 	sleeper func(time.Duration)
+	logger  *log.Logger
 }
 
 func New(config Config, sleeper func(time.Duration)) App {
 	return App{
 		config:  config,
 		sleeper: sleeper,
+		logger:  log.New(os.Stdout, "", log.LstdFlags),
 	}
 }
 
@@ -46,6 +50,7 @@ func (a App) Run() error {
 		for _, member := range a.config.ClusterMembers {
 			isLeader, err := leaderInfo(httpClient, member)
 			if err != nil {
+				a.logger.Printf("[ERR] %s\n", err)
 				return err
 			}
 
@@ -55,9 +60,12 @@ func (a App) Run() error {
 		}
 
 		if len(leaders) > 1 {
-			return fmt.Errorf("more than one leader exists: %v", leaders)
+			err := fmt.Errorf("more than one leader exists: %v", leaders)
+			a.logger.Printf("[ERR] %s\n", err)
+			return err
 		}
 
+		fmt.Printf("[INFO] the leader is %v\n", leaders)
 		a.sleeper(1 * time.Second)
 	}
 
