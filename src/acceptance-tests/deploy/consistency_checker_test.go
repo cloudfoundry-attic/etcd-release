@@ -137,7 +137,7 @@ var _ = Describe("consistency checker", func() {
 		})
 	}
 
-	FContext("without TLS", func() {
+	Context("without TLS", func() {
 		ConsistencyCheckerTest(false)
 	})
 
