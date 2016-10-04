@@ -2,6 +2,7 @@ package deploy_test
 
 import (
 	"acceptance-tests/testing/helpers"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -10,6 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
 )
@@ -66,6 +68,49 @@ var _ = Describe("consistency checker", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 
+			By("checking that the partitioned node has elected itself as leader", func() {
+				if enableSSL {
+					//TODO populate cert, key, ca cert from manifest props
+					//etcdURL := fmt.Sprintf("https://%s:4001", partitionedJobIP)
+					//goEtcdClient, err = goetcd.NewTLSClient(k.etcdURLs, k.clientCert, k.clientKey, k.caCert)
+					//if err != nil {
+					//http.Error(w, err.Error(), http.StatusInternalServerError)
+					//return
+				} else {
+					resp, err := http.Get(fmt.Sprintf("http://%s:4001/v2/stats/self", partitionedJobIP))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+					type selfResponse struct {
+						ID string `json:"id"`
+					}
+
+					var selfResp selfResponse
+					err = json.NewDecoder(resp.Body).Decode(&selfResp)
+					Expect(err).NotTo(HaveOccurred())
+
+					type leaderResponse struct {
+						Leader    string                 `json:leader`
+						Followers map[string]interface{} `json:followers`
+					}
+
+					Eventually(func() leaderResponse {
+						resp, err := http.Get(fmt.Sprintf("http://%s:4001/v2/stats/leader", partitionedJobIP))
+						Expect(err).NotTo(HaveOccurred())
+						Expect(resp.StatusCode).To(Equal(http.StatusOK))
+
+						var leaderResp leaderResponse
+						err = json.NewDecoder(resp.Body).Decode(&leaderResp)
+						Expect(err).NotTo(HaveOccurred())
+
+						return leaderResp
+					}, "2s", "10s").Should(Equal(leaderResponse{
+						Leader:    selfResp.ID,
+						Followers: map[string]interface{}{},
+					}))
+				}
+			})
+
 			By("removing the blockage of traffic on the partitioned node", func() {
 				err := unblockEtcdTraffic(partitionedJobIP, otherJobIPs)
 				Expect(err).NotTo(HaveOccurred())
@@ -92,7 +137,7 @@ var _ = Describe("consistency checker", func() {
 		})
 	}
 
-	Context("without TLS", func() {
+	FContext("without TLS", func() {
 		ConsistencyCheckerTest(false)
 	})
 

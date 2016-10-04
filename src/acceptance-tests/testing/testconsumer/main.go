@@ -40,14 +40,14 @@ func main() {
 	flags := parseCommandLineFlags()
 
 	kvHandler := handlers.NewKVHandler(flags.EtcdURL.Slice(), flags.CACert, flags.ClientCert, flags.ClientKey)
-	leaderNameHandler := handlers.NewLeaderNameHandler(flags.EtcdURL.Slice()[0], flags.CACert, flags.ClientCert, flags.ClientKey)
+	leaderNameHandler := handlers.NewLeaderHandler(flags.EtcdURL.Slice()[0], flags.CACert, flags.ClientCert, flags.ClientKey)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/kv/", func(w http.ResponseWriter, req *http.Request) {
 		kvHandler.ServeHTTP(w, req)
 	})
 
-	mux.HandleFunc("/leader_name", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/leader", func(w http.ResponseWriter, req *http.Request) {
 		leaderNameHandler.ServeHTTP(w, req)
 	})
 

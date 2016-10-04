@@ -2,9 +2,7 @@ package deploy_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -88,9 +86,7 @@ var _ = Describe("quorum loss", func() {
 						Expect(err).NotTo(HaveOccurred())
 					}
 
-					testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")
-					Expect(err).NotTo(HaveOccurred())
-					leader, err := jobIndexOfLeader(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
+					leader, err := jobIndexOfLeader(etcdClient)
 					Expect(err).NotTo(HaveOccurred())
 
 					rand.Seed(time.Now().Unix())
@@ -144,28 +140,18 @@ var _ = Describe("quorum loss", func() {
 	})
 })
 
-func jobIndexOfLeader(testconsumerURL string) (int, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/leader_name", testconsumerURL))
-	if err != nil {
-		return -1, err
-	}
-	defer resp.Body.Close()
-
-	buf, err := ioutil.ReadAll(resp.Body)
+func jobIndexOfLeader(etcdClient etcdclient.Client) (int, error) {
+	leader, err := etcdClient.Leader("")
 	if err != nil {
 		return -1, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return -1, fmt.Errorf("%s", string(buf))
-	}
+	leaderNameParts := strings.Split(leader, "-")
 
-	leaderNameParts := strings.Split(string(buf), "-")
-
-	leader, err := strconv.Atoi(leaderNameParts[len(leaderNameParts)-1])
+	leaderIndex, err := strconv.Atoi(leaderNameParts[len(leaderNameParts)-1])
 	if err != nil {
 		return -1, err
 	}
 
-	return leader, nil
+	return leaderIndex, nil
 }

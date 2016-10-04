@@ -10,15 +10,15 @@ import (
 	"net/http"
 )
 
-type LeaderNameHandler struct {
+type LeaderHandler struct {
 	etcdURL    string
 	caCert     string
 	clientCert string
 	clientKey  string
 }
 
-func NewLeaderNameHandler(etcdURL string, caCert, clientCert, clientKey string) LeaderNameHandler {
-	return LeaderNameHandler{
+func NewLeaderHandler(etcdURL string, caCert, clientCert, clientKey string) LeaderHandler {
+	return LeaderHandler{
 		etcdURL:    etcdURL,
 		caCert:     caCert,
 		clientCert: clientCert,
@@ -26,7 +26,7 @@ func NewLeaderNameHandler(etcdURL string, caCert, clientCert, clientKey string) 
 	}
 }
 
-func (h *LeaderNameHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (h *LeaderHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	var client *http.Client
 
 	if h.caCert != "" && h.clientCert != "" && h.clientKey != "" {

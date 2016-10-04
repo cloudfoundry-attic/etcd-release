@@ -10,9 +10,9 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("LeaderNameHandler", func() {
+var _ = Describe("LeaderHandler", func() {
 	var (
-		handler      handlers.LeaderNameHandler
+		handler      handlers.LeaderHandler
 		happyHandler http.HandlerFunc
 	)
 
@@ -99,7 +99,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler(etcdServer.URL, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
+				handler = handlers.NewLeaderHandler(etcdServer.URL, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -114,7 +114,7 @@ var _ = Describe("LeaderNameHandler", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					fakePath := "/some/fake/path"
-					handler = handlers.NewLeaderNameHandler(etcdServer.URL, fakePath, fakePath, fakePath)
+					handler = handlers.NewLeaderHandler(etcdServer.URL, fakePath, fakePath, fakePath)
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -128,7 +128,7 @@ var _ = Describe("LeaderNameHandler", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					fakePath := "/some/fake/path"
-					handler = handlers.NewLeaderNameHandler(etcdServer.URL, fakePath, "../fixtures/client.crt", "../fixtures/client.key")
+					handler = handlers.NewLeaderHandler(etcdServer.URL, fakePath, "../fixtures/client.crt", "../fixtures/client.key")
 
 					recorder := httptest.NewRecorder()
 					handler.ServeHTTP(recorder, request)
@@ -152,7 +152,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler(etcdServer.URL, "", "", "")
+				handler = handlers.NewLeaderHandler(etcdServer.URL, "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -167,7 +167,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler("%%%%%%%", "", "", "")
+				handler = handlers.NewLeaderHandler("%%%%%%%", "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -204,7 +204,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler(etcdServer.URL, "", "", "")
+				handler = handlers.NewLeaderHandler(etcdServer.URL, "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -241,7 +241,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler(etcdServer.URL, "", "", "")
+				handler = handlers.NewLeaderHandler(etcdServer.URL, "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -285,7 +285,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler(etcdServer.URL, "", "", "")
+				handler = handlers.NewLeaderHandler(etcdServer.URL, "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -329,7 +329,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler(etcdServer.URL, "", "", "")
+				handler = handlers.NewLeaderHandler(etcdServer.URL, "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)
@@ -379,7 +379,7 @@ var _ = Describe("LeaderNameHandler", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				Expect(err).NotTo(HaveOccurred())
 
-				handler = handlers.NewLeaderNameHandler(etcdServer.URL, "", "", "")
+				handler = handlers.NewLeaderHandler(etcdServer.URL, "", "", "")
 
 				recorder := httptest.NewRecorder()
 				handler.ServeHTTP(recorder, request)

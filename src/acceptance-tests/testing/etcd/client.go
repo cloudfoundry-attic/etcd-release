@@ -63,3 +63,22 @@ func (c Client) Set(key, value string) error {
 
 	return nil
 }
+
+func (c Client) Leader(nodeURL string) (string, error) {
+	resp, err := http.Get(fmt.Sprintf("%s/leader", c.testConsumerURL))
+	if err != nil {
+		return "", err
+	}
+
+	body, err := bodyReader(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("unexpected status: %d %s %s", resp.StatusCode, http.StatusText(resp.StatusCode), string(body))
+	}
+
+	return string(body), nil
+
+}

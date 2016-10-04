@@ -171,7 +171,7 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 		})
 	})
 
-	Context("leader_name", func() {
+	Context("leader", func() {
 		Context("etcd ssl mode", func() {
 			BeforeEach(func() {
 				var err error
@@ -198,8 +198,8 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 			})
 
 			Context("GET", func() {
-				It("the leader node name", func() {
-					status, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/leader_name", port), "")
+				It("returns the leader node name", func() {
+					status, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/leader", port), "")
 					Expect(err).NotTo(HaveOccurred())
 					Expect(status).To(Equal(http.StatusOK))
 					Expect(body).To(Equal("etcd-z1-2"))
@@ -209,11 +209,15 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 
 		Context("etcd non-ssl mode", func() {
 			BeforeEach(func() {
-				etcdServer := httptest.NewServer(handler)
-
-				command := exec.Command(pathToConsumer, "--port", port, "--etcd-service", etcdServer.URL)
-
 				var err error
+				etcdServer := httptest.NewUnstartedServer(handler)
+				etcdServer.Start()
+
+				command := exec.Command(pathToConsumer,
+					"--port", port,
+					"--etcd-service", etcdServer.URL,
+				)
+
 				session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -221,19 +225,11 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 			})
 
 			Context("GET", func() {
-				It("returns a value with the given key", func() {
-					status, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "")
+				It("returns the leader node name", func() {
+					status, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/leader", port), "")
 					Expect(err).NotTo(HaveOccurred())
 					Expect(status).To(Equal(http.StatusOK))
-					Expect(body).To(Equal("some-value"))
-				})
-			})
-
-			Context("PUT", func() {
-				It("sets a value with the given key", func() {
-					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "some-value")
-					Expect(err).NotTo(HaveOccurred())
-					Expect(status).To(Equal(http.StatusCreated))
+					Expect(body).To(Equal("etcd-z1-2"))
 				})
 			})
 		})
@@ -294,6 +290,14 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 					Expect(err).NotTo(HaveOccurred())
 					Expect(status).To(Equal(http.StatusOK))
 					Expect(body).To(Equal("some-value"))
+				})
+			})
+
+			Context("PUT", func() {
+				It("sets a value with the given key", func() {
+					status, _, err := makeRequest("PUT", fmt.Sprintf("http://localhost:%s/kv/some-key", port), "some-value")
+					Expect(err).NotTo(HaveOccurred())
+					Expect(status).To(Equal(http.StatusCreated))
 				})
 			})
 		})
