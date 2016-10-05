@@ -64,8 +64,10 @@ func (c Client) Set(key, value string) error {
 	return nil
 }
 
-func (c Client) Leader(nodeURL string) (string, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/leader", c.testConsumerURL))
+func (c Client) Leader() (string, error) {
+	endpoint := fmt.Sprintf("%s/leader", c.testConsumerURL)
+
+	resp, err := http.Get(endpoint)
 	if err != nil {
 		return "", err
 	}
@@ -80,5 +82,4 @@ func (c Client) Leader(nodeURL string) (string, error) {
 	}
 
 	return string(body), nil
-
 }

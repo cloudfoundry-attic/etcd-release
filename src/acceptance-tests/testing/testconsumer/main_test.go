@@ -204,6 +204,74 @@ var _ = Describe("provides an http interface to the etcd cluster", func() {
 					Expect(status).To(Equal(http.StatusOK))
 					Expect(body).To(Equal("etcd-z1-2"))
 				})
+
+				Context("requesting leader from specified node", func() {
+					It("makes a request to another node", func() {
+						otherEtcdServer := httptest.NewUnstartedServer(
+							http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+								switch req.URL.Path {
+								case "/v2/stats/self":
+									if req.Method == "GET" {
+										w.WriteHeader(http.StatusOK)
+										w.Write([]byte(`{
+									"leaderInfo": {
+										"startTime": "2016-09-20T20:41:29.990832596Z",
+										"uptime": "20m3.379868254s",
+										"leader": "1b8722e8a026db8e"
+									}
+								}`))
+										return
+									}
+								case "/v2/members":
+									if req.Method == "GET" {
+										w.WriteHeader(http.StatusOK)
+										w.Write([]byte(`{
+									"members": [
+										{
+										  "clientURLs": [
+											"https://etcd-z1-0.etcd.service.cf.internal:4001"
+										  ],
+										  "peerURLs": [
+											"https://etcd-z1-0.etcd.service.cf.internal:7001"
+										  ],
+										  "name": "etcd-z1-0",
+										  "id": "1b8722e8a026db8e"
+										},
+										{
+										  "clientURLs": [
+											"https://etcd-z1-1.etcd.service.cf.internal:4001"
+										  ],
+										  "peerURLs": [
+											"https://etcd-z1-1.etcd.service.cf.internal:7001"
+										  ],
+										  "name": "etcd-z1-1",
+										  "id": "9aac0801933fa6e0"
+										}
+									]
+									}`))
+										return
+									}
+								}
+							}),
+						)
+						otherEtcdServer.TLS = &tls.Config{}
+						otherEtcdServer.TLS.Certificates = make([]tls.Certificate, 1)
+						var err error
+						otherEtcdServer.TLS.Certificates[0], err = tls.LoadX509KeyPair("fixtures/server.crt", "fixtures/server.key")
+						Expect(err).NotTo(HaveOccurred())
+
+						otherEtcdServer.StartTLS()
+
+						parts := strings.Split(otherEtcdServer.URL, ":")
+						reqURL := fmt.Sprintf("http://localhost:%s", port) + "/leader?node=https%3A%2F%2F127.0.0.1%3A" + parts[2]
+
+						status, body, err := makeRequest("GET", reqURL, "")
+						Expect(err).NotTo(HaveOccurred())
+						Expect(status).To(Equal(http.StatusOK))
+						Expect(body).To(Equal("etcd-z1-0"))
+					})
+
+				})
 			})
 		})
 

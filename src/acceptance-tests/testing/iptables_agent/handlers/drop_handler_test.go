@@ -1,6 +1,7 @@
 package handlers_test
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -15,22 +16,38 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+type fakeIPTables struct {
+	runCalls []runCall
+	returns  struct {
+		output string
+		err    error
+	}
+}
+
+type runCall struct {
+	Receives struct {
+		Args []string
+	}
+}
+
+func (fakeIPTables *fakeIPTables) Run(args []string) (string, error) {
+	runCall := runCall{}
+	runCall.Receives.Args = args
+	fakeIPTables.runCalls = append(fakeIPTables.runCalls, runCall)
+	return fakeIPTables.returns.output, fakeIPTables.returns.err
+}
+
 var _ = Describe("DropHandler", func() {
+
 	var (
-		dropHandler        handlers.DropHandler
-		iptables           func(args []string) (string, error)
-		actualIPTablesArgs []string
+		dropHandler handlers.DropHandler
+		ipTables    *fakeIPTables
 	)
 
 	BeforeEach(func() {
-		actualIPTablesArgs = nil
-
-		iptables = func(args []string) (string, error) {
-			actualIPTablesArgs = args
-			return "", nil
-		}
-
-		dropHandler = handlers.NewDropHandler(iptables)
+		ipTables = &fakeIPTables{}
+		buffer := bytes.NewBuffer([]byte{})
+		dropHandler = handlers.NewDropHandler(ipTables, buffer)
 	})
 
 	DescribeTable("required params", func(requestParams, expectedErrMsg string) {
@@ -48,10 +65,54 @@ var _ = Describe("DropHandler", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(respContents)).To(Equal(expectedErrMsg))
 	},
-		Entry("missing addr", "port=9999", "must provide addr param"),
-		Entry("missing port", "addr=some-addr-ip", "must provide port param"),
-		Entry("missing addr and port", "", "must provide addr param, must provide port param"),
+		Entry("missing addr", "", "must provide addr param"),
 	)
+
+	Context("when adding a drop rule with PUT request", func() {
+		It("calls iptables with the correct arguments", func() {
+			request, err := http.NewRequest("PUT", "/drop?addr=some-ip-addr", strings.NewReader(""))
+			Expect(err).NotTo(HaveOccurred())
+
+			recorder := httptest.NewRecorder()
+
+			dropHandler.ServeHTTP(recorder, request)
+
+			Expect(ipTables.runCalls).To(HaveLen(2))
+			Expect(ipTables.runCalls[0].Receives.Args).To(Equal([]string{
+				"-A", "INPUT",
+				"-s", "some-ip-addr",
+				"-j", "DROP",
+			}))
+			Expect(ipTables.runCalls[1].Receives.Args).To(Equal([]string{
+				"-A", "OUTPUT",
+				"-d", "some-ip-addr",
+				"-j", "DROP",
+			}))
+			Expect(recorder.Code).To(Equal(http.StatusOK))
+		})
+	})
+
+	Context("when removing a drop rule with DELETE request", func() {
+		It("calls iptables with the correct arguments", func() {
+			request, err := http.NewRequest("DELETE", "/drop?addr=some-ip-addr", strings.NewReader(""))
+			Expect(err).NotTo(HaveOccurred())
+
+			recorder := httptest.NewRecorder()
+
+			dropHandler.ServeHTTP(recorder, request)
+			Expect(ipTables.runCalls[0].Receives.Args).To(Equal([]string{
+				"-D", "INPUT",
+				"-s", "some-ip-addr",
+				"-j", "DROP",
+			}))
+			Expect(ipTables.runCalls[1].Receives.Args).To(Equal([]string{
+				"-D", "OUTPUT",
+				"-d", "some-ip-addr",
+				"-j", "DROP",
+			}))
+			Expect(recorder.Code).To(Equal(http.StatusOK))
+		})
+	})
 
 	Context("failure cases", func() {
 		It("returns a bad request when the request is not a PUT or a DELETE", func() {
@@ -65,13 +126,13 @@ var _ = Describe("DropHandler", func() {
 			Expect(recorder.Code).To(Equal(http.StatusNotFound))
 		})
 
-		It("returns an error when ipTablesExecutor fails", func() {
-			iptables = func(_ []string) (string, error) {
-				return "some error occurred", errors.New("ipTablesExecutor failed")
-			}
-			dropHandler = handlers.NewDropHandler(iptables)
+		It("returns an error when iptables command fails", func() {
+			failingIPTables := &fakeIPTables{}
+			failingIPTables.returns.err = errors.New("failed iptables")
+			buffer := bytes.NewBuffer([]byte{})
+			dropHandler = handlers.NewDropHandler(failingIPTables, buffer)
 
-			request, err := http.NewRequest("PUT", "/drop?addr=some-ip-addr&port=9999", strings.NewReader(""))
+			request, err := http.NewRequest("PUT", "/drop?addr=some-ip-addr", strings.NewReader(""))
 			Expect(err).NotTo(HaveOccurred())
 
 			recorder := httptest.NewRecorder()
@@ -82,46 +143,7 @@ var _ = Describe("DropHandler", func() {
 
 			respContents, err := ioutil.ReadAll(recorder.Body)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(string(respContents)).To(Equal("error: ipTablesExecutor failed\niptables output: some error occurred"))
-		})
-	})
-
-	Context("when adding a drop rule with PUT request", func() {
-		It("calls iptables with the correct arguments", func() {
-			request, err := http.NewRequest("PUT", "/drop?addr=some-ip-addr&port=9898", strings.NewReader(""))
-			Expect(err).NotTo(HaveOccurred())
-
-			recorder := httptest.NewRecorder()
-
-			dropHandler.ServeHTTP(recorder, request)
-
-			Expect(actualIPTablesArgs).To(Equal([]string{
-				"-A", "OUTPUT",
-				"-p", "tcp",
-				"-d", "some-ip-addr",
-				"--dport", "9898",
-				"-j", "DROP",
-			}))
-			Expect(recorder.Code).To(Equal(http.StatusOK))
-		})
-	})
-
-	Context("when removing a drop rule with DELETE request", func() {
-		It("calls iptables with the correct arguments", func() {
-			request, err := http.NewRequest("DELETE", "/drop?addr=some-ip-addr&port=9898", strings.NewReader(""))
-			Expect(err).NotTo(HaveOccurred())
-
-			recorder := httptest.NewRecorder()
-
-			dropHandler.ServeHTTP(recorder, request)
-			Expect(actualIPTablesArgs).To(Equal([]string{
-				"-D", "OUTPUT",
-				"-p", "tcp",
-				"-d", "some-ip-addr",
-				"--dport", "9898",
-				"-j", "DROP",
-			}))
-			Expect(recorder.Code).To(Equal(http.StatusOK))
+			Expect(string(respContents)).To(ContainSubstring("failed iptables"))
 		})
 	})
 })

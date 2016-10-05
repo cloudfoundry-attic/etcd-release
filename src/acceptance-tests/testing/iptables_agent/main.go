@@ -2,33 +2,22 @@ package main
 
 import (
 	"acceptance-tests/testing/iptables_agent/handlers"
-	"bytes"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
-	"os/exec"
+	"os"
 )
 
 type Flags struct {
-	Port string
+	Port            string
+	IPTablesCommand string
 }
 
 func main() {
 	flags := parseCommandLineFlags()
 
-	dropHandler := handlers.NewDropHandler(func(args []string) (string, error) {
-		cmd := exec.Command("iptables", args...)
-		output := bytes.NewBuffer([]byte{})
-		cmd.Stdout = output
-		cmd.Stderr = output
-		err := cmd.Run()
-		if err != nil {
-			return output.String(), err
-		}
-
-		return "", nil
-	})
+	dropHandler := handlers.NewDropHandler(handlers.NewIPTables(flags.IPTablesCommand), os.Stdout)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/drop", func(w http.ResponseWriter, req *http.Request) {
@@ -41,6 +30,7 @@ func main() {
 func parseCommandLineFlags() Flags {
 	flags := Flags{}
 	flag.StringVar(&flags.Port, "port", "", "port to use for iptables agent server")
+	flag.StringVar(&flags.IPTablesCommand, "iptablesCommand", "iptables", "command to use for iptables agent server")
 	flag.Parse()
 
 	return flags

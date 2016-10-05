@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -106,6 +107,84 @@ var _ = Describe("LeaderHandler", func() {
 
 				Expect(recorder.Code).To(Equal(http.StatusOK))
 				Expect(recorder.Body.String()).To(Equal("etcd-z1-2"))
+			})
+
+			Context("when a node url is specified", func() {
+				It("returns the node name of the leader a given node knows about", func() {
+					otherEtcdServer := httptest.NewUnstartedServer(
+						http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+							switch r.URL.Path {
+							case "/v2/stats/self":
+								if r.Method == "GET" {
+									w.WriteHeader(http.StatusOK)
+									w.Write([]byte(`{
+										"leaderInfo": {
+										  "startTime": "2016-09-20T20:41:29.990832596Z",
+										  "uptime": "20m3.379868254s",
+										  "leader": "1b8722e8a026db8e"
+										}
+									}`))
+									return
+								}
+							case "/v2/members":
+								if r.Method == "GET" {
+									w.WriteHeader(http.StatusOK)
+									w.Write([]byte(`{
+										"members": [
+										  {
+											"clientURLs": [
+											  "https://etcd-z1-0.etcd.service.cf.internal:4001"
+											],
+											"peerURLs": [
+											  "https://etcd-z1-0.etcd.service.cf.internal:7001"
+											],
+											"name": "etcd-z1-0",
+											"id": "1b8722e8a026db8e"
+										  },
+										  {
+											"clientURLs": [
+											  "https://etcd-z1-1.etcd.service.cf.internal:4001"
+											],
+											"peerURLs": [
+											  "https://etcd-z1-1.etcd.service.cf.internal:7001"
+											],
+											"name": "etcd-z1-1",
+											"id": "9aac0801933fa6e0"
+										  }
+										]
+									}`))
+									return
+								}
+							default:
+								w.WriteHeader(http.StatusTeapot)
+								return
+							}
+						}),
+					)
+					otherEtcdServer.TLS = &tls.Config{}
+
+					otherEtcdServer.TLS.Certificates = make([]tls.Certificate, 1)
+					var err error
+					otherEtcdServer.TLS.Certificates[0], err = tls.LoadX509KeyPair("../fixtures/server.crt", "../fixtures/server.key")
+					Expect(err).NotTo(HaveOccurred())
+
+					otherEtcdServer.StartTLS()
+
+					parts := strings.Split(otherEtcdServer.URL, ":")
+
+					request, err := http.NewRequest("GET", "/", nil)
+					Expect(err).NotTo(HaveOccurred())
+
+					request.URL.RawQuery = "node=https%3A%2F%2F127.0.0.1%3A" + parts[2]
+
+					handler = handlers.NewLeaderHandler(etcdServer.URL, "../fixtures/ca.crt", "../fixtures/client.crt", "../fixtures/client.key")
+
+					recorder := httptest.NewRecorder()
+					handler.ServeHTTP(recorder, request)
+
+					Expect(recorder.Code).To(Equal(http.StatusOK))
+					Expect(recorder.Body.String()).To(Equal("etcd-z1-0"))
+				})
 			})
 
 			Context("failure cases", func() {

@@ -2,15 +2,20 @@ package deploy_test
 
 import (
 	"acceptance-tests/testing/helpers"
-	"encoding/json"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"strings"
 
+	etcdtc "acceptance-tests/testing/etcd"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	ginkgoconfig "github.com/onsi/ginkgo/config"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
@@ -24,6 +29,7 @@ var _ = Describe("consistency checker", func() {
 				partitionedJobIndex int
 				partitionedJobIP    string
 				otherJobIPs         []string
+				tcClient            etcdtc.Client
 			)
 
 			By("deploying etcd cluster", func() {
@@ -34,6 +40,10 @@ var _ = Describe("consistency checker", func() {
 				var err error
 				etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, configCopy, enableSSL)
 				Expect(err).NotTo(HaveOccurred())
+
+				testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")
+				Expect(err).NotTo(HaveOccurred())
+				tcClient = etcdtc.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
 			})
 
 			By("checking if etcd consistency check reports no split brain", func() {
@@ -43,7 +53,8 @@ var _ = Describe("consistency checker", func() {
 			})
 
 			By("blocking all network traffic on a random etcd node", func() {
-				partitionedJobIndex = rand.Intn(3)
+				rand.Seed(ginkgoconfig.GinkgoConfig.RandomSeed)
+				partitionedJobIndex = rand.Intn(2) + 1
 
 				for _, job := range etcdManifest.Jobs {
 					if job.Name == "etcd_z1" {
@@ -66,49 +77,6 @@ var _ = Describe("consistency checker", func() {
 			By("restarting the partitioned node", func() {
 				err := client.Restart(etcdManifest.Name, "etcd_z1", partitionedJobIndex)
 				Expect(err).NotTo(HaveOccurred())
-			})
-
-			By("checking that the partitioned node has elected itself as leader", func() {
-				if enableSSL {
-					//TODO populate cert, key, ca cert from manifest props
-					//etcdURL := fmt.Sprintf("https://%s:4001", partitionedJobIP)
-					//goEtcdClient, err = goetcd.NewTLSClient(k.etcdURLs, k.clientCert, k.clientKey, k.caCert)
-					//if err != nil {
-					//http.Error(w, err.Error(), http.StatusInternalServerError)
-					//return
-				} else {
-					resp, err := http.Get(fmt.Sprintf("http://%s:4001/v2/stats/self", partitionedJobIP))
-					Expect(err).NotTo(HaveOccurred())
-					Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-					type selfResponse struct {
-						ID string `json:"id"`
-					}
-
-					var selfResp selfResponse
-					err = json.NewDecoder(resp.Body).Decode(&selfResp)
-					Expect(err).NotTo(HaveOccurred())
-
-					type leaderResponse struct {
-						Leader    string                 `json:leader`
-						Followers map[string]interface{} `json:followers`
-					}
-
-					Eventually(func() leaderResponse {
-						resp, err := http.Get(fmt.Sprintf("http://%s:4001/v2/stats/leader", partitionedJobIP))
-						Expect(err).NotTo(HaveOccurred())
-						Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-						var leaderResp leaderResponse
-						err = json.NewDecoder(resp.Body).Decode(&leaderResp)
-						Expect(err).NotTo(HaveOccurred())
-
-						return leaderResp
-					}, "2s", "10s").Should(Equal(leaderResponse{
-						Leader:    selfResp.ID,
-						Followers: map[string]interface{}{},
-					}))
-				}
 			})
 
 			By("removing the blockage of traffic on the partitioned node", func() {
@@ -147,57 +115,71 @@ var _ = Describe("consistency checker", func() {
 })
 
 func blockEtcdTraffic(machineIP string, etcdJobIPs []string) error {
-	ports := []int{4001, 7001}
 
-	for _, port := range ports {
-		for _, etcdJobIP := range etcdJobIPs {
-			req, err := http.NewRequest("PUT", fmt.Sprintf("http://%s:5678/drop?addr=%s&port=%d", machineIP, etcdJobIP, port), strings.NewReader(""))
+	for _, etcdJobIP := range etcdJobIPs {
+		req, err := http.NewRequest("PUT", fmt.Sprintf("http://%s:5678/drop?addr=%s", machineIP, etcdJobIP), strings.NewReader(""))
+		if err != nil {
+			return err
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				return err
+				respBody = []byte("could not read body")
 			}
 
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				respBody, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					respBody = []byte("could not read body")
-				}
-
-				return fmt.Errorf("unexpected status: %d, error: %s", resp.StatusCode, string(respBody))
-			}
+			return fmt.Errorf("unexpected status: %d, error: %s", resp.StatusCode, string(respBody))
 		}
 	}
 	return nil
 }
 
 func unblockEtcdTraffic(machineIP string, etcdJobIPs []string) error {
-	ports := []int{4001, 7001}
 
-	for _, port := range ports {
-		for _, etcdJobIP := range etcdJobIPs {
-			req, err := http.NewRequest("DELETE", fmt.Sprintf("http://%s:5678/drop?addr=%s&port=%d", machineIP, etcdJobIP, port), strings.NewReader(""))
+	for _, etcdJobIP := range etcdJobIPs {
+		req, err := http.NewRequest("DELETE", fmt.Sprintf("http://%s:5678/drop?addr=%s", machineIP, etcdJobIP), strings.NewReader(""))
+		if err != nil {
+			return err
+		}
+
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				return err
+				respBody = []byte("could not read body")
 			}
 
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				respBody, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					respBody = []byte("could not read body")
-				}
-
-				return fmt.Errorf("unexpected status: %d, error: %s", resp.StatusCode, string(respBody))
-			}
+			return fmt.Errorf("unexpected status: %d, error: %s", resp.StatusCode, string(respBody))
 		}
 	}
 	return nil
+}
+
+func etcdTLSClient(manifest etcd.Manifest) (*http.Client, error) {
+	cert, err := tls.X509KeyPair([]byte(manifest.Properties.Etcd.ServerCert), []byte(manifest.Properties.Etcd.ServerKey))
+	if err != nil {
+		return &http.Client{}, err
+	}
+
+	caCert := manifest.Properties.Etcd.CACert
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM([]byte(caCert))
+
+	tlsConfig := &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		RootCAs:      caCertPool,
+	}
+	tlsConfig.BuildNameToCertificate()
+	transport := &http.Transport{TLSClientConfig: tlsConfig}
+	return &http.Client{Transport: transport}, nil
 }

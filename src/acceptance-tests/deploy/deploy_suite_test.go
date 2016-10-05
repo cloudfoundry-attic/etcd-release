@@ -51,8 +51,10 @@ var _ = SynchronizedBeforeSuite(func() []byte {
 })
 
 var _ = SynchronizedAfterSuite(func() {}, func() {
-	err := client.DeleteDeployment(turbulenceManifest.Name)
-	Expect(err).NotTo(HaveOccurred())
+	if len(turbulenceManifest.Name) != 0 {
+		err := client.DeleteDeployment(turbulenceManifest.Name)
+		Expect(err).NotTo(HaveOccurred())
+	}
 })
 
 func bootstrapSuite() (helpers.Config, bosh.Client) {

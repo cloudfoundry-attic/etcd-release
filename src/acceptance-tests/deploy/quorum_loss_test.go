@@ -141,7 +141,7 @@ var _ = Describe("quorum loss", func() {
 })
 
 func jobIndexOfLeader(etcdClient etcdclient.Client) (int, error) {
-	leader, err := etcdClient.Leader("")
+	leader, err := etcdClient.Leader()
 	if err != nil {
 		return -1, err
 	}

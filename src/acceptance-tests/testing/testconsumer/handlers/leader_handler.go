@@ -55,13 +55,21 @@ func (h *LeaderHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		client = &http.Client{}
 	}
 
-	members, err := getMembers(client, h.etcdURL)
+	var etcdURL string
+	node, hasNode := req.URL.Query()["node"]
+	if hasNode {
+		etcdURL = node[0]
+	} else {
+		etcdURL = h.etcdURL
+	}
+
+	members, err := getMembers(client, etcdURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	member, err := getLeader(client, h.etcdURL, members)
+	member, err := getLeader(client, etcdURL, members)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

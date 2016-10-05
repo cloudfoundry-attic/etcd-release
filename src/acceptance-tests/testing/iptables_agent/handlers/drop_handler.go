@@ -1,36 +1,62 @@
 package handlers
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
-	"strings"
+	"os/exec"
 )
 
 type DropHandler struct {
-	ipTablesExecutor func([]string) (string, error)
-	logger           *log.Logger
+	logger   *log.Logger
+	ipTables IPTablesWrapper
 }
 
-func NewDropHandler(ipTablesExecutor func([]string) (string, error)) DropHandler {
+type IPTablesWrapper interface {
+	Run([]string) (string, error)
+}
+
+func NewDropHandler(ipTablesWrapper IPTablesWrapper, writer io.Writer) DropHandler {
 	return DropHandler{
-		ipTablesExecutor: ipTablesExecutor,
-		logger:           log.New(os.Stdout, "[drop handler] ", log.LUTC),
+		logger:   log.New(writer, "[drop handler] ", log.LUTC),
+		ipTables: ipTablesWrapper,
 	}
 }
 
+type RealIPTables struct {
+	command string
+}
+
+func NewIPTables(command string) IPTablesWrapper {
+	return RealIPTables{command: command}
+}
+
+func (iptables RealIPTables) Run(args []string) (string, error) {
+	cmd := exec.Command(iptables.command, args...)
+	output := bytes.NewBuffer([]byte{})
+	cmd.Stdout = output
+	cmd.Stderr = output
+	err := cmd.Run()
+	if err != nil {
+		return output.String(), err
+	}
+
+	return "", nil
+}
+
 func (d *DropHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	log.Printf("received request: %s %s\n", req.Method, req.URL.String())
+	d.logger.Printf("received request: %s %s\n", req.Method, req.URL.String())
 	if req.Method != "PUT" && req.Method != "DELETE" {
 		d.logger.Println("error: not a PUT or DELETE request")
 		rw.WriteHeader(http.StatusNotFound)
 		return
 	}
 
-	addr, port, err := d.queryParams(req.URL)
+	addr, err := d.queryParams(req.URL)
 	if err != nil {
 		d.logger.Printf("error: missing required params (%s)\n", err.Error())
 		rw.WriteHeader(http.StatusBadRequest)
@@ -43,7 +69,16 @@ func (d *DropHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		command = "-D"
 	}
 
-	output, err := d.ipTablesExecutor([]string{command, "OUTPUT", "-p", "tcp", "-d", addr, "--dport", port, "-j", "DROP"})
+	output, err := d.ipTables.Run([]string{command, "INPUT", "-s", addr, "-j", "DROP"})
+	if err != nil {
+		d.logger.Printf("error: iptables failed (%s)\n", err)
+		d.logger.Printf("error: iptables failed output: %s\n", string(output))
+		rw.WriteHeader(http.StatusInternalServerError)
+		rw.Write([]byte(fmt.Sprintf("error: %s\niptables output: %s", err.Error(), string(output))))
+		return
+	}
+
+	output, err = d.ipTables.Run([]string{command, "OUTPUT", "-d", addr, "-j", "DROP"})
 	if err != nil {
 		d.logger.Printf("error: iptables failed (%s)\n", err)
 		d.logger.Printf("error: iptables failed output: %s\n", string(output))
@@ -55,22 +90,12 @@ func (d *DropHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	d.logger.Println("request successful")
 }
 
-func (d *DropHandler) queryParams(url *url.URL) (string, string, error) {
-	errs := []string{}
+func (d *DropHandler) queryParams(url *url.URL) (string, error) {
 	queryVals := url.Query()
 	addr := queryVals.Get("addr")
 	if addr == "" {
-		errs = append(errs, "must provide addr param")
+		return "", errors.New("must provide addr param")
 	}
 
-	port := queryVals.Get("port")
-	if port == "" {
-		errs = append(errs, "must provide port param")
-	}
-
-	if len(errs) > 0 {
-		return "", "", errors.New(strings.Join(errs, ", "))
-	}
-
-	return addr, port, nil
+	return addr, nil
 }

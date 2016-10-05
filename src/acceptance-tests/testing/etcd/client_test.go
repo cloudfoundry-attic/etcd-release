@@ -161,7 +161,7 @@ var _ = Describe("etcd", func() {
 
 			client := etcd.NewClient(testServer.URL)
 
-			leaderName, err := client.Leader("")
+			leaderName, err := client.Leader()
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(leaderName).To(Equal("etcd-z1-2"))
@@ -171,7 +171,7 @@ var _ = Describe("etcd", func() {
 			It("returns an error when the request fails", func() {
 				client := etcd.NewClient("%%%%%%")
 
-				_, err := client.Leader("")
+				_, err := client.Leader()
 				Expect(err.(*url.Error).Op).To(Equal("parse"))
 			})
 
@@ -187,7 +187,7 @@ var _ = Describe("etcd", func() {
 
 				client := etcd.NewClient(testServer.URL)
 
-				_, err := client.Leader("")
+				_, err := client.Leader()
 				Expect(err).To(MatchError("bad things happened"))
 			})
 
@@ -199,7 +199,7 @@ var _ = Describe("etcd", func() {
 
 				client := etcd.NewClient(testServer.URL)
 
-				_, err := client.Leader("")
+				_, err := client.Leader()
 				Expect(err).To(MatchError("unexpected status: 500 Internal Server Error something bad happened"))
 			})
 		})
