@@ -48,7 +48,7 @@ var _ = Describe("Multiple instance rolling upgrade", func() {
 			releaseNumber, err := helpers.DownloadLatestEtcdRelease(client)
 			Expect(err).NotTo(HaveOccurred())
 
-			manifest, err = helpers.DeployEtcdWithInstanceCountAndReleaseVersion(3, client, config, enableSSL, releaseNumber)
+			manifest, err = helpers.DeployEtcdWithInstanceCountAndReleaseVersion("multiple_instance_rolling_upgrade", 3, client, config, enableSSL, releaseNumber)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {

@@ -30,7 +30,7 @@ var _ = Describe("Scaling down instances", func() {
 			testKey = "etcd-key-" + guid
 			testValue = "etcd-value-" + guid
 
-			manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
+			manifest, err = helpers.DeployEtcdWithInstanceCount("scale_down_instances", 3, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {

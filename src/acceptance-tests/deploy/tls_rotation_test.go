@@ -258,7 +258,7 @@ var _ = Describe("TLS rotation", func() {
 
 	BeforeEach(func() {
 		var err error
-		manifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, true)
+		manifest, err = helpers.DeployEtcdWithInstanceCount("tls_rotation_test", 3, client, config, true)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() ([]bosh.VM, error) {

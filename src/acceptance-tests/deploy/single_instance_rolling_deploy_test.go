@@ -30,7 +30,7 @@ var _ = Describe("Single instance rolling deploys", func() {
 			testKey = "etcd-key-" + guid
 			testValue = "etcd-value-" + guid
 
-			manifest, err = helpers.DeployEtcdWithInstanceCount(1, client, config, enableSSL)
+			manifest, err = helpers.DeployEtcdWithInstanceCount("single_instance_rolling_deploy", 1, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {

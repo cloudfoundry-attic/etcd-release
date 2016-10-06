@@ -27,7 +27,7 @@ var _ = Describe("quorum loss", func() {
 
 		BeforeEach(func() {
 			var err error
-			etcdManifest, err = helpers.DeployEtcdWithInstanceCount(5, client, config, enableSSL)
+			etcdManifest, err = helpers.DeployEtcdWithInstanceCount("quorum_loss", 5, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {

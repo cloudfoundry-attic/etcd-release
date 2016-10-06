@@ -36,7 +36,7 @@ var _ = Describe("KillVm", func() {
 			testKey2 = "etcd-key-2-" + guid
 			testValue2 = "etcd-value-2-" + guid
 
-			etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, config, enableSSL)
+			etcdManifest, err = helpers.DeployEtcdWithInstanceCount("kill_vm", 3, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {

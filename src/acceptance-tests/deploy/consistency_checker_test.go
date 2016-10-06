@@ -38,7 +38,7 @@ var _ = Describe("consistency checker", func() {
 				Expect(config.IPTablesAgent).To(BeFalse())
 
 				var err error
-				etcdManifest, err = helpers.DeployEtcdWithInstanceCount(3, client, configCopy, enableSSL)
+				etcdManifest, err = helpers.DeployEtcdWithInstanceCount("consistency_checker", 3, client, configCopy, enableSSL)
 				Expect(err).NotTo(HaveOccurred())
 
 				testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")

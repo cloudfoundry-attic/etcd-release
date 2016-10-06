@@ -37,7 +37,7 @@ var _ = Describe("TLS Upgrade", func() {
 	It("keeps writing to an etcd cluster without interruption", func() {
 		By("deploy non tls etcd", func() {
 			var err error
-			manifest, err = helpers.NewEtcdWithInstanceCount(3, client, config, false)
+			manifest, err = helpers.NewEtcdWithInstanceCount("tls_upgrade", 3, client, config, false)
 			Expect(err).NotTo(HaveOccurred())
 
 			manifest, err = helpers.SetTestConsumerInstanceCount(5, manifest)

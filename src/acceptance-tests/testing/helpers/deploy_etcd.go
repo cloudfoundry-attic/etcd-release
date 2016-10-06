@@ -35,7 +35,7 @@ func ResolveVersionsAndDeploy(manifest etcd.Manifest, client bosh.Client) (err e
 	return
 }
 
-func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd.Config, iaasConfig iaas.Config, err error) {
+func buildManifestInputs(deploymentPrefix string, config Config, client bosh.Client) (manifestConfig etcd.Config, iaasConfig iaas.Config, err error) {
 	guid, err := NewGUID()
 	if err != nil {
 		return
@@ -48,7 +48,7 @@ func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd
 
 	manifestConfig = etcd.Config{
 		DirectorUUID:  info.UUID,
-		Name:          fmt.Sprintf("etcd-%s", guid),
+		Name:          fmt.Sprintf("etcd-%s-%s", deploymentPrefix, guid),
 		IPTablesAgent: config.IPTablesAgent,
 	}
 
@@ -97,8 +97,8 @@ func buildManifestInputs(config Config, client bosh.Client) (manifestConfig etcd
 	return
 }
 
-func DeployEtcdWithInstanceCountAndReleaseVersion(count int, client bosh.Client, config Config, enableSSL bool, releaseVersion string) (manifest etcd.Manifest, err error) {
-	manifest, err = NewEtcdWithInstanceCount(count, client, config, enableSSL)
+func DeployEtcdWithInstanceCountAndReleaseVersion(deploymentPrefix string, count int, client bosh.Client, config Config, enableSSL bool, releaseVersion string) (manifest etcd.Manifest, err error) {
+	manifest, err = NewEtcdWithInstanceCount(deploymentPrefix, count, client, config, enableSSL)
 	if err != nil {
 		return
 	}
@@ -113,8 +113,8 @@ func DeployEtcdWithInstanceCountAndReleaseVersion(count int, client bosh.Client,
 	return
 }
 
-func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
-	manifest, err = DeployEtcdWithInstanceCountAndReleaseVersion(count, client, config, enableSSL, EtcdDevReleaseVersion())
+func DeployEtcdWithInstanceCount(deploymentPrefix string, count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
+	manifest, err = DeployEtcdWithInstanceCountAndReleaseVersion(deploymentPrefix, count, client, config, enableSSL, EtcdDevReleaseVersion())
 	if err != nil {
 		return
 	}
@@ -123,8 +123,8 @@ func DeployEtcdWithInstanceCount(count int, client bosh.Client, config Config, e
 	return
 }
 
-func NewEtcdWithInstanceCount(count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
-	manifestConfig, iaasConfig, err := buildManifestInputs(config, client)
+func NewEtcdWithInstanceCount(deploymentPrefix string, count int, client bosh.Client, config Config, enableSSL bool) (manifest etcd.Manifest, err error) {
+	manifestConfig, iaasConfig, err := buildManifestInputs(deploymentPrefix, config, client)
 	if err != nil {
 		return
 	}
@@ -171,7 +171,7 @@ func SetTestConsumerInstanceCount(count int, manifest etcd.Manifest) (etcd.Manif
 }
 
 func NewEtcdManifestWithTLSUpgrade(manifestName string, client bosh.Client, config Config) (manifest etcd.Manifest, err error) {
-	manifestConfig, iaasConfig, err := buildManifestInputs(config, client)
+	manifestConfig, iaasConfig, err := buildManifestInputs(manifestName, config, client)
 	if err != nil {
 		return
 	}
