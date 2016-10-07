@@ -134,9 +134,12 @@ var _ = Describe("quorum loss", func() {
 					err = client.SetVMResurrection(etcdManifest.Name, "etcd_z1", jobIndexToResurrect, true)
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(func() error {
-						return client.ScanAndFix(etcdManifest.Name, "etcd_z1", []int{jobIndexToResurrect})
-					}, "5m", "1m").ShouldNot(HaveOccurred())
+					Eventually(func() ([]string, error) {
+						return lockedDeployments(client)
+					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
+
+					err = client.ScanAndFix(etcdManifest.Name, "etcd_z1", []int{jobIndexToResurrect})
+					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMs(client, etcdManifest.Name)

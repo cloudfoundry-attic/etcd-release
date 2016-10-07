@@ -74,9 +74,12 @@ var _ = Describe("KillVm", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(func() error {
-						return client.ScanAndFixAll(yaml)
-					}, "5m", "1m").ShouldNot(HaveOccurred())
+					Eventually(func() ([]string, error) {
+						return lockedDeployments(client)
+					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
+
+					err = client.ScanAndFixAll(yaml)
+					Expect(err).NotTo(HaveOccurred())
 
 					err = client.DeleteDeployment(etcdManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
@@ -116,9 +119,12 @@ var _ = Describe("KillVm", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(func() error {
-						return client.ScanAndFixAll(yaml)
-					}, "5m", "1m").ShouldNot(HaveOccurred())
+					Eventually(func() ([]string, error) {
+						return lockedDeployments(client)
+					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
+
+					err = client.ScanAndFixAll(yaml)
+					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMs(client, etcdManifest.Name)
