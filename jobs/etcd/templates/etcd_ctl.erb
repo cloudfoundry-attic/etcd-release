@@ -32,7 +32,6 @@ function main() {
   case $1 in
 
     start)
-
       trap handle_orphaned_etcd TERM
 
       <% if p("etcd.require_ssl") %>
@@ -46,6 +45,12 @@ function main() {
       <% end %>
 
       pid_guard ${PIDFILE} "etcd"
+
+      <% if !p("etcd.disable_network_diagnostics") %>
+        set +e
+        /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh start
+        set -e
+      <% end %>
 
       if ! mountpoint -q ${STORE_DIR}; then
         echo "WARNING: $STORE_DIR is not on a persistent disk as recommended"
@@ -110,6 +115,11 @@ function main() {
       ;;
 
     stop)
+      <% if !p("etcd.disable_network_diagnostics") %>
+        set +e
+        /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
+        set -e
+      <% end %>
 
       kill_and_wait ${PIDFILE}
 

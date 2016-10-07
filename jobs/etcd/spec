@@ -7,6 +7,8 @@ templates:
   etcd_bosh_utils.sh.erb: bin/etcd_bosh_utils.sh
   etcd_ctl.erb: bin/etcd_ctl
   etcd_consistency_checker_ctl.sh.erb: bin/etcd_consistency_checker_ctl
+  etcd_network_diagnostics_run_ctl.sh.erb: bin/etcd_network_diagnostics_run_ctl.sh
+  etcd_network_diagnostics_run.sh.erb: bin/etcd_network_diagnostics_run.sh
 
 packages:
   - etcd-common
@@ -15,6 +17,10 @@ packages:
   - etcd-consistency-checker
 
 properties:
+  etcd.disable_network_diagnostics:
+    description: "Disable network diagnostics for etcd"
+    default: false
+
   etcd.heartbeat_interval_in_milliseconds:
     description: "Interval between heartbeats in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
     default: 50

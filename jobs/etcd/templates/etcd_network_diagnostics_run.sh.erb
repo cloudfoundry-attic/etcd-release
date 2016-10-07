@@ -1,0 +1,65 @@
+#!/bin/bash -xu
+
+function debug(){
+  echo $(date) - ${@}
+}
+
+
+function exit_if_error(){
+  if [ ${1} -ne 0 ]
+  then
+    exit_code=${1}
+    shift
+    debug ${@}
+    exit ${exit_code}
+  fi
+}
+
+function health_check() {
+  local ip
+  ip="${1}"
+  debug "curl http://${ip}:4001/version"
+  curl -v -m 1 "http://${ip}:4001/version" > /dev/null
+  debug "curl against ${ip}: Exited with status ${?}"
+}
+
+function member_list_single_node() {
+  local ip
+  ip="${1}"
+  debug "etcdctl -C ${ip} member list"
+  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "http://${ip}:4001" member list
+  debug "etcdctl -C ${ip} member list: Exited with status ${?}"
+}
+
+function main() {
+  source /var/vcap/jobs/etcd/bin/etcd_bosh_utils.sh
+
+  debug "ifconfig"
+  ifconfig | sed 's/^/  /'
+  echo " "
+
+  while true
+  do
+    debug "Member-list"
+    member_list | sed 's/^/  /'
+    echo " "
+
+    debug "Individually query all members"
+    <% p("etcd.machines").each do |m| %>
+      health_check "<%= m %>" | sed 's/^/  /'
+      member_list_single_node "<%= m %>" | sed 's/^/  /'
+      echo " "
+    <% end %>
+
+    debug "arp cache"
+    arp -v | sed 's/^/  /'
+    echo " "
+
+    debug "Sleeping for 3 seconds"
+    sleep 3
+    echo " "
+    echo " "
+  done
+}
+
+main
