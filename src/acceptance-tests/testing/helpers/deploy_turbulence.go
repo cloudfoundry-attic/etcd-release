@@ -10,6 +10,7 @@ import (
 	"github.com/pivotal-cf-experimental/destiny/iaas"
 	"github.com/pivotal-cf-experimental/destiny/turbulence"
 
+	ginkgoConfig "github.com/onsi/ginkgo/config"
 	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
 )
 
@@ -33,7 +34,7 @@ func NewTurbulenceClient(manifest turbulence.Manifest) turbulenceclient.Client {
 	return turbulenceclient.NewClient(turbulenceUrl, 5*time.Minute, 2*time.Second)
 }
 
-func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, error) {
+func DeployTurbulence(prefix string, client bosh.Client, config Config) (turbulence.Manifest, error) {
 	info, err := client.Info()
 	if err != nil {
 		return turbulence.Manifest{}, err
@@ -46,7 +47,7 @@ func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, e
 
 	manifestConfig := turbulence.Config{
 		DirectorUUID: info.UUID,
-		Name:         "turbulence-etcd-" + guid,
+		Name:         fmt.Sprintf("turbulence-etcd-%s-%s", prefix, guid),
 		BOSH: turbulence.ConfigBOSH{
 			Target:         config.BOSH.Target,
 			Username:       config.BOSH.Username,
@@ -76,7 +77,10 @@ func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, e
 		}
 		var cidrBlock string
 		cidrPool := core.NewCIDRPool("10.0.16.0", 24, 27)
-		cidrBlock = cidrPool.Last()
+		cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode)
+		if err != nil {
+			return turbulence.Manifest{}, err
+		}
 
 		manifestConfig.IPRange = cidrBlock
 		awsConfig.Subnets = []iaas.AWSConfigSubnet{{ID: config.AWS.Subnet, Range: cidrBlock, AZ: "us-east-1a"}}
@@ -87,7 +91,10 @@ func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, e
 
 		var cidrBlock string
 		cidrPool := core.NewCIDRPool("10.244.4.0", 24, 27)
-		cidrBlock = cidrPool.Last()
+		cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode)
+		if err != nil {
+			return turbulence.Manifest{}, err
+		}
 
 		manifestConfig.IPRange = cidrBlock
 	default:

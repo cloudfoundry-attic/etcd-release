@@ -13,6 +13,9 @@ import (
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
+	"github.com/pivotal-cf-experimental/destiny/turbulence"
+
+	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,20 +26,38 @@ var _ = Describe("quorum loss", func() {
 		var (
 			etcdManifest etcd.Manifest
 			etcdClient   etcdclient.Client
+
+			turbulenceManifest turbulence.Manifest
+			turbulenceClient   turbulenceclient.Client
 		)
 
 		BeforeEach(func() {
-			var err error
-			etcdManifest, err = helpers.DeployEtcdWithInstanceCount("quorum_loss", 5, client, config, enableSSL)
-			Expect(err).NotTo(HaveOccurred())
+			By("deploying turbulence", func() {
+				var err error
+				turbulenceManifest, err = helpers.DeployTurbulence("kill_vm", client, config)
+				Expect(err).NotTo(HaveOccurred())
 
-			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMs(client, etcdManifest.Name)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
+				Eventually(func() ([]bosh.VM, error) {
+					return helpers.DeploymentVMs(client, turbulenceManifest.Name)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetTurbulenceVMsFromManifest(turbulenceManifest)))
 
-			testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")
-			Expect(err).NotTo(HaveOccurred())
-			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
+				turbulenceClient = helpers.NewTurbulenceClient(turbulenceManifest)
+			})
+
+			By("deploying a 5 node etcd", func() {
+				var err error
+
+				etcdManifest, err = helpers.DeployEtcdWithInstanceCount("quorum_loss", 5, client, config, enableSSL)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() ([]bosh.VM, error) {
+					return helpers.DeploymentVMs(client, etcdManifest.Name)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
+
+				testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")
+				Expect(err).NotTo(HaveOccurred())
+				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", etcdManifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
+			})
 		})
 
 		AfterEach(func() {
@@ -64,6 +85,11 @@ var _ = Describe("quorum loss", func() {
 					err = client.DeleteDeployment(etcdManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
 				}
+			})
+
+			By("deleting turbulence", func() {
+				err := client.DeleteDeployment(turbulenceManifest.Name)
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 

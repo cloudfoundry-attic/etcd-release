@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 
-	ginkgoConfig "github.com/onsi/ginkgo/config"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/core"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
 	"github.com/pivotal-cf-experimental/destiny/iaas"
+
+	ginkgoConfig "github.com/onsi/ginkgo/config"
 )
 
 func ResolveVersionsAndDeploy(manifest etcd.Manifest, client bosh.Client) (err error) {
