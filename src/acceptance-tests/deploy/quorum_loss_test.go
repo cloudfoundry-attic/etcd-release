@@ -50,9 +50,12 @@ var _ = Describe("quorum loss", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(func() error {
-						return client.ScanAndFixAll(yaml)
-					}, "5m", "1m").ShouldNot(HaveOccurred())
+					Eventually(func() ([]bosh.Lock, error) {
+						return client.Locks()
+					}, "10m", "1m").Should(BeEmpty())
+
+					err = client.ScanAndFixAll(yaml)
+					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMs(client, etcdManifest.Name)
