@@ -50,9 +50,9 @@ var _ = Describe("quorum loss", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(func() ([]bosh.Lock, error) {
-						return client.Locks()
-					}, "10m", "1m").Should(BeEmpty())
+					Eventually(func() ([]string, error) {
+						return lockedDeployments(client)
+					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
 
 					err = client.ScanAndFixAll(yaml)
 					Expect(err).NotTo(HaveOccurred())
@@ -157,4 +157,16 @@ func jobIndexOfLeader(etcdClient etcdclient.Client) (int, error) {
 	}
 
 	return leaderIndex, nil
+}
+
+func lockedDeployments(client bosh.Client) ([]string, error) {
+	var lockNames []string
+	locks, err := client.Locks()
+	if err != nil {
+		return []string{}, err
+	}
+	for _, lock := range locks {
+		lockNames = append(lockNames, lock.Resource[0])
+	}
+	return lockNames, nil
 }
