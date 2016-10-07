@@ -21,7 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("quorum loss", func() {
+var _ = PDescribe("quorum loss", func() {
 	QuorumLossTest := func(enableSSL bool) {
 		var (
 			etcdManifest etcd.Manifest

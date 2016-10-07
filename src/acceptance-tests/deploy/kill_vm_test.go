@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("KillVm", func() {
+var _ = PDescribe("KillVm", func() {
 	KillVMTest := func(enableSSL bool) {
 		var (
 			etcdManifest etcd.Manifest
