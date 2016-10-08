@@ -7,8 +7,8 @@ PKG_DIR=/var/vcap/packages/testconsumer
 PIDFILE=${RUN_DIR}/etcd_testconsumer.pid
 CERT_DIR=/var/vcap/jobs/etcd_testconsumer/config/certs
 
-exec > >(tee -a >(logger -p user.info -t vcap.${SCRIPT_NAME}.stdout) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> ${LOG_DIR}/${SCRIPT_NAME}.log)
-exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W interactive '{lineWithDate="echo [`date +\"%Y-%m-%d %H:%M:%S%z\"`] \"" $0 "\""; system(lineWithDate)  }' >> ${LOG_DIR}/${SCRIPT_NAME}.err.log)
+exec > >(tee -a >(logger -p user.info -t vcap.${SCRIPT_NAME}.stdout) | awk -W interactive '{ system("echo -n [$(date +\"%Y-%m-%d %H:%M:%S%z\")]"); print " " $0 }' >> ${LOG_DIR}/${SCRIPT_NAME}.log)
+exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W interactive '{ system("echo -n [$(date +\"%Y-%m-%d %H:%M:%S%z\")]"); print " " $0 }' >> ${LOG_DIR}/${SCRIPT_NAME}.err.log)
 
 function main() {
   case "${1}" in
