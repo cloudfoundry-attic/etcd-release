@@ -44,12 +44,26 @@ function main() {
     member_list | sed 's/^/  /'
     echo " "
 
+    <%
+        if p("etcd.require_ssl") || p("etcd.peer_require_ssl")
+          cluster_members = p("etcd.machines")
+        else
+          cluster_members = p("etcd.cluster").map do |zone|
+            result = []
+            for i in 0..zone["instances"]-1
+              result << "#{zone["name"].gsub('_', '-')}-#{i}.#{p("etcd.advertise_urls_dns_suffix")}"
+            end
+            result
+          end.flatten
+        end
+    %>
     debug "Individually query all members"
-    <% p("etcd.machines").each do |m| %>
+    <% cluster_members.each do |m| %>
       health_check "<%= m %>" | sed 's/^/  /'
       member_list_single_node "<%= m %>" | sed 's/^/  /'
       echo " "
     <% end %>
+
 
     debug "arp cache"
     arp -v | sed 's/^/  /'
