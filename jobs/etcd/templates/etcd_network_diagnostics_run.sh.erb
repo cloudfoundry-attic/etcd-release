@@ -46,8 +46,6 @@ function main() {
 
     <%
         if p("etcd.require_ssl") || p("etcd.peer_require_ssl")
-          cluster_members = p("etcd.machines")
-        else
           cluster_members = p("etcd.cluster").map do |zone|
             result = []
             for i in 0..zone["instances"]-1
@@ -55,6 +53,8 @@ function main() {
             end
             result
           end.flatten
+        else
+          cluster_members = p("etcd.machines")
         end
     %>
     debug "Individually query all members"
