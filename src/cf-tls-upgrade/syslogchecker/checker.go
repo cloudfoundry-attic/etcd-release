@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -215,7 +214,8 @@ func sendGetRequestToApp(url string) error {
 }
 
 func validateDrainerGotGuid(logContents string, guid string) error {
-	if !strings.Contains(logContents, fmt.Sprintf("log %s", guid)) {
+	var validLogLine = regexp.MustCompile(fmt.Sprintf("\\[APP.*\\].*%s", guid))
+	if !validLogLine.MatchString(logContents) {
 		return errors.New("could not validate the guid on syslog")
 	}
 	return nil

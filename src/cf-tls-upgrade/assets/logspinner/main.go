@@ -14,7 +14,6 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		parts := strings.Split(r.URL.Path, "/")
 
-		fmt.Println(parts)
 		switch string(parts[1]) {
 		case "log":
 			if len(parts) <= 2 {

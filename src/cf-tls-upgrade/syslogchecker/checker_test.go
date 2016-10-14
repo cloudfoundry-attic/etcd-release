@@ -68,8 +68,8 @@ var _ = Describe("Checker", func() {
 		syslogListenerPort = rand.Int()
 		logSpinnerAppName = fmt.Sprintf("my-app-%v", rand.Int())
 		logOutput = []string{
-			fmt.Sprintf("2016-07-28T17:02:49.24-0700 [App/0]      OUT ADDRESS: |127.0.0.1:%v|\n", syslogListenerPort),
-			fmt.Sprintf("2016-07-28T17:02:49.24-0700 [App/0]      log %s", guidGenerator.Generate()),
+			fmt.Sprintf("2016-07-28T17:02:49.24-0700 [APP/PROC/WEB/0]      OUT ADDRESS: |127.0.0.1:%v|\n", syslogListenerPort),
+			fmt.Sprintf("2016-07-28T17:02:49.24-0700 [APP/PROC/WEB/0]      %s", guidGenerator.Generate()),
 		}
 
 		os.Setenv("GOPATH", "/fake/go/path")
@@ -174,8 +174,8 @@ var _ = Describe("Checker", func() {
 			It("records an error when the syslog listener fails to validate it got the guid", func() {
 				sysLogAppName := "syslog-app-some-guid"
 				logOutput = []string{
-					fmt.Sprintf("2016-07-28T17:02:49.24-0700 [App/0]      OUT ADDRESS: |127.0.0.1:%v|\n", syslogListenerPort),
-					fmt.Sprintf("2016-07-28T17:02:49.24-0700 [RTR/0]      log/%s", guidGenerator.Generate()),
+					fmt.Sprintf("2016-07-28T17:02:49.24-0700 [APP/PROC/WEB/0]    OUT ADDRESS: |127.0.0.1:%v|\n", syslogListenerPort),
+					fmt.Sprintf("2016-07-28T17:02:49.24-0700 [RTR/0]             log/%s", guidGenerator.Generate()),
 				}
 
 				checker.Start(logSpinnerAppName, logspinnerServer.URL)
@@ -240,7 +240,7 @@ var _ = Describe("Checker", func() {
 			DescribeTable("records and returns errors during start",
 				func(command string, expectedCommands [][]string, unexpectedCommands []string, errMsg string) {
 					logOutput = []string{
-						"2016-07-28T17:02:49.24-0700 [App/0]      OUT ADDRESS: |127.0.0.1:100|",
+						"2016-07-28T17:02:49.24-0700 [APP/PROC/WEB/0]      OUT ADDRESS: |127.0.0.1:100|",
 					}
 
 					runner.RunCommand.Receives.Stub = func(args ...string) ([]byte, error) {
@@ -414,7 +414,7 @@ var _ = Describe("Checker", func() {
 					case "unbind-service":
 						return []byte("service not bound yet"), &exec.ExitError{}
 					default:
-						return []byte(fmt.Sprintf("2016-07-28T17:02:49.24-0700 [App/0]      OUT ADDRESS: |127.0.0.1:%v|\n", syslogListenerPort)), nil
+						return []byte(fmt.Sprintf("2016-07-28T17:02:49.24-0700 [APP/PROC/WEB/0]      OUT ADDRESS: |127.0.0.1:%v|\n", syslogListenerPort)), nil
 					}
 				}
 

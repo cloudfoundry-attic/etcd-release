@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	"github.com/cloudfoundry/noaa/consumer"
+	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"gopkg.in/yaml.v2"
@@ -30,6 +32,7 @@ const (
 	GUID_NOT_FOUND_ERROR_THRESHOLD        = 1
 	GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD = 2
 	BAD_GATEWAY_ERROR_COUNT_THRESHOLD     = 2
+	MISSING_LOG_THRESHOLD                 = 1000 // Frequency of spammer is 10ms (allow 10s of missing logs)
 )
 
 type gen struct{}
@@ -144,11 +147,17 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 
 		By("spamming logs", func() {
 			consumer := consumer.New(fmt.Sprintf("wss://doppler.%s:4443", config.CF.Domain), &tls.Config{InsecureSkipVerify: true}, nil)
-			msgChan, _ := consumer.Stream(getAppGuid(appName), getToken())
-			spammer = logspammer.NewSpammer(fmt.Sprintf("http://%s.%s", appName, config.CF.Domain), msgChan, 10*time.Millisecond)
+
+			spammer = logspammer.NewSpammer(os.Stdout, time.Sleep,
+				fmt.Sprintf("http://%s.%s", appName, config.CF.Domain),
+				func() (<-chan *events.Envelope, <-chan error) {
+					return consumer.Stream(getAppGuid(appName), getToken())
+				},
+				10*time.Millisecond,
+			)
 			Eventually(func() bool {
 				return spammer.CheckStream()
-			}).Should(BeTrue())
+			}, "10s", "1s").Should(BeTrue())
 
 			err = spammer.Start()
 			Expect(err).NotTo(HaveOccurred())
@@ -202,7 +211,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			err = spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
 
-			spammerErrs := spammer.Check()
+			spammerErrs, missingLogErrors := spammer.Check()
 
 			var errorSet helpers.ErrorSet
 
@@ -231,7 +240,12 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 				}
 			}
 
+			if len(missingLogErrors) > MISSING_LOG_THRESHOLD {
+				fmt.Println(missingLogErrors)
+			}
+
 			Expect(otherErrors).To(HaveLen(0))
+			Expect(len(missingLogErrors)).To(BeNumerically("<=", MISSING_LOG_THRESHOLD))
 			Expect(gatewayTimeoutErrCount).To(BeNumerically("<=", GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD))
 			Expect(badGatewayErrCount).To(BeNumerically("<=", BAD_GATEWAY_ERROR_COUNT_THRESHOLD))
 		})

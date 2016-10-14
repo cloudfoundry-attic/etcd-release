@@ -1,9 +1,11 @@
 package logspammer_test
 
 import (
+	"acceptance-tests/testing/helpers"
 	"cf-tls-upgrade/logspammer"
+	"errors"
+	"io/ioutil"
 
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	noaaerrors "github.com/cloudfoundry/noaa/errors"
 	"github.com/cloudfoundry/sonde-go/events"
 
 	. "github.com/onsi/ginkgo"
@@ -47,7 +50,8 @@ var _ = Describe("logspammer", func() {
 		appServerCallCount int32
 		skipStream         bool
 		l                  sync.Mutex
-		logChannelLock     sync.Mutex
+		channelLock        sync.Mutex
+		sleepDuration      time.Duration
 	)
 
 	var setSkipStream = func(b bool) {
@@ -63,23 +67,35 @@ var _ = Describe("logspammer", func() {
 	}
 
 	var writeLogToChannel = func(envelope *events.Envelope) {
-		logChannelLock.Lock()
-		defer logChannelLock.Unlock()
+		channelLock.Lock()
+		defer channelLock.Unlock()
 
 		noaaConsumer.StreamCall.Returns.OutputChan <- envelope
+	}
+
+	var writeErrorToErrorChannel = func(err error) {
+		channelLock.Lock()
+		defer channelLock.Unlock()
+
+		noaaConsumer.StreamCall.Returns.ErrChan <- err
+	}
+
+	var sleep = func(duration time.Duration) {
+		sleepDuration = duration
 	}
 
 	BeforeEach(func() {
 		atomic.StoreInt32(&appServerCallCount, 0)
 		noaaConsumer = &fakeNoaaConsumer{}
 		noaaConsumer.StreamCall.Returns.OutputChan = make(chan *events.Envelope)
+		noaaConsumer.StreamCall.Returns.ErrChan = make(chan error)
 
 		appServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			if strings.HasPrefix(req.URL.Path, "/log") && req.Method == "GET" {
 				parts := strings.Split(req.URL.Path, "/")
 				w.WriteHeader(http.StatusOK)
 				if getSkipStream() == false {
-					sourceType := "APP"
+					sourceType := "APP/PROC/WEB"
 					messageType := events.LogMessage_OUT
 
 					envelope := &events.Envelope{
@@ -97,7 +113,11 @@ var _ = Describe("logspammer", func() {
 			w.WriteHeader(http.StatusTeapot)
 		}))
 
-		spammer = logspammer.NewSpammer(appServer.URL, noaaConsumer.StreamCall.Returns.OutputChan, 10*time.Millisecond)
+		fakeStreamGenerator := func() (<-chan *events.Envelope, <-chan error) {
+			return noaaConsumer.Stream("some-guid", "some-token")
+		}
+
+		spammer = logspammer.NewSpammer(ioutil.Discard, sleep, appServer.URL, fakeStreamGenerator, 10*time.Millisecond)
 		err := spammer.Start()
 		Expect(err).NotTo(HaveOccurred())
 
@@ -111,16 +131,21 @@ var _ = Describe("logspammer", func() {
 			err := spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
 
-			err = spammer.Check()
-			Expect(err).NotTo(HaveOccurred())
+			spammerErr, logMissingErr := spammer.Check()
+			Expect(spammerErr).NotTo(HaveOccurred())
+			Expect(logMissingErr).NotTo(HaveOccurred())
 
 			Expect(int(atomic.LoadInt32(&appServerCallCount))).To(Equal(len(spammer.LogMessages())))
 		})
 
 		Context("failure cases", func() {
 			It("returns an error when the spammer fails to write to the app", func() {
+				fakeStreamGenerator := func() (<-chan *events.Envelope, <-chan error) {
+					return noaaConsumer.Stream("some-guid", "some-token")
+				}
+
 				spammer.Stop()
-				spammer = logspammer.NewSpammer("", make(chan *events.Envelope), 0)
+				spammer = logspammer.NewSpammer(ioutil.Discard, sleep, "", fakeStreamGenerator, 0)
 				err := spammer.Start()
 				Expect(err).NotTo(HaveOccurred())
 				time.Sleep(100 * time.Millisecond)
@@ -128,8 +153,9 @@ var _ = Describe("logspammer", func() {
 				err = spammer.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				err = spammer.Check()
-				Expect(err).To(MatchError(ContainSubstring("unsupported protocol scheme")))
+				spammerErr, logMissingErr := spammer.Check()
+				Expect(spammerErr).To(MatchError(ContainSubstring("unsupported protocol scheme")))
+				Expect(logMissingErr).NotTo(HaveOccurred())
 			})
 
 			It("returns an error when an app log line is missing", func() {
@@ -145,10 +171,21 @@ var _ = Describe("logspammer", func() {
 				err := spammer.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				logdiff := int(atomic.LoadInt32(&appServerCallCount)) - len(spammer.LogMessages())
-
-				err = spammer.Check()
-				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("missing log lines : %v", logdiff))))
+				spammerErrs, missingLogErrs := spammer.Check()
+				Expect(spammerErrs).NotTo(HaveOccurred())
+				Expect(missingLogErrs).To(Equal(helpers.ErrorSet{
+					"missing log number 1":  1,
+					"missing log number 2":  1,
+					"missing log number 3":  1,
+					"missing log number 4":  1,
+					"missing log number 5":  1,
+					"missing log number 6":  1,
+					"missing log number 7":  1,
+					"missing log number 8":  1,
+					"missing log number 9":  1,
+					"missing log number 10": 1,
+					"missing log number 11": 1,
+				}))
 			})
 		})
 	})
@@ -182,7 +219,7 @@ var _ = Describe("logspammer", func() {
 		})
 
 		It("ignores nil log message", func() {
-			sourceType := "APP"
+			sourceType := "APP/PROC/WEB"
 			messageType := events.LogMessage_OUT
 			envelopeNilMessage := &events.Envelope{
 				LogMessage: nil,
@@ -215,7 +252,7 @@ var _ = Describe("logspammer", func() {
 		})
 
 		It("ignores non message_type OUT messages", func() {
-			sourceType := "APP"
+			sourceType := "APP/PROC/WEB"
 			messageType := events.LogMessage_ERR
 
 			envelope := &events.Envelope{
@@ -239,12 +276,34 @@ var _ = Describe("logspammer", func() {
 				Expect(message).ToNot(ContainSubstring("NOT-AN-OUT-MESSAGE"))
 			}
 		})
+
+		It("refreshes when noaa gets unauthorised error message", func() {
+			writeErrorToErrorChannel(noaaerrors.NewUnauthorizedError("token expired"))
+
+			time.Sleep(5 * time.Millisecond)
+			err := spammer.Stop()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(noaaConsumer.StreamCall.CallCount).To(Equal(2))
+		})
+
+		It("ignore when noaa gets other errors on channel", func() {
+			writeErrorToErrorChannel(errors.New("unknown"))
+
+			time.Sleep(5 * time.Millisecond)
+			err := spammer.Stop()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(noaaConsumer.StreamCall.CallCount).To(Equal(1))
+		})
 	})
 
 	Describe("Stop", func() {
 		It("no longer streams messages when the spammer has been stopped", func() {
 			err := spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
+
+			Expect(sleepDuration).To(Equal(5 * time.Second))
 
 			Eventually(func() bool {
 				select {

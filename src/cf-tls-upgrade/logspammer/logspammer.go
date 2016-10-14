@@ -3,9 +3,13 @@ package logspammer
 import (
 	"acceptance-tests/testing/helpers"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,28 +18,37 @@ import (
 
 type Spammer struct {
 	sync.Mutex
-	appURL      string
-	frequency   time.Duration
-	doneGet     chan struct{}
-	doneMsg     chan struct{}
-	wg          sync.WaitGroup
-	logMessages []string
-	logWritten  int
-	msgChan     <-chan *events.Envelope
-	errors      helpers.ErrorSet
-	prefix      string
+	appURL          string
+	frequency       time.Duration
+	doneGet         chan struct{}
+	doneMsg         chan struct{}
+	wg              sync.WaitGroup
+	logMessages     []string
+	logWritten      int
+	msgChan         <-chan *events.Envelope
+	errChan         <-chan error
+	errors          helpers.ErrorSet
+	prefix          string
+	logger          io.Writer
+	sleeper         func(duration time.Duration)
+	streamGenerator func() (<-chan *events.Envelope, <-chan error)
 }
 
-func NewSpammer(appURL string, msgChan <-chan *events.Envelope, frequency time.Duration) *Spammer {
+func NewSpammer(logger io.Writer, sleeper func(duration time.Duration), appURL string, streamGenerator func() (<-chan *events.Envelope, <-chan error), frequency time.Duration) *Spammer {
+	msgChan, errChan := streamGenerator()
 	return &Spammer{
-		appURL:      appURL,
-		frequency:   frequency,
-		doneGet:     make(chan struct{}),
-		doneMsg:     make(chan struct{}),
-		msgChan:     msgChan,
-		errors:      helpers.ErrorSet{},
-		prefix:      fmt.Sprintf("spammer-%d", rand.Int()),
-		logMessages: []string{},
+		appURL:          appURL,
+		frequency:       frequency,
+		doneGet:         make(chan struct{}),
+		doneMsg:         make(chan struct{}),
+		msgChan:         msgChan,
+		errChan:         errChan,
+		errors:          helpers.ErrorSet{},
+		prefix:          fmt.Sprintf("spammer-%d", rand.Int()),
+		logMessages:     []string{},
+		logger:          logger,
+		sleeper:         sleeper,
+		streamGenerator: streamGenerator,
 	}
 }
 
@@ -64,8 +77,8 @@ func (s *Spammer) CheckStream() bool {
 }
 
 func (s *Spammer) Start() error {
+	s.wg.Add(1)
 	go func() {
-		s.wg.Add(1)
 		for {
 			select {
 			case <-s.doneGet:
@@ -105,11 +118,16 @@ func (s *Spammer) Start() error {
 			select {
 			case <-s.doneMsg:
 				return
+			case err := <-s.errChan:
+				if strings.Contains(err.Error(), "Unauthorized") {
+					s.msgChan, s.errChan = s.streamGenerator()
+				}
+				continue
 			case msg := <-s.msgChan:
 				s.Lock()
 				if msg != nil {
 					if msg.LogMessage != nil {
-						if *msg.LogMessage.SourceType == "APP" && *msg.LogMessage.MessageType == events.LogMessage_OUT {
+						if *msg.LogMessage.SourceType == "APP/PROC/WEB" && *msg.LogMessage.MessageType == events.LogMessage_OUT {
 							s.logMessages = append(s.logMessages, string(msg.LogMessage.Message))
 						}
 					}
@@ -125,22 +143,66 @@ func (s *Spammer) Start() error {
 func (s *Spammer) Stop() error {
 	close(s.doneGet)
 	s.wg.Wait()
-	time.Sleep(1 * time.Second)
+	s.sleeper(5 * time.Second)
 	close(s.doneMsg)
 	return nil
 }
 
-func (s *Spammer) Check() error {
-	diff := s.logWritten - len(s.LogMessages())
-	if diff > 0 {
-		s.errors["missing log lines"] = diff
+func (s *Spammer) Check() (error, error) {
+	receivedLogNumbers := s.getReceivedLogNumbers()
+	logMissing := helpers.ErrorSet{}
+
+	missingLogNumbers := []int{}
+	for expectedLogNumber := 0; expectedLogNumber < s.logWritten; expectedLogNumber++ {
+		if _, found := receivedLogNumbers[expectedLogNumber]; !found {
+			missingLogNumbers = append(missingLogNumbers, expectedLogNumber)
+		}
 	}
 
-	if len(s.errors) > 0 {
-		return s.errors
+	if len(missingLogNumbers) > 0 {
+		s.logger.Write([]byte(fmt.Sprintf("total logs written %d, received logs %d, diff %d\n",
+			s.logWritten,
+			len(receivedLogNumbers),
+			s.logWritten-len(receivedLogNumbers))))
+
+		for _, logNum := range missingLogNumbers {
+			logMissing.Add(fmt.Errorf("missing log number %d", logNum))
+		}
 	}
 
-	return nil
+	if len(s.errors) > 0 && len(logMissing) > 0 {
+		return s.errors, logMissing
+	} else if len(s.errors) > 0 {
+		return s.errors, nil
+	} else if len(logMissing) > 0 {
+		return nil, logMissing
+	}
+	return nil, nil
+}
+
+func (s *Spammer) getReceivedLogNumbers() map[int]bool {
+	receivedMessages := s.LogMessages()
+
+	receivedLogNumbers := map[int]bool{}
+	dropTimestamp := regexp.MustCompile(`\[.*\] `)
+	for _, logMessage := range receivedMessages {
+		// We ignore the message that has the word TEST
+		if strings.Contains(logMessage, "TEST") {
+			continue
+		}
+
+		// [2016-10-12 17:47:49.268214492 +0000 UTC] spammer-324517860517642426-27126-
+		log := dropTimestamp.ReplaceAllLiteralString(logMessage, "")
+		if len(strings.Split(log, "-")) >= 3 {
+			msgIntStr := strings.Split(log, "-")[2]
+			msgInt, err := strconv.Atoi(msgIntStr)
+			if err == nil {
+				receivedLogNumbers[msgInt] = true
+			}
+		}
+	}
+
+	return receivedLogNumbers
 }
 
 func (s *Spammer) LogMessages() []string {
