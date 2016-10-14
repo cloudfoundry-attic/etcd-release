@@ -247,8 +247,6 @@ properties:
     cluster:
     - instances: 3
       name: etcd_z1
-    machines:
-    - etcd.service.cf.internal
     ca_cert: |-
       -----BEGIN CERTIFICATE-----
       MIIFATCCAuugAwIBAgIBATALBgkqhkiG9w0BAQswEjEQMA4GA1UEAxMHZGllZ29D
