@@ -240,12 +240,13 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 				}
 			}
 
-			if len(missingLogErrors) > MISSING_LOG_THRESHOLD {
+			missingLogErrorsCount := len(missingLogErrors.(helpers.ErrorSet))
+			if missingLogErrorsCount > MISSING_LOG_THRESHOLD {
 				fmt.Println(missingLogErrors)
 			}
 
 			Expect(otherErrors).To(HaveLen(0))
-			Expect(len(missingLogErrors)).To(BeNumerically("<=", MISSING_LOG_THRESHOLD))
+			Expect(missingLogErrorsCount).To(BeNumerically("<=", MISSING_LOG_THRESHOLD))
 			Expect(gatewayTimeoutErrCount).To(BeNumerically("<=", GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD))
 			Expect(badGatewayErrCount).To(BeNumerically("<=", BAD_GATEWAY_ERROR_COUNT_THRESHOLD))
 		})
