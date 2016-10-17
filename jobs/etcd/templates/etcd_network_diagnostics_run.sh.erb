@@ -4,31 +4,20 @@ function debug(){
   echo $(date) - ${@}
 }
 
-
-function exit_if_error(){
-  if [ ${1} -ne 0 ]
-  then
-    exit_code=${1}
-    shift
-    debug ${@}
-    exit ${exit_code}
-  fi
-}
-
 function health_check() {
-  local ip
-  ip="${1}"
-  debug "curl http://${ip}:4001/version"
-  curl -v -m 1 "http://${ip}:4001/version" > /dev/null
-  debug "curl against ${ip}: Exited with status ${?}"
+  local node
+  node="${1}"
+  debug "curl ${node}/version"
+  curl -v -m 1 "${node}/version" > /dev/null
+  debug "curl against ${node}: Exited with status ${?}"
 }
 
 function member_list_single_node() {
-  local ip
-  ip="${1}"
-  debug "etcdctl -C ${ip} member list"
-  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "http://${ip}:4001" member list
-  debug "etcdctl -C ${ip} member list: Exited with status ${?}"
+  local node
+  node="${1}"
+  debug "etcdctl -C ${node} member list"
+  /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${node}" member list
+  debug "etcdctl -C ${node} member list: Exited with status ${?}"
 }
 
 function main() {
@@ -44,26 +33,13 @@ function main() {
     member_list | sed 's/^/  /'
     echo " "
 
-    <%
-        if p("etcd.require_ssl") || p("etcd.peer_require_ssl")
-          cluster_members = p("etcd.cluster").map do |zone|
-            result = []
-            for i in 0..zone["instances"]-1
-              result << "#{zone["name"].gsub('_', '-')}-#{i}.#{p("etcd.advertise_urls_dns_suffix")}"
-            end
-            result
-          end.flatten
-        else
-          cluster_members = p("etcd.machines")
-        end
-    %>
     debug "Individually query all members"
-    <% cluster_members.each do |m| %>
-      health_check "<%= m %>" | sed 's/^/  /'
-      member_list_single_node "<%= m %>" | sed 's/^/  /'
+    for cluster_member in $(echo ${cluster_members} | sed 's/,/ /g')
+    do
+      health_check "${cluster_member}" | sed 's/^/  /'
+      member_list_single_node "${cluster_member}" | sed 's/^/  /'
       echo " "
-    <% end %>
-
+    done
 
     debug "arp cache"
     arp -v | sed 's/^/  /'
@@ -71,8 +47,8 @@ function main() {
 
     debug "Sleeping for 3 seconds"
     sleep 3
-    echo " "
-    echo " "
+    echo ""
+    echo ""
   done
 }
 
