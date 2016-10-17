@@ -29,6 +29,9 @@ var _ = Describe("quorum loss", func() {
 
 			turbulenceManifest turbulence.Manifest
 			turbulenceClient   turbulenceclient.Client
+
+			initialKey   string
+			initialValue string
 		)
 
 		BeforeEach(func() {
@@ -98,15 +101,15 @@ var _ = Describe("quorum loss", func() {
 				By("setting and getting a value", func() {
 					guid, err := helpers.NewGUID()
 					Expect(err).NotTo(HaveOccurred())
-					testKey := "etcd-key-" + guid
-					testValue := "etcd-value-" + guid
+					initialKey = "etcd-key-" + guid
+					initialValue = "etcd-value-" + guid
 
-					err = etcdClient.Set(testKey, testValue)
+					err = etcdClient.Set(initialKey, initialValue)
 					Expect(err).NotTo(HaveOccurred())
 
-					value, err := etcdClient.Get(testKey)
+					value, err := etcdClient.Get(initialKey)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(value).To(Equal(testValue))
+					Expect(value).To(Equal(initialValue))
 				})
 
 				By("killing indices", func() {
@@ -144,6 +147,12 @@ var _ = Describe("quorum loss", func() {
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMs(client, etcdManifest.Name)
 					}, "5m", "1m").Should(ContainElement(bosh.VM{JobName: "etcd_z1", Index: jobIndexToResurrect, State: "running"}))
+				})
+
+				By("getting the previous key and value", func() {
+					value, err := etcdClient.Get(initialKey)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(value).To(Equal(initialValue))
 				})
 
 				By("setting and getting a new value", func() {
