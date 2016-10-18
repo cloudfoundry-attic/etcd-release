@@ -6,7 +6,7 @@ function debug(){
 
 function health_check() {
   local node
-  node="${1}"
+  node=$(echo "${1}" | sed 's/https:/http:/')
   debug "curl ${node}/version"
   curl -v -m 1 "${node}/version" > /dev/null
   debug "curl against ${node}: Exited with status ${?}"
@@ -27,8 +27,10 @@ function main() {
   ifconfig | sed 's/^/  /'
   echo " "
 
-  while true
-  do
+  local counter
+  counter=<%= p("etcd.network_diagnostics_duration_in_seconds") %>
+
+  until [ ${counter} -lt 0 ]; do
     debug "Member-list"
     member_list | sed 's/^/  /'
     echo " "
@@ -49,7 +51,11 @@ function main() {
     sleep 3
     echo ""
     echo ""
+
+    let counter-=3
   done
+
+  debug "exiting"
 }
 
 main

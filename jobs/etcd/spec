@@ -21,6 +21,10 @@ properties:
     description: "Enable network diagnostics for etcd"
     default: true
 
+  etcd.network_diagnostics_duration_in_seconds:
+    description: "Time in seconds that network diagnostic logs will be collected at startup"
+    default: 300
+
   etcd.heartbeat_interval_in_milliseconds:
     description: "Interval between heartbeats in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
     default: 50
