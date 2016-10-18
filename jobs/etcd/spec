@@ -17,9 +17,9 @@ packages:
   - etcd-consistency-checker
 
 properties:
-  etcd.disable_network_diagnostics:
-    description: "Disable network diagnostics for etcd"
-    default: false
+  etcd.enable_network_diagnostics:
+    description: "Enable network diagnostics for etcd"
+    default: true
 
   etcd.heartbeat_interval_in_milliseconds:
     description: "Interval between heartbeats in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"

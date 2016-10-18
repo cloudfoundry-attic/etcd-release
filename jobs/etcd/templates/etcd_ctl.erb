@@ -46,7 +46,7 @@ function main() {
 
       pid_guard ${PIDFILE} "etcd"
 
-      <% if !p("etcd.disable_network_diagnostics") %>
+      <% if p("etcd.enable_network_diagnostics") %>
         set +e
         /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh start
         set -e
@@ -115,11 +115,9 @@ function main() {
       ;;
 
     stop)
-      <% if !p("etcd.disable_network_diagnostics") %>
-        set +e
-        /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
-        set -e
-      <% end %>
+      set +e
+      /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
+      set -e
 
       kill_and_wait ${PIDFILE}
 

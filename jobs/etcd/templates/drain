@@ -9,6 +9,8 @@ exec 3>&1
 exec 1>> ${LOG_DIR}/drain.log
 exec 2>> ${LOG_DIR}/drain.log
 
+/var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
+
 safe_teardown "$(member_list)"
 
 echo 0 >&3
