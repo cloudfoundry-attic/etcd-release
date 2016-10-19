@@ -1,8 +1,10 @@
 package syslogchecker_test
 
 import (
+	"acceptance-tests/testing/helpers"
 	"cf-tls-upgrade/syslogchecker"
 	"cf-tls-upgrade/syslogchecker/fakes"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -20,8 +22,9 @@ import (
 )
 
 const (
-	SYSLOG_MANIFEST_PATH = "/fake/go/path/src/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
-	APP_GUID             = "37911525-ae36-46c5-aa4c-951551f192e6"
+	SYSLOG_MANIFEST_PATH           = "/fake/go/path/src/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
+	APP_GUID                       = "37911525-ae36-46c5-aa4c-951551f192e6"
+	runnerRunCallCountPerIteration = 12
 )
 
 type fakeGuidGenerator struct{}
@@ -101,18 +104,63 @@ var _ = Describe("Checker", func() {
 	})
 
 	Describe("Check", func() {
-		It("returns any errors that occurred during checker", func() {
-			checker.Start(logSpinnerAppName, "not-a-real-app")
+		It("returns okay and an error if the errors are below the threshold", func() {
+			runner.RunCommand.Receives.Stub = func(args ...string) ([]byte, error) {
+				if args[0] == "push" && checker.GetIterationCount() < 2 {
+					return nil, errors.New("an error occurred")
+				}
+				if args[0] == "unbind-service" && checker.GetIterationCount() < 2 {
+					return nil, errors.New("an error occurred")
+				}
+
+				if args[0] == "app" {
+					return []byte(APP_GUID), nil
+				}
+				return []byte(strings.Join(logOutput, "")), nil
+			}
+
+			checker.Start(logSpinnerAppName, logspinnerServer.URL)
+
+			expectedIterations := 10
+			expectedMinRunCommandCount := runnerRunCallCountPerIteration * (expectedIterations - 2)
 
 			Eventually(func() int {
 				return len(runner.RunCommand.Commands)
-			}).Should(BeNumerically(">", 9))
+			}, "1s", "5ms").Should(BeNumerically(">", expectedMinRunCommandCount))
 
 			err := checker.Stop()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(checker.Check()).Should(HaveKey(
-				`Get not-a-real-app/log/some-guid: unsupported protocol scheme ""`,
-			))
+
+			ok, iterationCount, errPercent, errs := checker.Check()
+			Expect(ok).To(BeTrue())
+
+			errSet, ok := errs.(helpers.ErrorSet)
+			Expect(ok).To(BeTrue())
+			Expect(iterationCount).To(Equal(expectedIterations))
+			Expect(errPercent).To(Equal(0.2))
+			Expect(errSet).To(HaveLen(2))
+			Expect(errSet).To(HaveKey("syslog drainer application push failed: "))
+			Expect(errSet["syslog drainer application push failed: "]).To(Equal(2))
+			Expect(errSet).To(HaveKey("could not unbind the logger from the application: "))
+			Expect(errSet["could not unbind the logger from the application: "]).To(Equal(2))
+		})
+
+		It("returns not okay and an error if the errors surpass the threshold", func() {
+			checker.Start(logSpinnerAppName, "not-a-real-app")
+
+			expectedIterations := 10
+			expectedMinRunCommandCount := runnerRunCallCountPerIteration * (expectedIterations - 1)
+
+			Eventually(func() int {
+				return len(runner.RunCommand.Commands)
+			}, "1s", "5ms").Should(BeNumerically(">", expectedMinRunCommandCount))
+
+			err := checker.Stop()
+			Expect(err).NotTo(HaveOccurred())
+			ok, _, _, errs := checker.Check()
+			Expect(ok).To(BeFalse())
+			Expect(errs).Should(HaveKey(`Get not-a-real-app/log/some-guid: unsupported protocol scheme ""`))
+			Expect(errs).Should(HaveKey(fmt.Sprintf(`ran %d times, exceeded total error threshold of 0.2: 0.5`, expectedIterations)))
 		})
 	})
 
@@ -149,7 +197,6 @@ var _ = Describe("Checker", func() {
 
 		Context("failure cases", func() {
 			It("records an error when the request to the logger app fails", func() {
-
 				logspinnerServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 					if strings.HasPrefix(req.URL.Path, "/log") && req.Method == "GET" {
 						w.WriteHeader(http.StatusNotFound)
@@ -168,7 +215,8 @@ var _ = Describe("Checker", func() {
 				err := checker.Stop()
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(checker.Check()).To(HaveKey("error sending get request to listener app: 404 - app not found"))
+				_, _, _, err = checker.Check()
+				Expect(err).To(HaveKey("error sending get request to listener app: 404 - app not found"))
 			})
 
 			It("records an error when the syslog listener fails to validate it got the guid", func() {
@@ -194,7 +242,8 @@ var _ = Describe("Checker", func() {
 					{"delete", sysLogAppName, "-f", "-r"},
 				}))
 
-				Expect(checker.Check()).To(HaveKey("could not validate the guid on syslog"))
+				_, _, _, err = checker.Check()
+				Expect(err).To(HaveKey("could not validate the guid on syslog"))
 			})
 
 			It("records the error when it could not get logs from syslog after app restage", func() {
@@ -234,7 +283,8 @@ var _ = Describe("Checker", func() {
 					{"logs", sysLogAppName, "--recent"},
 				}))
 
-				Expect(checker.Check()).To(HaveKey("could not get the logs for syslog drainer app: some error occurred"))
+				_, _, _, err = checker.Check()
+				Expect(err).To(HaveKey("could not get the logs for syslog drainer app: some error occurred"))
 			})
 
 			DescribeTable("records and returns errors during start",
@@ -265,7 +315,8 @@ var _ = Describe("Checker", func() {
 
 					Expect(runner.RunCommand.Commands).NotTo(ContainElement(unexpectedCommands))
 
-					Expect(checker.Check()).To(HaveKey(errMsg))
+					_, _, _, err = checker.Check()
+					Expect(err).To(HaveKey(errMsg))
 					Expect(getMessages()).To(HaveLen(0))
 				},
 				Entry("records an error when the syslog drainer app fails to push",
@@ -377,7 +428,8 @@ var _ = Describe("Checker", func() {
 					{"logs", sysLogAppName, "--recent"},
 				}))
 
-				Expect(checker.Check()).To(HaveKey("could not retrieve the logs from syslog-drainer app: could not retrieve the logs"))
+				_, _, _, err = checker.Check()
+				Expect(err).To(HaveKey("could not retrieve the logs from syslog-drainer app: could not retrieve the logs"))
 				Expect(getMessages()).To(HaveLen(0))
 			})
 
@@ -399,7 +451,8 @@ var _ = Describe("Checker", func() {
 					{"logs", sysLogAppName, "--recent"},
 				}))
 
-				Expect(checker.Check()).To(HaveKey("could not parse the IP address of syslog-drain app"))
+				_, _, _, err := checker.Check()
+				Expect(err).To(HaveKey("could not parse the IP address of syslog-drain app"))
 
 			})
 
@@ -434,10 +487,11 @@ var _ = Describe("Checker", func() {
 					{"delete", sysLogAppName, "-f", "-r"},
 				}))
 
-				Expect(checker.Check()).To(HaveKey("could not validate the guid on syslog"))
-				Expect(checker.Check()).To(HaveKey("could not delete the syslog drainer app: application deletion failed"))
-				Expect(checker.Check()).To(HaveKey("could not unbind the logger from the application: service not bound yet"))
-				Expect(checker.Check()).To(HaveKey("could not delete the service: delete-service failed"))
+				_, _, _, err = checker.Check()
+				Expect(err).To(HaveKey("could not validate the guid on syslog"))
+				Expect(err).To(HaveKey("could not delete the syslog drainer app: application deletion failed"))
+				Expect(err).To(HaveKey("could not unbind the logger from the application: service not bound yet"))
+				Expect(err).To(HaveKey("could not delete the service: delete-service failed"))
 			})
 
 		})

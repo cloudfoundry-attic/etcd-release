@@ -255,25 +255,14 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			err = checker.Stop()
 			Expect(err).NotTo(HaveOccurred())
 
-			checkerErrs := checker.Check()
-
-			if checkerErrs == nil {
-				return
+			if ok, iterationCount, errPercent, errs := checker.Check(); ok {
+				fmt.Println("total errors were within threshold")
+				fmt.Println("total iterations:", iterationCount)
+				fmt.Println("error percentage:", errPercent)
+				fmt.Println(errs)
+			} else {
+				Fail(errs.Error())
 			}
-
-			var errorSet helpers.ErrorSet
-
-			switch checkerErrs.(type) {
-			case helpers.ErrorSet:
-				errorSet = checkerErrs.(helpers.ErrorSet)
-			default:
-				Fail(checkerErrs.Error())
-			}
-
-			Expect(errorSet["could not validate the guid on syslog"]).To(BeNumerically("<=", GUID_NOT_FOUND_ERROR_THRESHOLD))
-			delete(errorSet, "could not validate the guid on syslog")
-
-			Expect(errorSet).To(HaveLen(0))
 		})
 	})
 })

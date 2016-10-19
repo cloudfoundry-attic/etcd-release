@@ -13,6 +13,11 @@ import (
 	"time"
 )
 
+const (
+	totalErrorThreshold = 0.2
+	maxErrsPerIteration = 2
+)
+
 type GuidGenerator interface {
 	Generate() string
 }
@@ -58,8 +63,8 @@ func (c Checker) Start(logSpinnerApp string, logSpinnerAppURL string) error {
 				if err := c.cleanup(logSpinnerApp, syslogDrainAppName); err != nil {
 					c.errors.Add(err)
 				}
+				atomic.AddInt32(c.iterationCount, 1)
 			}
-			atomic.AddInt32(c.iterationCount, 1)
 		}
 	}()
 
@@ -67,7 +72,7 @@ func (c Checker) Start(logSpinnerApp string, logSpinnerAppURL string) error {
 }
 
 func (c Checker) Stop() error {
-	close(c.doneChn)
+	c.doneChn <- struct{}{}
 	return nil
 }
 
@@ -172,11 +177,20 @@ func (c Checker) setupSyslogDrainerApp(syslogDrainerAppName string) error {
 	return nil
 }
 
-func (c Checker) Check() error {
-	if len(c.errors) > 0 {
-		return c.errors
+func (c Checker) Check() (bool, int, float64, error) {
+	iterationCount := int(c.GetIterationCount())
+	errsOccurred := 0
+	for _, errCount := range c.errors {
+		errsOccurred += errCount
 	}
-	return nil
+	errPercent := float64(errsOccurred) / (maxErrsPerIteration * float64(iterationCount))
+	ok := true
+	if errPercent > totalErrorThreshold {
+		ok = false
+		c.errors.Add(fmt.Errorf("ran %v times, exceeded total error threshold of %v: %v", iterationCount, totalErrorThreshold, errPercent))
+	}
+
+	return ok, iterationCount, errPercent, c.errors
 }
 
 func getSyslogAddress(output []byte) (string, error) {
