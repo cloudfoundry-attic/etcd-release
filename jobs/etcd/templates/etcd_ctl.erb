@@ -26,48 +26,6 @@ function handle_orphaned_etcd() {
   kill "${etcd_pid}"
 }
 
-function start_and_sync_etcd() {
-  /var/vcap/packages/etcd/etcd ${etcd_sec_flags}                                              \
-      --name                        ${node_name}                                              \
-      --data-dir                    ${DATA_DIR}                                               \
-      --heartbeat-interval          <%= p("etcd.heartbeat_interval_in_milliseconds") %>       \
-      --election-timeout            <%= p("etcd.election_timeout_in_milliseconds") %>         \
-      --listen-peer-urls            ${listen_peer_url}                                        \
-      --listen-client-urls          ${listen_client_url}                                      \
-      --initial-advertise-peer-urls ${advertise_peer_url}                                     \
-      --advertise-client-urls       ${advertise_client_url}                                   \
-      --initial-cluster             ${cluster}                                                \
-      --initial-cluster-state       ${cluster_state}                                          \
-      2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)             \
-      1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd) &
-
-  etcd_pid=$!
-
-  synced=false
-  wait_for_this_node_to_synchronize # mutates $synced
-
-  if ${synced}; then
-    return
-  else
-    safe_teardown "${prior_member_list}"
-    kill -9 ${etcd_pid}
-    exit 1
-  fi
-}
-
-# Verifies that the peer url in the etcd cluster for this node is correct, this may
-# happen if the job name changes.
-function verify_peer_url() {
-  if [[ -z $(member_list | grep "name=${node_name} peerURLs=${advertise_peer_url}") ]]; then
-    kill -9 ${etcd_pid}
-    sleep 2
-
-    rm -rf ${DATA_DIR}/*
-
-    start_and_sync_etcd
-  fi
-}
-
 function main() {
   mkdir -p ${RUN_DIR}
 
@@ -127,10 +85,32 @@ function main() {
       # the server subsequently expects all peers to agree on the cluster members
       sleep 2
 
-      start_and_sync_etcd
+      /var/vcap/packages/etcd/etcd ${etcd_sec_flags}                                              \
+          --name                        ${node_name}                                              \
+          --data-dir                    ${DATA_DIR}                                               \
+          --heartbeat-interval          <%= p("etcd.heartbeat_interval_in_milliseconds") %>       \
+          --election-timeout            <%= p("etcd.election_timeout_in_milliseconds") %>         \
+          --listen-peer-urls            ${listen_peer_url}                                        \
+          --listen-client-urls          ${listen_client_url}                                      \
+          --initial-advertise-peer-urls ${advertise_peer_url}                                     \
+          --advertise-client-urls       ${advertise_client_url}                                   \
+          --initial-cluster             ${cluster}                                                \
+          --initial-cluster-state       ${cluster_state}                                          \
+          2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)             \
+          1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd) &
 
-      verify_peer_url
-      echo ${etcd_pid} > ${PIDFILE}
+      etcd_pid=$!
+
+      synced=false
+      wait_for_this_node_to_synchronize # mutates $synced
+
+      if ${synced}; then
+        echo ${etcd_pid} > ${PIDFILE}
+      else
+        safe_teardown "${prior_member_list}"
+        kill -9 ${etcd_pid}
+        exit 1
+      fi
 
       ;;
 
