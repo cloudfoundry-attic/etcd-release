@@ -105,14 +105,15 @@ var _ = Describe("KillVm", func() {
 				})
 
 				By("reading the value from etcd", func() {
-					value, err := etcdClient.Get(testKey1)
-					Expect(err).ToNot(HaveOccurred())
-					Expect(value).To(Equal(testValue1))
+					Eventually(func() (string, error) {
+						return etcdClient.Get(testKey1)
+					}, "10s", "1s").Should(Equal(testValue1))
 				})
 
 				By("setting a new persistent value", func() {
-					err := etcdClient.Set(testKey2, testValue2)
-					Expect(err).ToNot(HaveOccurred())
+					Eventually(func() error {
+						return etcdClient.Set(testKey2, testValue2)
+					}, "10s", "1s").Should(Succeed())
 				})
 
 				By("fixing the deployment", func() {
