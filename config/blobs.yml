@@ -3,3 +3,7 @@ golang/go1.6.3.linux-amd64.tar.gz:
   object_id: 777bb709-053a-4447-a239-4cd33ef6b457
   sha: 5e916ba4dd8c2fc43beafca4c08b334c4d0686f3
   size: 84856920
+etcd/etcd-v2.1.1-linux-amd64.tar.gz:
+  object_id: 7c506af5-8fee-4981-beac-8da611a4c7db
+  sha: d90a29e051f8dea2f5bb4200610ccbcec45497d7
+  size: 5608238

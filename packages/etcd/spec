@@ -1,9 +1,5 @@
 ---
 name: etcd
 
-dependencies:
-  - golang1.6
 files:
-  - github.com/coreos/etcd/**/*
-excluded_files:
-  - github.com/coreos/etcd/Godeps/_workspace/src/github.com/prometheus/procfs/fixtures/26231/exe
+  - etcd/etcd-v2.1.1-linux-amd64.tar.gz
