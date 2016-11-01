@@ -1,4 +1,4 @@
-package deploy_test
+package turbulence_test
 
 import (
 	etcdclient "acceptance-tests/testing/etcd"
