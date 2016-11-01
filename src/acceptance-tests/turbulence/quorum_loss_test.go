@@ -13,9 +13,6 @@ import (
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
-	"github.com/pivotal-cf-experimental/destiny/turbulence"
-
-	turbulenceclient "github.com/pivotal-cf-experimental/bosh-test/turbulence"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,34 +24,19 @@ var _ = Describe("quorum loss", func() {
 			etcdManifest etcd.Manifest
 			etcdClient   etcdclient.Client
 
-			turbulenceManifest turbulence.Manifest
-			turbulenceClient   turbulenceclient.Client
-
 			initialKey   string
 			initialValue string
 		)
 
 		BeforeEach(func() {
-			By("deploying turbulence", func() {
-				var err error
-				turbulenceManifest, err = helpers.DeployTurbulence("kill_vm", client, config)
-				Expect(err).NotTo(HaveOccurred())
-
-				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMs(client, turbulenceManifest.Name)
-				}, "1m", "10s").Should(ConsistOf(helpers.GetTurbulenceVMsFromManifest(turbulenceManifest)))
-
-				turbulenceClient = helpers.NewTurbulenceClient(turbulenceManifest)
-			})
-
 			By("deploying a 5 node etcd", func() {
 				var err error
 
-				etcdManifest, err = helpers.DeployEtcdWithInstanceCount("quorum_loss", 5, client, config, enableSSL)
+				etcdManifest, err = helpers.DeployEtcdWithInstanceCount("quorum_loss", 5, boshClient, config, enableSSL)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMs(client, etcdManifest.Name)
+					return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
 				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
 				testConsumerIndex, err := helpers.FindJobIndexByName(etcdManifest, "testconsumer_z1")
@@ -67,7 +49,7 @@ var _ = Describe("quorum loss", func() {
 			By("deleting the deployment", func() {
 				if !CurrentGinkgoTestDescription().Failed {
 					for i := 0; i < 5; i++ {
-						err := client.SetVMResurrection(etcdManifest.Name, "etcd_z1", i, true)
+						err := boshClient.SetVMResurrection(etcdManifest.Name, "etcd_z1", i, true)
 						Expect(err).NotTo(HaveOccurred())
 					}
 
@@ -75,24 +57,19 @@ var _ = Describe("quorum loss", func() {
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]string, error) {
-						return lockedDeployments(client)
+						return lockedDeployments(boshClient)
 					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
 
-					err = client.ScanAndFixAll(yaml)
+					err = boshClient.ScanAndFixAll(yaml)
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return helpers.DeploymentVMs(client, etcdManifest.Name)
+						return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
 					}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
-					err = client.DeleteDeployment(etcdManifest.Name)
+					err = boshClient.DeleteDeployment(etcdManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
 				}
-			})
-
-			By("deleting turbulence", func() {
-				err := client.DeleteDeployment(turbulenceManifest.Name)
-				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
@@ -114,7 +91,7 @@ var _ = Describe("quorum loss", func() {
 
 				By("killing indices", func() {
 					for i := 0; i < 5; i++ {
-						err := client.SetVMResurrection(etcdManifest.Name, "etcd_z1", i, false)
+						err := boshClient.SetVMResurrection(etcdManifest.Name, "etcd_z1", i, false)
 						Expect(err).NotTo(HaveOccurred())
 					}
 
@@ -134,18 +111,18 @@ var _ = Describe("quorum loss", func() {
 					err = turbulenceClient.KillIndices(etcdManifest.Name, "etcd_z1", instances)
 					Expect(err).NotTo(HaveOccurred())
 
-					err = client.SetVMResurrection(etcdManifest.Name, "etcd_z1", jobIndexToResurrect, true)
+					err = boshClient.SetVMResurrection(etcdManifest.Name, "etcd_z1", jobIndexToResurrect, true)
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]string, error) {
-						return lockedDeployments(client)
+						return lockedDeployments(boshClient)
 					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
 
-					err = client.ScanAndFix(etcdManifest.Name, "etcd_z1", []int{jobIndexToResurrect})
+					err = boshClient.ScanAndFix(etcdManifest.Name, "etcd_z1", []int{jobIndexToResurrect})
 					Expect(err).NotTo(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return helpers.DeploymentVMs(client, etcdManifest.Name)
+						return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
 					}, "5m", "1m").Should(ContainElement(bosh.VM{JobName: "etcd_z1", Index: jobIndexToResurrect, State: "running"}))
 				})
 
@@ -197,9 +174,9 @@ func jobIndexOfLeader(etcdClient etcdclient.Client) (int, error) {
 	return leaderIndex, nil
 }
 
-func lockedDeployments(client bosh.Client) ([]string, error) {
+func lockedDeployments(boshClient bosh.Client) ([]string, error) {
 	var lockNames []string
-	locks, err := client.Locks()
+	locks, err := boshClient.Locks()
 	if err != nil {
 		return []string{}, err
 	}

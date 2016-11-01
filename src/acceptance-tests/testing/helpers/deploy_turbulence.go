@@ -34,7 +34,7 @@ func NewTurbulenceClient(manifest turbulence.Manifest) turbulenceclient.Client {
 	return turbulenceclient.NewClient(turbulenceUrl, 5*time.Minute, 2*time.Second)
 }
 
-func DeployTurbulence(prefix string, client bosh.Client, config Config) (turbulence.Manifest, error) {
+func DeployTurbulence(client bosh.Client, config Config) (turbulence.Manifest, error) {
 	info, err := client.Info()
 	if err != nil {
 		return turbulence.Manifest{}, err
@@ -47,7 +47,7 @@ func DeployTurbulence(prefix string, client bosh.Client, config Config) (turbule
 
 	manifestConfig := turbulence.Config{
 		DirectorUUID: info.UUID,
-		Name:         fmt.Sprintf("turbulence-etcd-%s-%s", prefix, guid),
+		Name:         fmt.Sprintf("turbulence-etcd-%s", guid),
 		BOSH: turbulence.ConfigBOSH{
 			Target:         config.BOSH.Target,
 			Username:       config.BOSH.Username,
@@ -77,10 +77,7 @@ func DeployTurbulence(prefix string, client bosh.Client, config Config) (turbule
 		}
 		var cidrBlock string
 		cidrPool := core.NewCIDRPool("10.0.16.0", 24, 27)
-		cidrBlock, err = cidrPool.Get(ginkgoConfig.GinkgoConfig.ParallelNode)
-		if err != nil {
-			return turbulence.Manifest{}, err
-		}
+		cidrBlock = cidrPool.Last()
 
 		manifestConfig.IPRange = cidrBlock
 		awsConfig.Subnets = []iaas.AWSConfigSubnet{{ID: config.AWS.Subnet, Range: cidrBlock, AZ: "us-east-1a"}}
