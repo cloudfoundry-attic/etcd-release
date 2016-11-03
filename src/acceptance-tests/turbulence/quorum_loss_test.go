@@ -29,6 +29,18 @@ var _ = Describe("quorum loss", func() {
 		)
 
 		BeforeEach(func() {
+			By("deploying turbulence", func() {
+				var err error
+				turbulenceManifest, err = helpers.DeployTurbulence(boshClient, config)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() ([]bosh.VM, error) {
+					return helpers.DeploymentVMs(boshClient, turbulenceManifest.Name)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetTurbulenceVMsFromManifest(turbulenceManifest)))
+
+				turbulenceClient = helpers.NewTurbulenceClient(turbulenceManifest)
+			})
+
 			By("deploying a 5 node etcd", func() {
 				var err error
 
@@ -58,7 +70,7 @@ var _ = Describe("quorum loss", func() {
 
 					Eventually(func() ([]string, error) {
 						return lockedDeployments(boshClient)
-					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
+					}, "12m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
 
 					err = boshClient.ScanAndFixAll(yaml)
 					Expect(err).NotTo(HaveOccurred())
@@ -70,6 +82,11 @@ var _ = Describe("quorum loss", func() {
 					err = boshClient.DeleteDeployment(etcdManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
 				}
+			})
+
+			By("deleting turbulence", func() {
+				err := boshClient.DeleteDeployment(turbulenceManifest.Name)
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
@@ -116,7 +133,7 @@ var _ = Describe("quorum loss", func() {
 
 					Eventually(func() ([]string, error) {
 						return lockedDeployments(boshClient)
-					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
+					}, "12m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
 
 					err = boshClient.ScanAndFix(etcdManifest.Name, "etcd_z1", []int{jobIndexToResurrect})
 					Expect(err).NotTo(HaveOccurred())

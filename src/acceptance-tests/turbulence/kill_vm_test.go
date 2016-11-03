@@ -36,6 +36,18 @@ var _ = Describe("KillVm", func() {
 			testKey2 = "etcd-key-2-" + guid
 			testValue2 = "etcd-value-2-" + guid
 
+			By("deploying turbulence", func() {
+				var err error
+				turbulenceManifest, err = helpers.DeployTurbulence(boshClient, config)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() ([]bosh.VM, error) {
+					return helpers.DeploymentVMs(boshClient, turbulenceManifest.Name)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetTurbulenceVMsFromManifest(turbulenceManifest)))
+
+				turbulenceClient = helpers.NewTurbulenceClient(turbulenceManifest)
+			})
+
 			By("deploying 3 node etcd", func() {
 				etcdManifest, err = helpers.DeployEtcdWithInstanceCount("kill_vm", 3, boshClient, config, enableSSL)
 				Expect(err).NotTo(HaveOccurred())
@@ -58,7 +70,7 @@ var _ = Describe("KillVm", func() {
 
 					Eventually(func() ([]string, error) {
 						return lockedDeployments(boshClient)
-					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
+					}, "12m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
 
 					err = boshClient.ScanAndFixAll(yaml)
 					Expect(err).NotTo(HaveOccurred())
@@ -66,6 +78,11 @@ var _ = Describe("KillVm", func() {
 					err = boshClient.DeleteDeployment(etcdManifest.Name)
 					Expect(err).NotTo(HaveOccurred())
 				}
+			})
+
+			By("deleting turbulence", func() {
+				err := boshClient.DeleteDeployment(turbulenceManifest.Name)
+				Expect(err).NotTo(HaveOccurred())
 			})
 		})
 
@@ -99,7 +116,7 @@ var _ = Describe("KillVm", func() {
 
 					Eventually(func() ([]string, error) {
 						return lockedDeployments(boshClient)
-					}, "10m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
+					}, "12m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
 
 					err = boshClient.ScanAndFixAll(yaml)
 					Expect(err).NotTo(HaveOccurred())
