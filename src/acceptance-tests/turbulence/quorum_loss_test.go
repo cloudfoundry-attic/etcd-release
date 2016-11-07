@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = PDescribe("quorum loss", func() {
+var _ = Describe("quorum loss", func() {
 	QuorumLossTest := func(enableSSL bool) {
 		var (
 			etcdManifest etcd.Manifest
@@ -68,12 +68,9 @@ var _ = PDescribe("quorum loss", func() {
 					yaml, err := etcdManifest.ToYAML()
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(func() ([]string, error) {
-						return lockedDeployments(boshClient)
-					}, "12m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
-
-					err = boshClient.ScanAndFixAll(yaml)
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						return boshClient.ScanAndFixAll(yaml)
+					}, "12m", "1m").ShouldNot(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
@@ -131,12 +128,9 @@ var _ = PDescribe("quorum loss", func() {
 					err = boshClient.SetVMResurrection(etcdManifest.Name, "etcd_z1", jobIndexToResurrect, true)
 					Expect(err).NotTo(HaveOccurred())
 
-					Eventually(func() ([]string, error) {
-						return lockedDeployments(boshClient)
-					}, "12m", "1m").ShouldNot(ContainElement(etcdManifest.Name))
-
-					err = boshClient.ScanAndFix(etcdManifest.Name, "etcd_z1", []int{jobIndexToResurrect})
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						return boshClient.ScanAndFix(etcdManifest.Name, "etcd_z1", []int{jobIndexToResurrect})
+					}, "12m", "1m").ShouldNot(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMs(boshClient, etcdManifest.Name)
