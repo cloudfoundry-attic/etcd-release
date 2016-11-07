@@ -35,3 +35,7 @@ properties:
   etcd_proxy.port:
     description: "port of proxy server"
     default: 4001
+
+  etcd_proxy.ip:
+    description: "IP of proxy server"
+    default: "0.0.0.0"
