@@ -58,6 +58,10 @@ properties:
   etcd.client_key:
     description: "PEM-encoded client key"
 
+  etcd.client_ip:
+    description: "IP for etcd client"
+    default: "0.0.0.0"
+
   etcd.peer_require_ssl:
     description: "enable ssl between etcd peers"
     default: true
@@ -70,6 +74,10 @@ properties:
 
   etcd.peer_key:
     description: "PEM-encoded peer key"
+
+  etcd.peer_ip:
+    description: "IP for etcd peer"
+    default: "0.0.0.0"
 
   etcd.dns_health_check_host:
     description: "Host to ping for confirmation of DNS resolution"
