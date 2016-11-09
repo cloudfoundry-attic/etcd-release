@@ -4,7 +4,7 @@ SCRIPT_DIR=$(dirname $0)
 
 function main(){
   ulimit -v unlimited
-  ulimit -n 4096
+  ulimit -n 100000
   sudo -u vcap $SCRIPT_DIR/etcd_ctl $@
 }
 
