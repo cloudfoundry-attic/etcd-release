@@ -19,6 +19,7 @@ import (
 type Flags struct {
 	EtcdDNSSuffix  string
 	EtcdPort       string
+	IP             string
 	Port           string
 	CACertFilePath string
 	CertFilePath   string
@@ -29,6 +30,7 @@ func main() {
 	flags := Flags{}
 	flag.StringVar(&flags.EtcdDNSSuffix, "etcd-dns-suffix", "", "domain of etcd cluster")
 	flag.StringVar(&flags.EtcdPort, "etcd-port", "4001", "port that etcd server is running on")
+	flag.StringVar(&flags.IP, "ip", "", "ip of the proxy server")
 	flag.StringVar(&flags.Port, "port", "", "port of the proxy server")
 	flag.StringVar(&flags.CACertFilePath, "cacert", "", "path to the etcd ca certificate")
 	flag.StringVar(&flags.CertFilePath, "cert", "", "path to the etcd client certificate")
@@ -72,7 +74,7 @@ func main() {
 		proxy.ServeHTTP(w, r)
 	})
 
-	if err := http.ListenAndServe(":"+flags.Port, nil); err != nil {
+	if err := http.ListenAndServe(flags.IP+":"+flags.Port, nil); err != nil {
 		fail(err)
 	}
 }
