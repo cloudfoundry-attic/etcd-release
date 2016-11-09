@@ -6,6 +6,7 @@ templates:
   drain: bin/drain
   etcd_bosh_utils.sh.erb: bin/etcd_bosh_utils.sh
   etcd_ctl.erb: bin/etcd_ctl
+  etcd_ctl_wrapper.erb: bin/etcd_ctl_wrapper
   etcd_consistency_checker_ctl.sh.erb: bin/etcd_consistency_checker_ctl
   etcd_network_diagnostics_run_ctl.sh.erb: bin/etcd_network_diagnostics_run_ctl.sh
   etcd_network_diagnostics_run.sh.erb: bin/etcd_network_diagnostics_run.sh

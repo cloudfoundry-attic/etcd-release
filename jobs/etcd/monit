@@ -1,7 +1,7 @@
 check process etcd
   with pidfile /var/vcap/sys/run/etcd/etcd.pid
-  start program "/usr/bin/timeout 55 /var/vcap/jobs/etcd/bin/etcd_ctl start"
-    as uid vcap and gid vcap with timeout 60 seconds
+  start program "/usr/bin/timeout 55 /var/vcap/jobs/etcd/bin/etcd_ctl_wrapper start"
+    with timeout 60 seconds
   stop program "/var/vcap/jobs/etcd/bin/etcd_ctl stop"
   group vcap
 

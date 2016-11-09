@@ -22,15 +22,8 @@ function create_directories_and_chown_to_vcap() {
     chown -R vcap:vcap ${RUN_DIR}
 }
 
-function set_ulimit() {
-  # Allowed number of open file descriptors
-  ulimit -n 100000
-}
-
 function main() {
   create_directories_and_chown_to_vcap
-
-  set_ulimit
 }
 
 main
