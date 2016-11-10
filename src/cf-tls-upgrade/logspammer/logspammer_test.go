@@ -51,7 +51,6 @@ var _ = Describe("logspammer", func() {
 		skipStream         bool
 		l                  sync.Mutex
 		channelLock        sync.Mutex
-		sleepDuration      time.Duration
 	)
 
 	var setSkipStream = func(b bool) {
@@ -78,10 +77,6 @@ var _ = Describe("logspammer", func() {
 		defer channelLock.Unlock()
 
 		noaaConsumer.StreamCall.Returns.ErrChan <- err
-	}
-
-	var sleep = func(duration time.Duration) {
-		sleepDuration = duration
 	}
 
 	BeforeEach(func() {
@@ -117,7 +112,7 @@ var _ = Describe("logspammer", func() {
 			return noaaConsumer.Stream("some-guid", "some-token")
 		}
 
-		spammer = logspammer.NewSpammer(ioutil.Discard, sleep, appServer.URL, fakeStreamGenerator, 10*time.Millisecond)
+		spammer = logspammer.NewSpammer(ioutil.Discard, appServer.URL, fakeStreamGenerator, 10*time.Millisecond)
 		err := spammer.Start()
 		Expect(err).NotTo(HaveOccurred())
 
@@ -145,7 +140,7 @@ var _ = Describe("logspammer", func() {
 				}
 
 				spammer.Stop()
-				spammer = logspammer.NewSpammer(ioutil.Discard, sleep, "", fakeStreamGenerator, 0)
+				spammer = logspammer.NewSpammer(ioutil.Discard, "", fakeStreamGenerator, 0)
 				err := spammer.Start()
 				Expect(err).NotTo(HaveOccurred())
 				time.Sleep(100 * time.Millisecond)
@@ -302,8 +297,6 @@ var _ = Describe("logspammer", func() {
 		It("no longer streams messages when the spammer has been stopped", func() {
 			err := spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
-
-			Expect(sleepDuration).To(Equal(5 * time.Second))
 
 			Eventually(func() bool {
 				select {

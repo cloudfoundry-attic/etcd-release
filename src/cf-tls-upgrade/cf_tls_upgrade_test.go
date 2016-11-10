@@ -148,8 +148,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 		By("spamming logs", func() {
 			consumer := consumer.New(fmt.Sprintf("wss://doppler.%s:4443", config.CF.Domain), &tls.Config{InsecureSkipVerify: true}, nil)
 
-			spammer = logspammer.NewSpammer(os.Stdout, time.Sleep,
-				fmt.Sprintf("http://%s.%s", appName, config.CF.Domain),
+			spammer = logspammer.NewSpammer(os.Stdout, fmt.Sprintf("http://%s.%s", appName, config.CF.Domain),
 				func() (<-chan *events.Envelope, <-chan error) {
 					return consumer.Stream(getAppGuid(appName), getToken())
 				},
@@ -202,11 +201,6 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			}, "1m", "10s").Should(ConsistOf(expectedVMs))
 		})
 
-		By("running a couple iterations of the syslog-drain checker", func() {
-			count := checker.GetIterationCount()
-			Eventually(checker.GetIterationCount, "10m", "10s").Should(BeNumerically(">", count+2))
-		})
-
 		By("stopping spammer and checking for errors", func() {
 			err = spammer.Stop()
 			Expect(err).NotTo(HaveOccurred())
@@ -249,6 +243,11 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			Expect(missingLogErrorsCount).To(BeNumerically("<=", MISSING_LOG_THRESHOLD))
 			Expect(gatewayTimeoutErrCount).To(BeNumerically("<=", GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD))
 			Expect(badGatewayErrCount).To(BeNumerically("<=", BAD_GATEWAY_ERROR_COUNT_THRESHOLD))
+		})
+
+		By("running a couple iterations of the syslog-drain checker", func() {
+			count := checker.GetIterationCount()
+			Eventually(checker.GetIterationCount, "10m", "10s").Should(BeNumerically(">", count+2))
 		})
 
 		By("stopping syslogchecker and checking for errors", func() {

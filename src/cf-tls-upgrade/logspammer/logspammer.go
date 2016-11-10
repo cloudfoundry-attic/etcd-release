@@ -23,6 +23,7 @@ type Spammer struct {
 	doneGet         chan struct{}
 	doneMsg         chan struct{}
 	wg              sync.WaitGroup
+	doneWaitGroup   sync.WaitGroup
 	logMessages     []string
 	logWritten      int
 	msgChan         <-chan *events.Envelope
@@ -30,11 +31,10 @@ type Spammer struct {
 	errors          helpers.ErrorSet
 	prefix          string
 	logger          io.Writer
-	sleeper         func(duration time.Duration)
 	streamGenerator func() (<-chan *events.Envelope, <-chan error)
 }
 
-func NewSpammer(logger io.Writer, sleeper func(duration time.Duration), appURL string, streamGenerator func() (<-chan *events.Envelope, <-chan error), frequency time.Duration) *Spammer {
+func NewSpammer(logger io.Writer, appURL string, streamGenerator func() (<-chan *events.Envelope, <-chan error), frequency time.Duration) *Spammer {
 	msgChan, errChan := streamGenerator()
 	return &Spammer{
 		appURL:          appURL,
@@ -47,7 +47,6 @@ func NewSpammer(logger io.Writer, sleeper func(duration time.Duration), appURL s
 		prefix:          fmt.Sprintf("spammer-%d", rand.Int()),
 		logMessages:     []string{},
 		logger:          logger,
-		sleeper:         sleeper,
 		streamGenerator: streamGenerator,
 	}
 }
@@ -78,11 +77,14 @@ func (s *Spammer) CheckStream() bool {
 
 func (s *Spammer) Start() error {
 	s.wg.Add(1)
+	s.doneWaitGroup.Add(1)
 	go func() {
 		for {
 			select {
 			case <-s.doneGet:
 				s.wg.Done()
+				close(s.doneMsg)
+				s.doneWaitGroup.Wait()
 				return
 			case <-time.After(s.frequency):
 				resp, err := http.Get(fmt.Sprintf("%s/log/%s-%d-", s.appURL, s.prefix, s.logWritten))
@@ -143,8 +145,6 @@ func (s *Spammer) Start() error {
 func (s *Spammer) Stop() error {
 	close(s.doneGet)
 	s.wg.Wait()
-	s.sleeper(5 * time.Second)
-	close(s.doneMsg)
 	return nil
 }
 
