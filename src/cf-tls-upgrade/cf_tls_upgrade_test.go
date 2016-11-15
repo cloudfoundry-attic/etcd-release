@@ -32,7 +32,7 @@ const (
 	GUID_NOT_FOUND_ERROR_THRESHOLD        = 1
 	GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD = 2
 	BAD_GATEWAY_ERROR_COUNT_THRESHOLD     = 2
-	MISSING_LOG_THRESHOLD                 = 1000 // Frequency of spammer is 10ms (allow 10s of missing logs)
+	MISSING_LOG_THRESHOLD                 = 200 // Frequency of spammer is 100ms (allow 20s of missing logs)
 )
 
 type gen struct{}
@@ -152,7 +152,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 				func() (<-chan *events.Envelope, <-chan error) {
 					return consumer.Stream(getAppGuid(appName), getToken())
 				},
-				10*time.Millisecond,
+				100*time.Millisecond,
 			)
 			Eventually(func() bool {
 				return spammer.CheckStream()
