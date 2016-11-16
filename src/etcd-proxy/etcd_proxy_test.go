@@ -286,6 +286,31 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 			Expect(session.ExitCode()).To(Equal(1))
 			Expect(session.Err.Contents()).To(ContainSubstring("failed to reach etcd-cluster: "))
 		})
+
+		It("returns an error when it fails to bind to ip", func() {
+			var err error
+			etcdServer := startMockETCDServer()
+			etcdServerURL, err := url.Parse(etcdServer.URL)
+			Expect(err).NotTo(HaveOccurred())
+
+			etcdServerHost := strings.Split(etcdServerURL.Host, ":")[0]
+			etcdServerPort := strings.Split(etcdServerURL.Host, ":")[1]
+			command := exec.Command(pathToEtcdProxy,
+				"--etcd-dns-suffix", etcdServerHost,
+				"--etcd-port", etcdServerPort,
+				"--ip", "%%%",
+				"--port", port,
+				"--cacert", caCertFilePath,
+				"--cert", clientCertFilePath,
+				"--key", clientKeyFilePath,
+			)
+			session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Eventually(session).Should(gexec.Exit())
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(session.ExitCode()).To(Equal(1))
+			Expect(session.Err.Contents()).To(ContainSubstring("missing brackets in address %%%"))
+		})
 	})
 })
 
