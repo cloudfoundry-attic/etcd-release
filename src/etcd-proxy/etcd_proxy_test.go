@@ -175,6 +175,46 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 		})
 	})
 
+	It("returns the proxy ip in /v2/members", func() {
+		etcdServer := startMockETCDServer()
+
+		etcdServerURL, err := url.Parse(etcdServer.URL)
+		Expect(err).NotTo(HaveOccurred())
+
+		etcdServerHost := strings.Split(etcdServerURL.Host, ":")[0]
+		etcdServerPort := strings.Split(etcdServerURL.Host, ":")[1]
+
+		command := exec.Command(pathToEtcdProxy,
+			"--etcd-dns-suffix", etcdServerHost,
+			"--etcd-port", etcdServerPort,
+			"--port", port,
+			"--cacert", caCertFilePath,
+			"--cert", clientCertFilePath,
+			"--key", clientKeyFilePath,
+			"--advertise-ip", "10.0.2.123",
+		)
+
+		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+
+		waitForServerToStart(port)
+
+		statusCode, body, err := makeRequest("GET", fmt.Sprintf("http://localhost:%s/v2/members", port), "")
+		Expect(statusCode).To(Equal(http.StatusOK))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(body).To(MatchJSON(fmt.Sprintf(`{
+			"members": [
+				{
+					"id":"xxxxxxxxxxxxxxxx",
+					"name":"proxy",
+					"clientURLs": ["http://10.0.2.123:%s"]
+				}
+			]
+		}`, port)))
+
+		Expect(session.Err.Contents()).To(ContainSubstring("RequestURI:/v2/members"))
+	})
+
 	Context("failure cases", func() {
 		It("returns an error when an unknown flag is provided", func() {
 			var err error
