@@ -41,8 +41,6 @@ jobs:
     release: consul
   - name: etcd
     release: etcd
-  - name: iptables_agent
-    release: etcd
 
 networks:
 - name: etcd1
