@@ -30,7 +30,7 @@ var _ = Describe("Scaling down instances", func() {
 			testKey = "etcd-key-" + guid
 			testValue = "etcd-value-" + guid
 
-			manifest, err = helpers.DeployEtcdWithInstanceCount("scale_down_instances", 3, client, config, enableSSL)
+			manifest, err = helpers.DeployEtcdWithInstanceCount("scale_down_instances", 5, client, config, enableSSL)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
@@ -49,18 +49,18 @@ var _ = Describe("Scaling down instances", func() {
 			}
 		})
 
-		It("scales from 3 to 1 nodes", func() {
+		It("scales from 5 to 3 nodes", func() {
 			By("setting a persistent value", func() {
 				err := etcdClient.Set(testKey, testValue)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			By("scaling down to 1 node", func() {
+			By("scaling down to 3 node", func() {
 				var err error
-				manifest, err = helpers.SetEtcdInstanceCount(1, manifest)
+				manifest, err = helpers.SetEtcdInstanceCount(3, manifest)
 
 				members := manifest.EtcdMembers()
-				Expect(members).To(HaveLen(1))
+				Expect(members).To(HaveLen(3))
 
 				yaml, err := manifest.ToYAML()
 				Expect(err).NotTo(HaveOccurred())
