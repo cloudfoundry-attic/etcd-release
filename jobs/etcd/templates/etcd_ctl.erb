@@ -60,7 +60,14 @@ function main() {
 
       create_cert_files
 
-      prior_member_list=$(member_list)
+      prior_member_list=""
+      for i in $(seq 5); do
+        prior_member_list=$(member_list)
+        if [ -n "${prior_member_list}" ]; then
+          break
+        fi
+        sleep 1
+      done
 
       if [ -z "${prior_member_list}" ]; then
         cluster_state=new
