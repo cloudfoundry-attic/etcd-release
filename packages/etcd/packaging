@@ -1,4 +1,4 @@
 set -e -x
 
-tar xzf etcd/etcd-v2.2.0-linux-amd64.tar.gz
-cp -R etcd-v2.2.0-linux-amd64/* ${BOSH_INSTALL_TARGET}
+tar xzf etcd/etcd-v2.2.0-tls1.2-patch-linux-amd64.tar.gz
+cp -R etcd-v2.2.0-tls1.2-patch-linux-amd64/* ${BOSH_INSTALL_TARGET}

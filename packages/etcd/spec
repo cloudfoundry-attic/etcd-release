@@ -2,4 +2,4 @@
 name: etcd
 
 files:
-  - etcd/etcd-v2.2.0-linux-amd64.tar.gz
+  - etcd/etcd-v2.2.0-tls1.2-patch-linux-amd64.tar.gz
