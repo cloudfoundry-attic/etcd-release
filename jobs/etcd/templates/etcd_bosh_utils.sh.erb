@@ -131,7 +131,7 @@ etcd_sec_flags="${etcd_sec_flags} ${etcd_peer_sec_flags}"
 
 create_cert_files() {
   true
-
+  set +x
   <% if p("etcd.require_ssl") %>
   echo -n '<%= p("etcd.ca_cert") %>' > ${ca_cert_file}
   echo -n '<%= p("etcd.server_cert") %>' > ${server_cert_file}
@@ -150,6 +150,7 @@ create_cert_files() {
   chown vcap:vcap ${CERT_DIR}/*.{crt,key}
   chmod 640 ${CERT_DIR}/*.{crt,key}
   <% end %>
+  set -x
 }
 
 member_list() {
