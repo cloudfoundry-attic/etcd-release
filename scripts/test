@@ -33,6 +33,8 @@ function main() {
 
   upload_releases "${scripts_dir}"
   force_compilation "${scripts_dir}"
+
+  unset_bosh_config
   bash -c "${scripts_dir}/../src/acceptance-tests/scripts/test $@"
 }
 
@@ -41,6 +43,14 @@ function parse_config() {
   export BOSH_DIRECTOR=$(jq --raw-output '.bosh.target' "${EATS_CONFIG}")
   export BOSH_USER=$(jq --raw-output '.bosh.username' "${EATS_CONFIG}")
   export BOSH_PASSWORD=$(jq --raw-output '.bosh.password' "${EATS_CONFIG}")
+  set -x
+}
+
+function unset_bosh_config() {
+  set +x
+  unset BOSH_DIRECTOR
+  unset BOSH_USER
+  unset BOSH_PASSWORD
   set -x
 }
 
@@ -84,6 +94,7 @@ function upload_release() {
 }
 
 function cleanup_releases() {
+  parse_config
   set +e
   bosh -t "${BOSH_DIRECTOR}" -n delete release turbulence "${turbulence_version}"
   bosh -t "${BOSH_DIRECTOR}" -n delete release bosh-warden-cpi "${warden_cpi_version}"

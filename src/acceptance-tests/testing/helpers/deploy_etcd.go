@@ -36,6 +36,19 @@ func ResolveVersionsAndDeploy(manifest etcd.Manifest, client bosh.Client) (err e
 	return
 }
 
+func ResolveVersionsAndDeployV2(manifest string, client bosh.Client) (err error) {
+	yaml, err := client.ResolveManifestVersionsV2([]byte(manifest))
+	if err != nil {
+		return
+	}
+	_, err = client.Deploy(yaml)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func buildManifestInputs(deploymentPrefix string, config Config, client bosh.Client) (manifestConfig etcd.Config, iaasConfig iaas.Config, err error) {
 	guid, err := NewGUID()
 	if err != nil {
