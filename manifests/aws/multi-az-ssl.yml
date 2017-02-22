@@ -13,6 +13,7 @@ jobs:
   templates:
   - name: consul_agent
     release: consul
+    consumes: { consul: nil }
   persistent_disk: 1024
   properties:
     consul:
@@ -32,6 +33,7 @@ jobs:
     name: etcd
   - release: consul
     name: consul_agent
+    consumes: { consul: nil }
   properties:
     consul:
       agent:
@@ -50,6 +52,7 @@ jobs:
     name: etcd
   - release: consul
     name: consul_agent
+    consumes: { consul: nil }
   properties:
     consul:
       agent:

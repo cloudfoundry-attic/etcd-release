@@ -9,6 +9,7 @@ instance_groups:
   jobs:
   - release: consul
     name: consul_agent
+    consumes: { consul: nil }
   vm_type: Standard_DS2_v2
   stemcell: default
   persistent_disk_type: 1024
@@ -27,6 +28,7 @@ instance_groups:
   jobs:
   - release: consul
     name: consul_agent
+    consumes: { consul: nil }
   - release: etcd
     name: etcd
   vm_type: Standard_DS2_v2
