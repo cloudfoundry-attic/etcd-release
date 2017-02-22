@@ -20,6 +20,7 @@ jobs:
   templates:
   - name: consul_agent
     release: consul
+    consumes: { consul: nil }
 
 - name: etcd_z1
   instances: 3
@@ -39,6 +40,7 @@ jobs:
   templates:
   - name: consul_agent
     release: consul
+    consumes: { consul: nil }
   - name: etcd
     release: etcd
 
