@@ -17,7 +17,7 @@ import (
 func GetTurbulenceVMsFromManifest(manifest turbulence.Manifest) []bosh.VM {
 	var vms []bosh.VM
 
-	for _, job := range manifest.Jobs {
+	for _, job := range manifest.InstanceGroups {
 		for i := 0; i < job.Instances; i++ {
 			vms = append(vms, bosh.VM{JobName: job.Name, Index: i, State: "running"})
 		}
@@ -29,7 +29,7 @@ func GetTurbulenceVMsFromManifest(manifest turbulence.Manifest) []bosh.VM {
 func NewTurbulenceClient(manifest turbulence.Manifest) turbulenceclient.Client {
 	turbulenceUrl := fmt.Sprintf("https://turbulence:%s@%s:8080",
 		manifest.Properties.TurbulenceAPI.Password,
-		manifest.Jobs[0].Networks[0].StaticIPs[0])
+		manifest.InstanceGroups[0].Networks[0].StaticIPs[0])
 
 	return turbulenceclient.NewClient(turbulenceUrl, 5*time.Minute, 2*time.Second)
 }
