@@ -12,7 +12,7 @@ exec > >(tee -a >(logger -p user.info -t vcap.${SCRIPT_NAME}.stdout) | awk -W in
 exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W interactive '{ system("echo -n [$(date +\"%Y-%m-%d %H:%M:%S%z\")]"); print " " $0 }' >> ${LOG_DIR}/${SCRIPT_NAME}.err.log)
 
 function wait_for_this_node_to_synchronize() {
-  for i in $(seq 55); do
+  for i in $(seq 45); do
     if /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C ${advertise_client_url} ls; then
       synced=true
       break
