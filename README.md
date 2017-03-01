@@ -54,7 +54,10 @@ We assume you have already deployed and targeted a BOSH director. For more instr
 Find the "BOSH Lite Warden" stemcell you wish to use. [bosh.io](https://bosh.io/stemcells) provides a resource to find and download stemcells.  Then run `bosh upload stemcell STEMCELL_URL_OR_PATH_TO_DOWNLOADED_STEMCELL`.
 
 ###2. Creating a release
-From within the etcd-release director run `bosh create release --force` to create a development release.
+
+Run `git submodule --init --recursive` to clone all submodules within `etcd-release` if you have done so already.
+
+From within the etcd-release directory run `bosh create release --force` to create a development release.
 
 ###3. Uploading a release
 Once you've created a development release run `bosh upload release` to upload your development release to the director.
