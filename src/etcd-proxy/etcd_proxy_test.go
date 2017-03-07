@@ -306,7 +306,7 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(session.ExitCode()).To(Equal(1))
-			Expect(session.Err.Contents()).To(ContainSubstring("listen tcp: invalid port -1"))
+			Expect(session.Err.Contents()).To(ContainSubstring("invalid port"))
 		})
 
 		It("returns an error when its not able to talk to the cluster", func() {
@@ -349,7 +349,7 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(session.ExitCode()).To(Equal(1))
-			Expect(session.Err.Contents()).To(ContainSubstring("missing brackets in address %%%"))
+			Expect(session.Err.Contents()).To(ContainSubstring("missing brackets in address"))
 		})
 	})
 })
