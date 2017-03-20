@@ -53,14 +53,21 @@ DATA_DIR=${STORE_DIR}/etcd
     end
   end
 
+  def cluster_member_ips
+    ips = nil
+    if_p("etcd.machines") { |machines| ips = machines.map { |m| "http://#{m}:4001" } }
+    unless ips
+      ips = link("etcd").instances.map { |i| "http://#{i.address}:4001" }
+    end
+    ips
+  end
+
   def cluster_members
     if p("etcd.require_ssl") || p("etcd.peer_require_ssl")
       cluster_url = "#{client_protocol}://#{p("etcd.advertise_urls_dns_suffix")}:4001"
       return cluster_url
     else
-      my_ip = discover_external_ip
-      cluster_member_ips = p("etcd.machines").map { |m| "http://#{m}:4001" }.join(" ")
-      return cluster_member_ips
+      cluster_member_ips.join(" ")
     end
   end
 
@@ -75,9 +82,7 @@ DATA_DIR=${STORE_DIR}/etcd
       end.flatten.join(",")
       return cluster_member_urls
     else
-      my_ip = discover_external_ip
-      cluster_member_ips = p("etcd.machines").map { |m| "http://#{m}:4001" }.join(",")
-      return cluster_member_ips
+      cluster_member_ips.flatten.join(",")
     end
   end
 %>
