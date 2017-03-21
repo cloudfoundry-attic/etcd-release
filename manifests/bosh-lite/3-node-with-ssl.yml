@@ -11,6 +11,12 @@ instance_groups:
   jobs:
   - name: consul_agent
     release: consul
+    provides:
+      consul:
+        as: consul_server
+        shared: true
+    consumes:
+      consul: {from: consul_server}
     properties:
       consul:
         agent:
@@ -156,12 +162,6 @@ instance_groups:
           EroZtdjv1A9NVpCHJM7a/3nl0aALEsn3JKYEuG4HCY/oJ7rPpJItfrJ3MUTn/uqD
           BKcJHlf9kYxFaLL17iOq9rY0+LURr63BkRa2uyn489luxcHnTjk=
           -----END RSA PRIVATE KEY-----
-    provides:
-      consul:
-        as: consul_server
-        shared: true
-    consumes:
-      consul: {from: consul_server}
 
 - name: etcd
   azs: [z1, z2, z3]
@@ -191,9 +191,6 @@ instance_groups:
         require_ssl: true
         advertise_urls_dns_suffix: etcd.service.cf.internal
         heartbeat_interval_in_milliseconds: 50
-        cluster:
-        - instances: 3
-          name: etcd_z1
         ca_cert: |-
           -----BEGIN CERTIFICATE-----
           MIIFATCCAuugAwIBAgIBATALBgkqhkiG9w0BAQswEjEQMA4GA1UEAxMHZGllZ29D
