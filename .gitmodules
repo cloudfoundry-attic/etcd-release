@@ -61,3 +61,6 @@
 [submodule "src/github.com/pivotal-cf-experimental/gomegamatchers"]
 	path = src/github.com/pivotal-cf-experimental/gomegamatchers
 	url = https://github.com/pivotal-cf-experimental/gomegamatchers.git
+[submodule "src/acceptance-tests/vendor/github.com/go-yaml/yaml"]
+	path = src/acceptance-tests/vendor/github.com/go-yaml/yaml
+	url = https://github.com/go-yaml/yaml.git
