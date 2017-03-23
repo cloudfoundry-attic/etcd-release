@@ -34,6 +34,6 @@
 [submodule "src/cf-tls-upgrade/vendor/github.com/go-yaml/yaml"]
 	path = src/cf-tls-upgrade/vendor/github.com/go-yaml/yaml
 	url = https://github.com/go-yaml/yaml.git
-[submodule "/Users/pivotal/go/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/vendor/gopkg.in/yaml.v2"]
-	path = /Users/pivotal/go/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/vendor/gopkg.in/yaml.v2
+[submodule "src/acceptance-tests/vendor/gopkg.in/yaml.v2"]
+	path = src/acceptance-tests/vendor/gopkg.in/yaml.v2
 	url = https://gopkg.in/yaml.v2
