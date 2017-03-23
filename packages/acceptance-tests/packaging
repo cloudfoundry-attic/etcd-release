@@ -1,15 +1,5 @@
 #!/bin/bash -exu
 
-touch ${BOSH_INSTALL_TARGET}/acceptance-tests_packaging_was_called
-echo '${BOSH_INSTALL_TARGET}' >> /acceptance-tests_packaging_was_called
-echo "${BOSH_INSTALL_TARGET}" >> /acceptance-tests_packaging_was_called
-echo '${PWD}' >> /acceptance-tests_packaging_was_called
-echo "${PWD}" >> /acceptance-tests_packaging_was_called
-echo '${GOROOT}' >> /acceptance-tests_packaging_was_called
-echo "${GOROOT}" >> /acceptance-tests_packaging_was_called
-echo '${GOPATH}' >> /acceptance-tests_packaging_was_called
-echo "${GOPATH}" >> /acceptance-tests_packaging_was_called
-
 mkdir -p "${BOSH_INSTALL_TARGET}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/"
 cp -R ${PWD}/acceptance-tests/* \
 "${BOSH_INSTALL_TARGET}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/"
