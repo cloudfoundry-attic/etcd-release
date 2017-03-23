@@ -26,7 +26,6 @@ function require() {
 }
 
 function main() {
-  export PATH="/go/src/github.com/cloudfoundry-incubator/etcd-release:$PATH"
   parse_config
 
   local scripts_dir
