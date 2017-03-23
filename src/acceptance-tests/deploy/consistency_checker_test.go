@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	etcdtc "acceptance-tests/testing/etcd"
+	etcdtc "github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/etcd"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 	. "github.com/onsi/ginkgo"

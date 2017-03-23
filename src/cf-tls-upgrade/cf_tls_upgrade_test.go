@@ -1,7 +1,6 @@
 package cf_tls_upgrade_test
 
 import (
-	"acceptance-tests/testing/helpers"
 	"cf-tls-upgrade/logspammer"
 	"cf-tls-upgrade/syslogchecker"
 	"crypto/tls"
@@ -14,13 +13,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
+	"github.com/go-yaml/yaml"
+
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
 	"github.com/cloudfoundry-incubator/cf-test-helpers/generator"
 	"github.com/cloudfoundry/noaa/consumer"
 	"github.com/cloudfoundry/sonde-go/events"
 	"github.com/onsi/gomega/gexec"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	"gopkg.in/yaml.v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

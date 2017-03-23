@@ -1,7 +1,6 @@
 package logspammer
 
 import (
-	"acceptance-tests/testing/helpers"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
 	"github.com/cloudfoundry/sonde-go/events"
 )

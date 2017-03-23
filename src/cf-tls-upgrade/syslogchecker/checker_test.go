@@ -1,7 +1,8 @@
 package syslogchecker_test
 
 import (
-	"acceptance-tests/testing/helpers"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
+
 	"cf-tls-upgrade/syslogchecker"
 	"cf-tls-upgrade/syslogchecker/fakes"
 	"errors"

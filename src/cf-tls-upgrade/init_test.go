@@ -1,9 +1,10 @@
 package cf_tls_upgrade_test
 
 import (
-	"acceptance-tests/testing/helpers"
 	"fmt"
 	"testing"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 

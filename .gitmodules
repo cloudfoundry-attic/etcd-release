@@ -31,3 +31,6 @@
 [submodule "src/acceptance-tests/vendor/github.com/ugorji/go"]
 	path = src/acceptance-tests/vendor/github.com/ugorji/go
 	url = https://github.com/ugorji/go.git
+[submodule "src/cf-tls-upgrade/vendor/github.com/go-yaml/yaml"]
+	path = src/cf-tls-upgrade/vendor/github.com/go-yaml/yaml
+	url = https://github.com/go-yaml/yaml.git

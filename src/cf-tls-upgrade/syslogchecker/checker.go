@@ -1,7 +1,6 @@
 package syslogchecker
 
 import (
-	"acceptance-tests/testing/helpers"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -11,6 +10,8 @@ import (
 	"regexp"
 	"sync/atomic"
 	"time"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 )
 
 const (

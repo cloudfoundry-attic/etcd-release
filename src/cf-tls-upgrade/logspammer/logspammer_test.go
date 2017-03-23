@@ -1,10 +1,11 @@
 package logspammer_test
 
 import (
-	"acceptance-tests/testing/helpers"
 	"cf-tls-upgrade/logspammer"
 	"errors"
 	"io/ioutil"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
 	"net/http"
 	"net/http/httptest"

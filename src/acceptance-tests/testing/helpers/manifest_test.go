@@ -4,7 +4,6 @@ import (
 	"io/ioutil"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
-
 	"github.com/go-yaml/yaml"
 
 	. "github.com/onsi/ginkgo"
