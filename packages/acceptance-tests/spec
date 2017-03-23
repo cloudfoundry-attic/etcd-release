@@ -6,5 +6,3 @@ dependencies:
 
 files:
  - acceptance-tests/**/*
- - gopkg.in/yaml.v2/**/*
- - github.com/**/*

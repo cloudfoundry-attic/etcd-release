@@ -1,9 +1,9 @@
 package helpers_test
 
 import (
-	"acceptance-tests/testing/helpers"
 	"io/ioutil"
 
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 	"github.com/pivotal-cf-experimental/gomegamatchers"
 
 	. "github.com/onsi/ginkgo"

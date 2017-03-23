@@ -1,7 +1,6 @@
 package deploy_test
 
 import (
-	"acceptance-tests/testing/helpers"
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
@@ -12,6 +11,7 @@ import (
 
 	etcdtc "acceptance-tests/testing/etcd"
 
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 

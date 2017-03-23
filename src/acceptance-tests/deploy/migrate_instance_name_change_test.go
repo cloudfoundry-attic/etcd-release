@@ -1,16 +1,15 @@
 package deploy_test
 
 import (
-	"acceptance-tests/testing/helpers"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	etcdclient "github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/etcd"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
-
-	etcdclient "acceptance-tests/testing/etcd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

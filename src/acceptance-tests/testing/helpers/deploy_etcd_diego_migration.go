@@ -1,6 +1,6 @@
 package helpers
 
-import "gopkg.in/yaml.v2"
+import "github.com/go-yaml/yaml"
 
 func CreateDiegoTLSMigrationManifest(nonTLSDiegoManifest []byte) ([]byte, error) {
 	var manifest Manifest

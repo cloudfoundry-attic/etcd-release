@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"acceptance-tests/testing/helpers"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 

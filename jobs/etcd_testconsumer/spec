@@ -5,7 +5,7 @@ templates:
   pre-start.erb: bin/pre-start
 
 packages:
-  - testconsumer
+  - acceptance-tests
   - etcd-dns-checker
 
 properties:

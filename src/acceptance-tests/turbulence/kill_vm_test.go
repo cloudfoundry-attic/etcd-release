@@ -1,10 +1,12 @@
 package turbulence_test
 
 import (
-	etcdclient "acceptance-tests/testing/etcd"
-	"acceptance-tests/testing/helpers"
 	"fmt"
 	"math/rand"
+
+	etcdclient "github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/etcd"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"

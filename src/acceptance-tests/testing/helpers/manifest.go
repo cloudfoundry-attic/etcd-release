@@ -1,9 +1,9 @@
 package helpers
 
 import (
+	"github.com/go-yaml/yaml"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
-	"gopkg.in/yaml.v2"
 )
 
 func DeploymentVMs(boshClient bosh.Client, deploymentName string) ([]bosh.VM, error) {

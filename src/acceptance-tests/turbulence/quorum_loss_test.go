@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"acceptance-tests/testing/helpers"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
-	etcdclient "acceptance-tests/testing/etcd"
+	etcdclient "github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/etcd"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
 	"github.com/pivotal-cf-experimental/destiny/etcd"
