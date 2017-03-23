@@ -1,6 +1,6 @@
 #!/bin/bash -exu
 
-touch /acceptance-tests_packaging_was_called
+touch ${BOSH_INSTALL_TARGET}/acceptance-tests_packaging_was_called
 echo '${BOSH_INSTALL_TARGET}' >> /acceptance-tests_packaging_was_called
 echo "${BOSH_INSTALL_TARGET}" >> /acceptance-tests_packaging_was_called
 echo '${PWD}' >> /acceptance-tests_packaging_was_called
