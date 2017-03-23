@@ -2,7 +2,7 @@
 
 export PATH="${PATH}:/var/vcap/packages/etcd/bin"
 export GOROOT="$(readlink -nf /var/vcap/packages/golang1.7)"
-export GOPATH="/var/vcap/packages/acceptance-tests/src/github.com/cloudfoundry-incubator/etcd-release"
+export GOPATH="/var/vcap/packages/acceptance-tests"
 export PATH="${GOROOT}/bin:${PATH}"
 
 export EATS_CONFIG=/tmp/config.json
