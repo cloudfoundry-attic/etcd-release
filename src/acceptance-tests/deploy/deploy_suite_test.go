@@ -1,6 +1,7 @@
 package deploy_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
@@ -28,7 +29,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	client = bosh.NewClient(bosh.Config{
-		URL:              config.BOSH.Target,
+		URL:              fmt.Sprintf("https://%s:25555", config.BOSH.Target),
 		Username:         config.BOSH.Username,
 		Password:         config.BOSH.Password,
 		AllowInsecureSSL: true,
