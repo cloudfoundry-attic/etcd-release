@@ -13,6 +13,7 @@ func DeploymentVMs(boshClient bosh.Client, deploymentName string) ([]bosh.VM, er
 	}
 
 	for index := range vms {
+		vms[index].ID = ""
 		vms[index].IPs = nil
 	}
 
