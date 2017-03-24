@@ -35,7 +35,7 @@ function main() {
   force_compilation "${scripts_dir}"
 
   unset_bosh_config
-  bash -c "${scripts_dir}/../src/acceptance-tests/scripts/test $@"
+  bash -c "${scripts_dir}/../src/acceptance-tests/scripts/test -nodes ${PARALLEL_NODES} $@"
 }
 
 function parse_config() {
@@ -43,6 +43,7 @@ function parse_config() {
   export BOSH_DIRECTOR=$(jq --raw-output '.bosh.target' "${EATS_CONFIG}")
   export BOSH_USER=$(jq --raw-output '.bosh.username' "${EATS_CONFIG}")
   export BOSH_PASSWORD=$(jq --raw-output '.bosh.password' "${EATS_CONFIG}")
+  export PARALLEL_NODES="$(jq --raw-output 'if .bosh.parallel_nodes == null then 1 else .bosh.parallel_nodes end' "${EATS_CONFIG}")"
   set -x
 }
 
