@@ -12,7 +12,6 @@ cp -R ${PWD}/etcd-proxy/* "${BOSH_INSTALL_TARGET}/src/github.com/cloudfoundry-in
 export GOROOT="$(readlink -nf /var/vcap/packages/golang1.7)"
 export GOPATH="${BOSH_INSTALL_TARGET}"
 export PATH="${GOROOT}/bin:${PATH}"
-export GO15VENDOREXPERIMENT=1
 
 go install "github.com/cloudfoundry-incubator/etcd-release/src/etcd-proxy"
 
