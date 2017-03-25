@@ -1,7 +1,7 @@
 #!/bin/bash -exu
 
 export PATH="${PATH}:/var/vcap/packages/etcd/bin"
-export GOROOT="$(readlink -nf /var/vcap/packages/golang1.7)"
+export GOROOT="$(readlink -nf /var/vcap/packages/golang1.8)"
 export GOPATH="/var/vcap/packages/acceptance-tests"
 export PATH="${GOROOT}/bin:${PATH}"
 
