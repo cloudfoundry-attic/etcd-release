@@ -17,6 +17,14 @@ packages:
   - etcd-dns-checker
   - etcd-consistency-checker
 
+provides:
+- name: etcd
+  type: etcd_service
+
+consumes:
+- name: etcd
+  type: etcd_service
+
 properties:
   etcd.enable_network_diagnostics:
     description: "Enable network diagnostics for etcd"
@@ -35,7 +43,7 @@ properties:
     default: 1000
 
   etcd.machines:
-    description: "Addresses of etcd machines"
+    description: "(if not using links) Addresses of etcd machines"
 
   etcd.cluster:
     description: "Information about etcd cluster"

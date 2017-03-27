@@ -1,23 +1,32 @@
 azs:
 - name: z1
+- name: z2
+- name: z3
 
 vm_types:
 - name: default
 
 networks:
+- name: public
+  type: manual
+  subnets:
+  - range: 10.244.0.0/17
+    gateway: 10.244.0.1
+    azs: [z1, z2, z3]
+    dns: [8.8.8.8]
+    reserved: []
+    cloud_properties:
+      name: random
 - name: private
   type: manual
   subnets:
-  - az: z1
+  - range: 10.244.128.0/17
+    gateway: 10.244.128.1
+    azs: [z1, z2, z3]
+    dns: [8.8.8.8]
+    reserved: []
     cloud_properties:
       name: random
-    gateway: 10.244.2.1
-    range: 10.244.2.0/24
-    reserved:
-    - 10.244.2.2-10.244.2.3
-    - 10.244.2.255
-    static:
-    - 10.244.2.4
 
 disk_types:
 - name: default
