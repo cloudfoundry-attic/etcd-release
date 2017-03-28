@@ -74,11 +74,10 @@ DATA_DIR=${STORE_DIR}/etcd
   def consistency_checker_cluster_members
     if p("etcd.require_ssl") || p("etcd.peer_require_ssl")
       cluster_member_urls = nil
-      service_name="etcd"
       if_link("etcd") do |etcd_link|
         urls = []
         etcd_link.instances.size.times do |i|
-          urls << "#{client_protocol}://#{service_name}-#{i}.#{p("etcd.advertise_urls_dns_suffix")}:4001"
+          urls << "#{client_protocol}://#{name.gsub('_', '-')}-#{i}.#{p("etcd.advertise_urls_dns_suffix")}:4001"
         end
         cluster_member_urls = urls.flatten.join(",")
       end
