@@ -1,8 +1,6 @@
 package cf_tls_upgrade_test
 
 import (
-	"cf-tls-upgrade/logspammer"
-	"cf-tls-upgrade/syslogchecker"
 	"crypto/tls"
 	"errors"
 	"fmt"
@@ -14,6 +12,8 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
+	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/logspammer"
+	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/syslogchecker"
 	"github.com/go-yaml/yaml"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"
@@ -119,7 +119,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 		})
 
 		By("pushing an application to diego", func() {
-			appName = generator.PrefixedRandomName("EATS-APP-")
+			appName = generator.PrefixedRandomName("EATS-APP-", "")
 			Eventually(cf.Cf(
 				"push", appName,
 				"-f", "assets/logspinner/manifest.yml",
@@ -132,7 +132,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 		})
 
 		By("starting the syslog-drain process", func() {
-			syslogAppName := generator.PrefixedRandomName("syslog-source-app-")
+			syslogAppName := generator.PrefixedRandomName("syslog-source-app-", "")
 			Eventually(cf.Cf(
 				"push", syslogAppName,
 				"-f", "assets/logspinner/manifest.yml",
