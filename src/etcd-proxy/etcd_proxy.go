@@ -71,8 +71,10 @@ func main() {
 		TLSClientConfig: buildTLSConfig(flags.CACertFilePath, flags.CertFilePath, flags.KeyFilePath),
 	}
 
+	logger := log.New(os.Stdout, "", log.LstdFlags)
+
 	http.HandleFunc("/v2/members", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%+v", r)
+		logger.Printf("members: %+v", r)
 		response := fmt.Sprintf(`{
 			"members": [
 				{
@@ -86,7 +88,7 @@ func main() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%+v", r)
+		logger.Printf("root: %+v", r)
 		proxy.ServeHTTP(w, r)
 	})
 
