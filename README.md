@@ -5,7 +5,7 @@ This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/et
 * [CI](https://mega.ci.cf-app.com/pipelines/etcd)
 * [Roadmap](https://www.pivotaltracker.com/n/projects/1382120)
 
-###Contents
+### Contents
 
 * [Using Etcd](#using-etcd)
 * [Deploying](#deploying)
