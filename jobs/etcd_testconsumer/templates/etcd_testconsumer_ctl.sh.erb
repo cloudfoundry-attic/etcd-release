@@ -26,16 +26,24 @@ def machines
 		return p("etcd_testconsumer.etcd.machines")
 	end
 end
+
+def etcd_dns_suffix
+	respond_to?(:if_link) && if_link("etcd") do |link|
+		return link.p("etcd.advertise_urls_dns_suffix")
+	end.else do
+    return p("etcd_testconsumer.etcd.advertise_urls_dns_suffix")
+	end
+end
 %>
 
 function main() {
   case "${1}" in
     "start")
-      local protocol
-      protocol="http://"
-
       local tls_flags
       tls_flags=""
+
+      local etcd_services
+      etcd_services=""
 
       <% if require_ssl %>
       set +e
@@ -46,22 +54,21 @@ function main() {
       fi
       set -e
 
-      protocol="https://"
       tls_flags="\
       --ca-cert-file ${CERT_DIR}/ca.crt \
       --client-ssl-cert-file ${CERT_DIR}/client.crt \
       --client-ssl-key-file ${CERT_DIR}/client.key"
-      <% end %>
 
-      local addresses
-      addresses=""
+      etcd_services=" --etcd-service https://<%= etcd_dns_suffix  %>:4001"
 
-      <% machines.each do |machine| %>
-        addresses="${addresses} --etcd-service ${protocol}<%= machine %>:4001"
-      <% end %>
+      <% else %>
+        <% machines.each do |machine| %>
+          etcd_services="${etcd_services} --etcd-service http://<%= machine %>:4001"
+        <% end %>
+      <% end%>
 
       "${PKG_DIR}/bin/testconsumer" --port 6769 \
-        ${addresses} \
+        ${etcd_services} \
         ${tls_flags} \
         2> >(tee -a ${LOG_DIR}/etcd_testconsumer.stderr.log | logger -p user.error -t vcap.etcd_testconsumer) \
         1> >(tee -a ${LOG_DIR}/etcd_testconsumer.stdout.log | logger -p user.info  -t vcap.etcd_testconsumer) &
