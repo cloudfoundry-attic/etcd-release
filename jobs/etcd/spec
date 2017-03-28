@@ -20,6 +20,27 @@ packages:
 provides:
 - name: etcd
   type: etcd_service
+  properties:
+  - etcd.enable_network_diagnostics
+  - etcd.network_diagnostics_duration_in_seconds
+  - etcd.heartbeat_interval_in_milliseconds
+  - etcd.election_timeout_in_milliseconds
+  - etcd.machines
+  - etcd.cluster
+  - etcd.require_ssl
+  - etcd.ca_cert
+  - etcd.server_cert
+  - etcd.server_key
+  - etcd.client_cert
+  - etcd.client_key
+  - etcd.client_ip
+  - etcd.peer_require_ssl
+  - etcd.peer_ca_cert
+  - etcd.peer_cert
+  - etcd.peer_key
+  - etcd.peer_ip
+  - etcd.dns_health_check_host
+  - etcd.advertise_urls_dns_suffix
 
 consumes:
 - name: etcd
