@@ -171,7 +171,7 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 		}
 		}`, value)))
 
-			Expect(session.Err.Contents()).To(ContainSubstring("RequestURI:/v2/keys/some-key"))
+			Expect(string(session.Out.Contents())).To(ContainSubstring("RequestURI:/v2/keys/some-key"))
 		})
 	})
 
@@ -212,7 +212,7 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 			]
 		}`, port)))
 
-		Expect(session.Err.Contents()).To(ContainSubstring("RequestURI:/v2/members"))
+		Expect(string(session.Out.Contents())).To(ContainSubstring("RequestURI:/v2/members"))
 	})
 
 	Context("failure cases", func() {
