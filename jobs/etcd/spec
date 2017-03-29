@@ -45,6 +45,7 @@ provides:
 consumes:
 - name: etcd
   type: etcd_service
+  optional: true
 
 properties:
   etcd.enable_network_diagnostics:
