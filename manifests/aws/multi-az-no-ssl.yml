@@ -15,6 +15,7 @@ jobs:
   templates:
   - release: etcd
     name: etcd
+    consumes: {etcd: nil}
 - name: etcd_z2
   instances: 1
   networks:
@@ -26,6 +27,7 @@ jobs:
   templates:
   - release: etcd
     name: etcd
+    consumes: {etcd: nil}
 
 networks:
 - name: etcd1

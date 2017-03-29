@@ -31,6 +31,7 @@ jobs:
   templates:
   - release: etcd
     name: etcd
+    consumes: {etcd: nil}
   - release: consul
     name: consul_agent
     consumes: { consul: nil }
@@ -50,6 +51,7 @@ jobs:
   templates:
   - release: etcd
     name: etcd
+    consumes: {etcd: nil}
   - release: consul
     name: consul_agent
     consumes: { consul: nil }

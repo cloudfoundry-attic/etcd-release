@@ -31,6 +31,7 @@ instance_groups:
     consumes: { consul: nil }
   - release: etcd
     name: etcd
+    consumes: {etcd: nil}
   vm_type: Standard_DS2_v2
   stemcell: default
   persistent_disk_type: 1024
