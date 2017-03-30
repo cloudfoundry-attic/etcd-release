@@ -8,7 +8,7 @@ import (
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	"github.com/pivotal-cf-experimental/destiny/etcd"
+	"github.com/pivotal-cf-experimental/destiny/ops"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,11 +18,13 @@ var _ = Describe("Scaling up instances", func() {
 	ScaleUpInstances := func(enableSSL bool) {
 
 		var (
-			manifest   etcd.Manifest
-			etcdClient etcdclient.Client
+			manifest     string
+			manifestName string
 
 			testKey   string
 			testValue string
+
+			etcdClient etcdclient.Client
 		)
 
 		BeforeEach(func() {
@@ -32,21 +34,29 @@ var _ = Describe("Scaling up instances", func() {
 			testKey = "etcd-key-" + guid
 			testValue = "etcd-value-" + guid
 
-			manifest, err = helpers.DeployEtcdWithInstanceCount("scale_up_instances", 3, client, config, enableSSL)
+			deploymentName := "scale-up-3-to-5-non-tls"
+			if enableSSL {
+				deploymentName = "scale-up-3-to-5-tls"
+			}
+			manifest, err = helpers.DeployEtcdWithOpsWithInstanceCount(deploymentName, 3, enableSSL, boshClient)
+			Expect(err).NotTo(HaveOccurred())
+
+			manifestName, err = ops.ManifestName(manifest)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMs(client, manifest.Name)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
 
-			testConsumerIndex, err := helpers.FindJobIndexByName(manifest, "testconsumer_z1")
+			testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "testconsumer")
 			Expect(err).NotTo(HaveOccurred())
-			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", manifest.Jobs[testConsumerIndex].Networks[0].StaticIPs[0]))
+
+			etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", testConsumerIPs[0]))
 		})
 
 		AfterEach(func() {
 			if !CurrentGinkgoTestDescription().Failed {
-				err := client.DeleteDeployment(manifest.Name)
+				err := boshClient.DeleteDeployment(manifestName)
 				Expect(err).NotTo(HaveOccurred())
 			}
 		})
@@ -59,20 +69,19 @@ var _ = Describe("Scaling up instances", func() {
 
 			By("scaling up to 5 nodes", func() {
 				var err error
-				manifest, err = helpers.SetEtcdInstanceCount(5, manifest)
-
-				members := manifest.EtcdMembers()
-				Expect(members).To(HaveLen(5))
-
-				yaml, err := manifest.ToYAML()
+				manifest, err = ops.ApplyOp(manifest, ops.Op{
+					Type:  "replace",
+					Path:  "/instance_groups/name=etcd/instances",
+					Value: 5,
+				})
 				Expect(err).NotTo(HaveOccurred())
 
-				_, err = client.Deploy(yaml)
+				_, err = boshClient.Deploy([]byte(manifest))
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMs(client, manifest.Name)
-				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
+					return helpers.DeploymentVMsWithOps(boshClient, manifestName)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
 			})
 
 			By("reading the value from each etcd node in the cluster", func() {

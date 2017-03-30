@@ -9,7 +9,7 @@ import (
 	etcdclient "github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/etcd"
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	"github.com/pivotal-cf-experimental/destiny/etcd"
+	"github.com/pivotal-cf-experimental/destiny/ops"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,13 +17,14 @@ import (
 
 var _ = Describe("Migrate instance name change", func() {
 	var (
-		manifest   string
+		manifest     string
+		manifestName string
+
 		etcdClient etcdclient.Client
 		spammer    *helpers.Spammer
 
-		testKey      string
-		testValue    string
-		manifestName string
+		testKey   string
+		testValue string
 	)
 
 	BeforeEach(func() {
@@ -33,25 +34,27 @@ var _ = Describe("Migrate instance name change", func() {
 		testKey = "etcd-key-" + guid
 		testValue = "etcd-value-" + guid
 
-		manifest, err = helpers.DeployEtcdV2WithInstanceCount("migrate_instance_name_change", 3, client, config)
+		manifest, err = helpers.DeployEtcdWithOpsWithInstanceCount("migrate-instance-name-change", 3, false, boshClient)
 		Expect(err).NotTo(HaveOccurred())
 
-		manifestName, err = etcd.ManifestName(manifest)
+		manifestName, err = ops.ManifestName(manifest)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() ([]bosh.VM, error) {
-			return helpers.DeploymentVMs(client, manifestName)
-		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestV2(manifest)))
+			return helpers.DeploymentVMsWithOps(boshClient, manifestName)
+		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
 
-		vmIPs, err := helpers.GetVMIPs(client, manifestName, "testconsumer")
+		testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "testconsumer")
 		Expect(err).NotTo(HaveOccurred())
-		etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", vmIPs[0]))
+
+		etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", testConsumerIPs[0]))
+
 		spammer = helpers.NewSpammer(etcdClient, 1*time.Second, "migrate-instance-name-change")
 	})
 
 	AfterEach(func() {
 		if !CurrentGinkgoTestDescription().Failed {
-			err := client.DeleteDeployment(manifestName)
+			err := boshClient.DeleteDeployment(manifestName)
 			Expect(err).NotTo(HaveOccurred())
 		}
 	})
@@ -64,23 +67,35 @@ var _ = Describe("Migrate instance name change", func() {
 
 		By("deploying with a new name", func() {
 			var err error
-			manifest, err = etcd.ApplyOp(manifest, "replace", "/instance_groups/name=etcd/name", "new_etcd")
+			manifest, err = ops.ApplyOps(manifest, []ops.Op{
+				{
+					Type:  "replace",
+					Path:  "/instance_groups/name=etcd/name",
+					Value: "new_etcd",
+				},
+				{
+					Type: "replace",
+					Path: "/instance_groups/name=new_etcd/migrated_from?/-",
+					Value: map[string]string{
+						"name": "etcd",
+					},
+				},
+				{
+					Type:  "replace",
+					Path:  "/instance_groups/name=new_etcd/cluster?/name=etcd/name",
+					Value: "new_etcd",
+				},
+			})
 			Expect(err).ToNot(HaveOccurred())
 
-			manifest, err = etcd.ApplyOp(manifest, "replace", "/instance_groups/name=new_etcd/migrated_from?", []map[string]string{{"name": "etcd"}})
-			Expect(err).ToNot(HaveOccurred())
-
-			manifest, err = etcd.ApplyOp(manifest, "replace", "/properties/etcd/cluster/name=etcd/name", "new_etcd")
-			Expect(err).ToNot(HaveOccurred())
+			_, err = boshClient.Deploy([]byte(manifest))
+			Expect(err).NotTo(HaveOccurred())
 
 			spammer.Spam()
 
-			err = helpers.ResolveVersionsAndDeployV2(manifest, client)
-			Expect(err).ToNot(HaveOccurred())
-
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMs(client, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestV2(manifest)))
+				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
 
 			spammer.Stop()
 		})
