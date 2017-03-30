@@ -1,6 +1,7 @@
 #!/bin/bash -eux
 
 export ETCD_RELEASE_VERSION="99999+dev.$(date +%s)"
+export LATEST_ETCD_RELEASE_VERSION="$(curl http://bosh.io/api/v1/releases/github.com/cloudfoundry-incubator/etcd-release | jq -r .[0].version)"
 
 consul_release_version="0"
 warden_cpi_version="29"
@@ -71,6 +72,9 @@ function upload_releases() {
   upload_release "${releases_dir}/bosh-warden-cpi-release.tgz" "http://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=${warden_cpi_version}"
   upload_release "${releases_dir}/consul-release-${consul_release_version}.tgz" "${consul_release_url}"
   upload_release "${releases_dir}/turbulence-release.tgz" "http://bosh.io/d/github.com/cppforlife/turbulence-release?v=${turbulence_version}"
+
+  wget -nc -O "${releases_dir}/etcd-release-${LATEST_ETCD_RELEASE_VERSION}.tgz" "http://bosh.io/d/github.com/cloudfoundry-incubator/etcd-release?v=${LATEST_ETCD_RELEASE_VERSION}" || echo "File Exists"
+  bosh upload-release "${releases_dir}/etcd-release-${LATEST_ETCD_RELEASE_VERSION}.tgz"
 }
 
 function upload_release() {
@@ -84,16 +88,6 @@ function upload_release() {
     wget -O "${local_release_path}" "${release_url}"
   fi
   bosh upload-release "${local_release_path}"
-}
-
-function cleanup_releases() {
-  parse_config
-  set +e
-  bosh -n delete-release turbulence/"${turbulence_version}"
-  bosh -n delete-release bosh-warden-cpi/"${warden_cpi_version}"
-  bosh -n delete-release consul/"${consul_release_version}"
-  bosh -n delete-release etcd/"${ETCD_RELEASE_VERSION}"
-  set -e
 }
 
 function force_compilation() {
@@ -119,6 +113,17 @@ function force_compilation() {
   bosh -d etcd-compilation export-release "bosh-warden-cpi/${warden_cpi_version}" "ubuntu-trusty/${stemcell_version}"
   bosh -d etcd-compilation -n delete-deployment
   popd > /dev/null
+}
+
+function cleanup_releases() {
+  parse_config
+  set +e
+  bosh -n delete-release turbulence/"${turbulence_version}"
+  bosh -n delete-release bosh-warden-cpi/"${warden_cpi_version}"
+  bosh -n delete-release consul/"${consul_release_version}"
+  bosh -n delete-release etcd/"${LATEST_ETCD_RELEASE_VERSION}"
+  bosh -n delete-release etcd/"${ETCD_RELEASE_VERSION}"
+  set -e
 }
 
 check_dependencies
