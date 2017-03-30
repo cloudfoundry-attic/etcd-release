@@ -1,11 +1,13 @@
 azs:
 - name: z1
 - name: z2
-- name: z3
-- name: z4
 
 vm_types:
 - name: default
+- name: small
+- name: medium
+- name: large
+- name: extra-large
 
 networks:
 - name: private
@@ -19,8 +21,7 @@ networks:
     reserved:
     - 10.244.4.2-10.244.4.3
     - 10.244.4.255
-    static:
-    - 10.244.4.4-10.244.4.251
+    static: []
   - az: z2
     cloud_properties:
       name: random
@@ -29,30 +30,23 @@ networks:
     reserved:
     - 10.244.5.2-10.244.5.3
     - 10.244.5.255
-    static:
-    - 10.244.5.4-10.244.5.251
-  - az: z3
-    cloud_properties:
-      name: random
-    gateway: 10.244.6.1
-    range: 10.244.6.0/24
-    reserved:
-    - 10.244.6.2-10.244.6.3
-    - 10.244.6.255
-    static: []
-  - az: z4
-    cloud_properties:
-      name: random
-    gateway: 10.244.7.1
-    range: 10.244.7.0/24
-    reserved:
-    - 10.244.7.2-10.244.7.3
-    - 10.244.7.255
     static: []
 
 disk_types:
-- name: default
-  disk_size: 1024
+- disk_size: 1024
+  name: 1GB
+- disk_size: 5120
+  name: 5GB
+- disk_size: 10240
+  name: 10GB
+- disk_size: 51200
+  name: 50GB
+- disk_size: 102400
+  name: 100GB
+- disk_size: 512000
+  name: 500GB
+- disk_size: 1048576
+  name: 1TB
 
 compilation:
   workers: 3
