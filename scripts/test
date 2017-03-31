@@ -5,7 +5,7 @@ export LATEST_ETCD_RELEASE_VERSION="$(curl http://bosh.io/api/v1/releases/github
 
 consul_release_version="0"
 warden_cpi_version="29"
-turbulence_version="0.4"
+turbulence_version="0.6"
 
 function check_dependencies() {
   test -n "${EATS_CONFIG?"EATS_CONFIG is a required environment variable"}"
@@ -96,7 +96,7 @@ function force_compilation() {
 
   set +x
   local stemcell_version
-  stemcell_version=$(curl -k https://${BOSH_CLIENT}:${BOSH_CLIENT_SECRET}@${BOSH_ENVIRONMENT}:25555/stemcells | jq -r .[0].version)
+  stemcell_version=$(bosh stemcells | awk '$3 == "ubuntu-trusty" { print $2 }')
   set -x
 
   if [[ -n $(bosh cloud-config) ]]; then

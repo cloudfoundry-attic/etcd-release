@@ -83,6 +83,26 @@ func GetNonErrandVMsFromRawManifest(rawManifest []byte) ([]bosh.VM, error) {
 	return vms, nil
 }
 
+func GetVMIDByIndices(boshClient bosh.Client, deploymentName, jobName string, indices []int) ([]string, error) {
+	vms, err := boshClient.DeploymentVMs(deploymentName)
+	if err != nil {
+		return []string{}, err
+	}
+
+	var vmIDs []string
+	for _, vm := range vms {
+		if vm.JobName == jobName {
+			for _, index := range indices {
+				if index == vm.Index {
+					vmIDs = append(vmIDs, vm.ID)
+				}
+			}
+		}
+	}
+
+	return vmIDs, nil
+}
+
 type Manifest struct {
 	Name          interface{}            `yaml:"name"`
 	DirectorUUID  string                 `yaml:"director_uuid"`
