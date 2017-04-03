@@ -4,16 +4,6 @@ name: eats
 releases:
 - name: etcd
   version: latest
-- name: consul
-  version: latest
-- name: bosh-warden-cpi
-  version: 34
-  url: https://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=34
-  sha1: 5b102afe81bea5927983575aeafddbd93f6a21a5
-- name: turbulence
-  version: 0.6
-  url: https://bosh.io/d/github.com/cppforlife/turbulence-release?v=0.6
-  sha1: 5222108e2aa500bb60205d7a0e6f654dde391f36
 
 stemcells:
 - alias: default
