@@ -14,5 +14,9 @@ EOF
 
 chown -R vcap:vcap "/var/vcap/data/"
 pushd "/var/vcap/data/tmp" > /dev/null
-  chpst -u vcap:vcap bash -c "${GOPATH}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/scripts/test -nodes <%= p('etcd.acceptance_tests.parallel_nodes') %>"
+<% if p('etcd.acceptance_tests.enable_turbulence_tests') %>
+  chpst -u vcap:vcap bash -c "${GOPATH}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/scripts/test -nodes <%= p('etcd.acceptance_tests.parallel_nodes') %> turbulence"
+<% else %>
+  chpst -u vcap:vcap bash -c "${GOPATH}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/scripts/test -skipPackage turbulence -nodes <%= p('etcd.acceptance_tests.parallel_nodes') %>"
+<% end %>
 popd > /dev/null

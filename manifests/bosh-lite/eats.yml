@@ -40,11 +40,9 @@ properties:
         username: ((bosh_username))
         password: ((bosh_password))
         director_ca_cert: ((bosh_director_ca_cert))
-      registry:
-        username: ((bosh_registry_username))
-        password: ((bosh_registry_password))
       parallel_nodes: 1
       etcd_release_version: latest
+      enable_turbulence_tests: ((enable_turbulence_tests))
 
 update:
   serial: true
