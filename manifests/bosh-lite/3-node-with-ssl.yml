@@ -177,6 +177,7 @@ instance_groups:
     release: consul
     consumes:
       consul: {from: consul_server}
+      etcd: {from: etcd_server}
     properties:
       consul:
         agent:

@@ -40,7 +40,9 @@ jobs:
   templates:
   - name: consul_agent
     release: consul
-    consumes: { consul: nil }
+    consumes:
+      consul: nil
+      etcd: {from: etcd_server}
   - name: etcd
     release: etcd
 
@@ -54,7 +56,9 @@ jobs:
   templates:
   - name: consul_agent
     release: consul
-    consumes: { consul: nil }
+    consumes:
+      consul: nil
+      etcd: {from: etcd_server}
   - name: etcd_proxy
     release: etcd
 
