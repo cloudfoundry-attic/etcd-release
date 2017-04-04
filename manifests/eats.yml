@@ -30,7 +30,7 @@ properties:
         username: ((bosh_username))
         password: ((bosh_password))
         director_ca_cert: ((bosh_director_ca_cert))
-      parallel_nodes: 1
+      parallel_nodes: ((parallel_nodes))
       etcd_release_version: latest
       enable_turbulence_tests: ((enable_turbulence_tests))
 
