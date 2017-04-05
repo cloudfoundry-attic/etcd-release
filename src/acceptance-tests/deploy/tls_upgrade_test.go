@@ -84,7 +84,7 @@ var _ = Describe("TLS Upgrade", func() {
 
 		By("deploy tls etcd, scale down non-tls etcd, deploy proxy, and switch clients to tls etcd", func() {
 			var err error
-			manifest, err = helpers.NewEtcdManifestWithOpsWithInstanceCount("tls_upgrade", 3, true, boshClient)
+			manifest, err = helpers.NewEtcdManifestWithOpsWithInstanceCount("tls-upgrade", 3, true, boshClient)
 			Expect(err).NotTo(HaveOccurred())
 
 			caCert, err := ops.FindOp(manifest, "/instance_groups/name=etcd/properties/etcd/ca_cert")
