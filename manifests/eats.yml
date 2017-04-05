@@ -3,12 +3,12 @@ name: eats
 
 releases:
 - name: etcd
-  version: latest
+  version: ((etcd_release_version))
 
 stemcells:
 - alias: default
   os: ubuntu-trusty
-  version: latest
+  version: ((stemcell_version))
 
 instance_groups:
 - name: acceptance-tests
@@ -31,7 +31,8 @@ properties:
         password: ((bosh_password))
         director_ca_cert: ((bosh_director_ca_cert))
       parallel_nodes: ((parallel_nodes))
-      etcd_release_version: latest
+      etcd_release_version: ((etcd_release_version))
+      latest_etcd_release_version: ((latest_etcd_release_version))
       enable_turbulence_tests: ((enable_turbulence_tests))
 
 update:
