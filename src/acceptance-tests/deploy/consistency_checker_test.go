@@ -52,6 +52,11 @@ var _ = Describe("consistency checker", func() {
 					Value: map[string]string{
 						"name":    "iptables_agent",
 						"release": "etcd",
+						"consumes": map[string]string{
+							"etcd": map[string]string{
+								"as": "etcd-server",
+							},
+						},
 					},
 				})
 				Expect(err).NotTo(HaveOccurred())
