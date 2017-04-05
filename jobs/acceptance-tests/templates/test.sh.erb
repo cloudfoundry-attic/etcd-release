@@ -7,6 +7,7 @@ export PATH="${GOROOT}/bin:${PATH}"
 
 export EATS_CONFIG=/tmp/config.json
 export EATS_RELEASE_VERSION="<%= p('etcd.acceptance_tests.etcd_release_version') %>"
+export LATEST_EATS_RELEASE_VERSION="<%= p('etcd.acceptance_tests.latest_etcd_release_version') %>"
 
 cat > $EATS_CONFIG <<EOF
 <%= p('etcd.acceptance_tests').to_json %>

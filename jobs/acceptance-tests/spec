@@ -33,6 +33,10 @@ properties:
    description: "The default etcd-release version number to deploy"
    default: latest
 
+  etcd.acceptance_tests.latest_etcd_release_version:
+   description: "The latest bosh.io etcd-release version number to deploy"
+   default: latest
+
   etcd.acceptance_tests.enable_turbulence_tests:
    description: "Run tests in turbulence package"
    default: false
