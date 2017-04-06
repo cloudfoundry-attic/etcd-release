@@ -115,7 +115,7 @@ var _ = Describe("consistency checker", func() {
 
 				Eventually(func() ([]bosh.VM, error) {
 					return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-				}, "1m", "10s").Should(ConsistOf(vms))
+				}, "5m", "10s").Should(ConsistOf(vms))
 			})
 
 			By("deleting the deployment", func() {
