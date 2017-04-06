@@ -26,9 +26,9 @@ properties:
   etcd:
     acceptance_tests:
       bosh:
-        target: ((bosh_target))
-        username: ((bosh_username))
-        password: ((bosh_password))
+        target: ((bosh_environment))
+        username: ((bosh_client))
+        password: ((bosh_client_secret))
         director_ca_cert: ((bosh_director_ca_cert))
       parallel_nodes: ((parallel_nodes))
       etcd_release_version: ((etcd_release_version))
