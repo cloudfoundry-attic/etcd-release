@@ -35,9 +35,9 @@ var _ = Describe("quorum loss", func() {
 		)
 
 		BeforeEach(func() {
-			deploymentSuffix := "kill-vm-non-tls"
+			deploymentSuffix := "quorum-loss-non-tls"
 			if enableSSL {
-				deploymentSuffix = "kill-vm-tls"
+				deploymentSuffix = "quorum-loss-tls"
 			}
 
 			By("deploying turbulence", func() {
