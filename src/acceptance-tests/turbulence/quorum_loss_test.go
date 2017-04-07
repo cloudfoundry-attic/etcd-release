@@ -96,6 +96,10 @@ var _ = Describe("quorum loss", func() {
 						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
 					}, "10m", "1m").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
 
+					Eventually(func() ([]string, error) {
+						return lockedDeployments(boshClient)
+					}, "12m", "1m").ShouldNot(ContainElement(etcdManifestName))
+
 					err := boshClient.DeleteDeployment(etcdManifestName)
 					Expect(err).NotTo(HaveOccurred())
 				}
