@@ -212,7 +212,7 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 			]
 		}`, port)))
 
-		Expect(string(session.Out.Contents())).To(ContainSubstring("RequestURI:/v2/members"))
+		Eventually(string(session.Out.Contents()), "1m", "5s").Should(ContainSubstring("RequestURI:/v2/members"))
 	})
 
 	Context("failure cases", func() {
