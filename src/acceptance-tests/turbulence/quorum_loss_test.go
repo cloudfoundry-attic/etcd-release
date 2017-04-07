@@ -94,7 +94,7 @@ var _ = Describe("quorum loss", func() {
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-					}, "5m", "1m").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+					}, "10m", "1m").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
 
 					err := boshClient.DeleteDeployment(etcdManifestName)
 					Expect(err).NotTo(HaveOccurred())
@@ -156,7 +156,7 @@ var _ = Describe("quorum loss", func() {
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-					}, "5m", "1m").Should(ContainElement(bosh.VM{JobName: "etcd", Index: jobIndexToResurrect, State: "running"}))
+					}, "10m", "1m").Should(ContainElement(bosh.VM{JobName: "etcd", Index: jobIndexToResurrect, State: "running"}))
 				})
 
 				By("getting the previous key and value", func() {

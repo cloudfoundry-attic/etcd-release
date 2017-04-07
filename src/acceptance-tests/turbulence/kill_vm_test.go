@@ -102,7 +102,7 @@ var _ = Describe("KillVm", func() {
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-					}, "5m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+					}, "10m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
 
 					err := boshClient.DeleteDeployment(etcdManifestName)
 					Expect(err).NotTo(HaveOccurred())
@@ -155,7 +155,7 @@ var _ = Describe("KillVm", func() {
 
 					Eventually(func() ([]bosh.VM, error) {
 						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-					}, "5m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+					}, "10m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
 				})
 
 				By("reading each value from the resurrected VM", func() {
