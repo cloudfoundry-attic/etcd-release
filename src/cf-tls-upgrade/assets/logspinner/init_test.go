@@ -19,6 +19,6 @@ var (
 
 var _ = BeforeSuite(func() {
 	var err error
-	pathToLogspinner, err = gexec.Build("cf-tls-upgrade/assets/logspinner")
+	pathToLogspinner, err = gexec.Build("github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/assets/logspinner")
 	Expect(err).NotTo(HaveOccurred())
 })

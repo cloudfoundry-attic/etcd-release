@@ -3,8 +3,6 @@ package syslogchecker_test
 import (
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 
-	"cf-tls-upgrade/syslogchecker"
-	"cf-tls-upgrade/syslogchecker/fakes"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -15,6 +13,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/syslogchecker"
+	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/syslogchecker/fakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
