@@ -433,9 +433,7 @@ stemcells:
 
 releases:
 - name: consul
-  version: 158
-  url: https://bosh.io/d/github.com/cloudfoundry-incubator/consul-release?v=158
-  sha1: d86e407811e22800eda86eb2c3b40a07be23d23d
+  version: latest
 - name: etcd
   version: latest
 
