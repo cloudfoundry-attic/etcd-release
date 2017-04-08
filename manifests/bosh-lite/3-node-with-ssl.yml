@@ -177,7 +177,6 @@ instance_groups:
     release: consul
     consumes:
       consul: {from: consul_server}
-      etcd: {from: etcd_server}
     properties:
       consul:
         agent:
@@ -185,9 +184,10 @@ instance_groups:
             etcd: {}
   - name: etcd
     release: etcd
+    consumes:
+      etcd: {from: etcd_server}
     provides:
-      etcd:
-        shared: true
+      etcd: {as: etcd_server}
     properties:
       etcd:
         peer_require_ssl: true

@@ -42,9 +42,12 @@ jobs:
     release: consul
     consumes:
       consul: nil
-      etcd: {from: etcd_server}
   - name: etcd
     release: etcd
+    consumes:
+      etcd: {from: etcd_server}
+    provides:
+      etcd: {as: etcd_server}
 
 - name: etcd_proxy_z1
   instances: 1
@@ -58,7 +61,6 @@ jobs:
     release: consul
     consumes:
       consul: nil
-      etcd: {from: etcd_server}
   - name: etcd_proxy
     release: etcd
 

@@ -16,9 +16,10 @@ instance_groups:
   jobs:
   - name: etcd
     release: etcd
+    consumes:
+      etcd: {from: etcd_server}
     provides:
-      etcd:
-        shared: true
+      etcd: {as: etcd_server}
     properties:
       etcd:
         peer_require_ssl: false
