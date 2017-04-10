@@ -179,7 +179,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return client.DeploymentVMs(config.BOSH.DeploymentName)
+				return helpers.DeploymentVMsWithOps(client, config.BOSH.DeploymentName)
 			}, "1m", "10s").Should(ConsistOf(expectedVMs))
 		})
 
@@ -198,7 +198,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return client.DeploymentVMs(deploymentName)
+				return helpers.DeploymentVMsWithOps(client, deploymentName)
 			}, "1m", "10s").Should(ConsistOf(expectedVMs))
 		})
 
