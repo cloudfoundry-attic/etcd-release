@@ -55,3 +55,9 @@
 [submodule "src/cf-tls-upgrade/vendor/github.com/gorilla/websocket"]
 	path = src/cf-tls-upgrade/vendor/github.com/gorilla/websocket
 	url = https://github.com/gorilla/websocket.git
+[submodule "src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/gomegamatchers"]
+	path = src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/gomegamatchers
+	url = https://github.com/pivotal-cf-experimental/gomegamatchers
+[submodule "src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/bosh-test"]
+	path = src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/bosh-test
+	url = https://github.com/pivotal-cf-experimental/bosh-test
