@@ -155,7 +155,7 @@ func (c Checker) cleanup(logSpinnerApp, appName string) error {
 
 func (c Checker) setupSyslogDrainerApp(syslogDrainerAppName string) error {
 	output, err := c.runner.Run("push", syslogDrainerAppName,
-		"-f", filepath.Join(os.Getenv("GOPATH"), "src/acceptance-tests/cf-tls-upgrade/syslogchecker/assets/manifest.yml"),
+		"-f", filepath.Join(os.Getenv("GOPATH"), "src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/syslogchecker/assets/manifest.yml"),
 		"--no-start")
 	if err != nil {
 		return fmt.Errorf("syslog drainer application push failed: %s", output)

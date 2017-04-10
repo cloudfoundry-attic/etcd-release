@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	SYSLOG_MANIFEST_PATH           = "/fake/go/path/src/acceptance-tests/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
+	SYSLOG_MANIFEST_PATH           = "/fake/go/path/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
 	APP_GUID                       = "37911525-ae36-46c5-aa4c-951551f192e6"
 	runnerRunCallCountPerIteration = 12
 )

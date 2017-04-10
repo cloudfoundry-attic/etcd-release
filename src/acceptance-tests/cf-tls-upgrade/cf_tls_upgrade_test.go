@@ -235,9 +235,12 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 				}
 			}
 
-			missingLogErrorsCount := len(missingLogErrors.(helpers.ErrorSet))
-			if missingLogErrorsCount > MISSING_LOG_THRESHOLD {
-				fmt.Println(missingLogErrors)
+			var missingLogErrorsCount int
+			if missingLogErrors != nil {
+				missingLogErrorsCount = len(missingLogErrors.(helpers.ErrorSet))
+				if missingLogErrorsCount > MISSING_LOG_THRESHOLD {
+					fmt.Println(missingLogErrors)
+				}
 			}
 
 			Expect(otherErrors).To(HaveLen(0))
