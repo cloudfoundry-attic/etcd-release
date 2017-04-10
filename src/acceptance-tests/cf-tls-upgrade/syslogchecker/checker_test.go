@@ -14,8 +14,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/syslogchecker"
-	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/syslogchecker/fakes"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/syslogchecker"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/syslogchecker/fakes"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	SYSLOG_MANIFEST_PATH           = "/fake/go/path/src/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
+	SYSLOG_MANIFEST_PATH           = "/fake/go/path/src/acceptance-tests/cf-tls-upgrade/syslogchecker/assets/manifest.yml"
 	APP_GUID                       = "37911525-ae36-46c5-aa4c-951551f192e6"
 	runnerRunCallCountPerIteration = 12
 )

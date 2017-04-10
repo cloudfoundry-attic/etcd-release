@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/logspammer"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/syslogchecker"
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
-	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/logspammer"
-	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/syslogchecker"
 	"github.com/go-yaml/yaml"
 
 	"github.com/cloudfoundry-incubator/cf-test-helpers/cf"

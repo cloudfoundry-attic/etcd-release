@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 
-	"github.com/cloudfoundry-incubator/etcd-release/src/cf-tls-upgrade/logspammer"
+	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/logspammer"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
 

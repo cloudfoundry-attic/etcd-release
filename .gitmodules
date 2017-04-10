@@ -31,33 +31,24 @@
 [submodule "src/acceptance-tests/vendor/github.com/ugorji/go"]
 	path = src/acceptance-tests/vendor/github.com/ugorji/go
 	url = https://github.com/ugorji/go.git
-[submodule "src/cf-tls-upgrade/vendor/github.com/go-yaml/yaml"]
-	path = src/cf-tls-upgrade/vendor/github.com/go-yaml/yaml
-	url = https://github.com/go-yaml/yaml.git
 [submodule "src/acceptance-tests/vendor/gopkg.in/yaml.v2"]
 	path = src/acceptance-tests/vendor/gopkg.in/yaml.v2
 	url = https://gopkg.in/yaml.v2
-[submodule "src/cf-tls-upgrade/vendor/github.com/cloudfoundry-incubator/cf-test-helpers"]
-	path = src/cf-tls-upgrade/vendor/github.com/cloudfoundry-incubator/cf-test-helpers
-	url = https://github.com/cloudfoundry-incubator/cf-test-helpers.git
-[submodule "src/cf-tls-upgrade/vendor/github.com/cloudfoundry/sonde-go"]
-	path = src/cf-tls-upgrade/vendor/github.com/cloudfoundry/sonde-go
-	url = https://github.com/cloudfoundry/sonde-go.git
-[submodule "src/cf-tls-upgrade/vendor/github.com/nu7hatch/gouuid"]
-	path = src/cf-tls-upgrade/vendor/github.com/nu7hatch/gouuid
-	url = https://github.com/nu7hatch/gouuid.git
-[submodule "src/cf-tls-upgrade/vendor/github.com/cloudfoundry/noaa"]
-	path = src/cf-tls-upgrade/vendor/github.com/cloudfoundry/noaa
-	url = https://github.com/cloudfoundry/noaa.git
-[submodule "src/cf-tls-upgrade/vendor/github.com/gogo/protobuf"]
-	path = src/cf-tls-upgrade/vendor/github.com/gogo/protobuf
-	url = https://github.com/gogo/protobuf.git
-[submodule "src/cf-tls-upgrade/vendor/github.com/gorilla/websocket"]
-	path = src/cf-tls-upgrade/vendor/github.com/gorilla/websocket
-	url = https://github.com/gorilla/websocket.git
-[submodule "src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/gomegamatchers"]
-	path = src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/gomegamatchers
-	url = https://github.com/pivotal-cf-experimental/gomegamatchers
-[submodule "src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/bosh-test"]
-	path = src/cf-tls-upgrade/vendor/github.com/pivotal-cf-experimental/bosh-test
-	url = https://github.com/pivotal-cf-experimental/bosh-test
+[submodule "src/acceptance-tests/vendor/github.com/gorilla/websocket"]
+	path = src/acceptance-tests/vendor/github.com/gorilla/websocket
+	url = https://github.com/gorilla/websocket
+[submodule "src/acceptance-tests/vendor/github.com/gogo/protobuf"]
+	path = src/acceptance-tests/vendor/github.com/gogo/protobuf
+	url = https://github.com/gogo/protobuf
+[submodule "src/acceptance-tests/vendor/github.com/cloudfoundry/noaa"]
+	path = src/acceptance-tests/vendor/github.com/cloudfoundry/noaa
+	url = https://github.com/cloudfoundry/noaa
+[submodule "src/acceptance-tests/vendor/github.com/cloudfoundry/sonde-go"]
+	path = src/acceptance-tests/vendor/github.com/cloudfoundry/sonde-go
+	url = https://github.com/cloudfoundry/sonde-go
+[submodule "src/acceptance-tests/vendor/github.com/cloudfoundry-incubator/cf-test-helpers"]
+	path = src/acceptance-tests/vendor/github.com/cloudfoundry-incubator/cf-test-helpers
+	url = https://github.com/cloudfoundry-incubator/cf-test-helpers
+[submodule "src/acceptance-tests/vendor/github.com/nu7hatch/gouuid"]
+	path = src/acceptance-tests/vendor/github.com/nu7hatch/gouuid
+	url = https://github.com/nu7hatch/gouuid
