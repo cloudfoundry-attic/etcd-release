@@ -185,6 +185,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: etcd_metrics_server
     release: etcd
   - name: metron_agent
@@ -213,6 +214,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: etcd_metrics_server
     release: etcd
   - name: metron_agent
@@ -238,6 +240,7 @@ jobs:
     release: cf
   - name: etcd_proxy
     release: etcd
+    consumes: { etcd: nil }
   - name: etcd_metrics_server
     release: etcd
   - name: metron_agent
@@ -262,6 +265,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: etcd_metrics_server
     release: etcd
   - name: metron_agent

@@ -27,6 +27,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: bbs
     release: diego
   - name: metron_agent
@@ -52,6 +53,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: bbs
     release: diego
   - name: metron_agent
@@ -77,6 +79,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: bbs
     release: diego
   - name: metron_agent
@@ -430,6 +433,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: bbs
     release: diego
   - name: metron_agent
@@ -480,6 +484,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: bbs
     release: diego
   - name: metron_agent
@@ -530,6 +535,7 @@ jobs:
     release: cf
   - name: etcd
     release: etcd
+    consumes: { etcd: nil }
   - name: bbs
     release: diego
   - name: metron_agent
