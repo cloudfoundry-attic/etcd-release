@@ -421,6 +421,9 @@ func etcdTLSJob(instances int, azIndex int) Job {
 			{
 				Name:    "etcd",
 				Release: "etcd",
+				Consumes: map[string]interface{}{
+					"etcd": "nil",
+				},
 			},
 			{
 				Name:    "etcd_metrics_server",
