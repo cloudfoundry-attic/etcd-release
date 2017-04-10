@@ -142,6 +142,7 @@ type JobProperties struct {
 	Doppler           interface{}       `yaml:"doppler,omitempty"`
 	TrafficController interface{}       `yaml:"traffic_controller,omitempty"`
 	Diego             interface{}       `yaml:"diego,omitempty"`
+	Loggregator       interface{}       `yaml:"loggregator,omitempty"`
 }
 
 type Template struct {
