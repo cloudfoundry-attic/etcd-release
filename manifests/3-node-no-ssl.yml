@@ -1,6 +1,13 @@
-director_uuid: BOSH-DIRECTOR-UUID
+name: etcd-no-ssl
 
-name: etcd
+stemcells:
+- alias: default
+  os: ubuntu-trusty
+  version: latest
+
+releases:
+- name: etcd
+  version: latest
 
 instance_groups:
 - name: etcd
@@ -31,14 +38,3 @@ update:
   max_in_flight: 1
   canary_watch_time: 1000-60000
   update_watch_time: 1000-60000
-
-variables: []
-
-stemcells:
-- alias: default
-  os: ubuntu-trusty
-  version: latest
-
-releases:
-- name: etcd
-  version: latest
