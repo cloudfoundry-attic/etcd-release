@@ -18,6 +18,6 @@ pushd "/var/vcap/data/tmp" > /dev/null
 <% if p('etcd.acceptance_tests.enable_turbulence_tests') %>
   chpst -u vcap:vcap bash -c "${GOPATH}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/scripts/test -skipPackage cf-tls-upgrade -nodes <%= p('etcd.acceptance_tests.parallel_nodes') %> turbulence"
 <% else %>
-  chpst -u vcap:vcap bash -c "${GOPATH}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/scripts/test -skipPackage turbulence -skipPackage cf-tls-upgrade -nodes <%= p('etcd.acceptance_tests.parallel_nodes') %>"
+  chpst -u vcap:vcap bash -c "${GOPATH}/src/github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/scripts/test -skipPackage turbulence,cf-tls-upgrade -nodes <%= p('etcd.acceptance_tests.parallel_nodes') %>"
 <% end %>
 popd > /dev/null
