@@ -2,6 +2,7 @@ package logspammer_test
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/logspammer"
@@ -123,6 +124,10 @@ var _ = Describe("logspammer", func() {
 		}).Should(BeNumerically(">", 0))
 	})
 
+	AfterEach(func() {
+		logspammer.ResetTimeNow()
+	})
+
 	Describe("Check", func() {
 		It("check for log interruptions", func() {
 			err := spammer.Stop()
@@ -156,6 +161,15 @@ var _ = Describe("logspammer", func() {
 			})
 
 			It("returns an error when an app log line is missing", func() {
+				var testUnixSeconds, timeCallCount int64
+				// Hard-code the time for the purposes of matching log entries below.
+				testUnixSeconds = 1515151515
+				logspammer.SetTimeNow(func() time.Time {
+					// Increment the nanoseconds every time the code requests the current time.
+					timeCallCount++
+					return time.Unix(testUnixSeconds, timeCallCount)
+				})
+
 				setSkipStream(true)
 				logCount := len(spammer.LogMessages())
 
@@ -170,19 +184,19 @@ var _ = Describe("logspammer", func() {
 
 				spammerErrs, missingLogErrs := spammer.Check()
 				Expect(spammerErrs).NotTo(HaveOccurred())
-				Expect(missingLogErrs).To(Equal(helpers.ErrorSet{
-					"missing log number 1":  1,
-					"missing log number 2":  1,
-					"missing log number 3":  1,
-					"missing log number 4":  1,
-					"missing log number 5":  1,
-					"missing log number 6":  1,
-					"missing log number 7":  1,
-					"missing log number 8":  1,
-					"missing log number 9":  1,
-					"missing log number 10": 1,
-					"missing log number 11": 1,
-				}))
+				// We are constructing the expected timestamps of the "missing"
+				// log entries to account for different timezones when running
+				// the tests.
+				expectedErrorSet := helpers.ErrorSet{}
+
+				var i int64
+				// There should be exactly 11 missing log entries based on the
+				// "Eventually" step above.
+				for i = 1; i <= 11; i++ {
+					expectedErrorSet[fmt.Sprintf("missing log entry: %s", time.Unix(testUnixSeconds, i).Format(logspammer.TimeFormat))] = 1
+				}
+
+				Expect(missingLogErrs).To(Equal(expectedErrorSet))
 			})
 		})
 	})

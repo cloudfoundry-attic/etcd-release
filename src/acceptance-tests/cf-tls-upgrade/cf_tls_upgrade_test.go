@@ -163,7 +163,7 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		By("scaling down the non-TLS etcd cluster to 1 node and converting it to a proxy", func() {
+		By("deploying a TLS etcd cluster, scaling down the non-TLS etcd cluster to 1 node and converting it to a proxy", func() {
 			originalManifest, err := client.DownloadManifest(config.BOSH.DeploymentName)
 			Expect(err).NotTo(HaveOccurred())
 

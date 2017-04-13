@@ -17,6 +17,13 @@ import (
 	"github.com/cloudfoundry/sonde-go/events"
 )
 
+// Use a custom time format to avoid losing trailing 0s in the nanoseconds.
+const TimeFormat = "2006-01-02 15:04:05.000000000 -0700 MST"
+
+var (
+	timeNow (func() time.Time)
+)
+
 type Spammer struct {
 	sync.Mutex
 	appURL          string
@@ -27,6 +34,7 @@ type Spammer struct {
 	doneWaitGroup   sync.WaitGroup
 	logMessages     []string
 	logWritten      int
+	logsWritten     map[int]time.Time
 	msgChan         <-chan *events.Envelope
 	errChan         <-chan error
 	errors          helpers.ErrorSet
@@ -36,6 +44,8 @@ type Spammer struct {
 }
 
 func NewSpammer(logger io.Writer, appURL string, streamGenerator func() (<-chan *events.Envelope, <-chan error), frequency time.Duration) *Spammer {
+	timeNow = time.Now
+
 	msgChan, errChan := streamGenerator()
 	return &Spammer{
 		appURL:          appURL,
@@ -49,6 +59,7 @@ func NewSpammer(logger io.Writer, appURL string, streamGenerator func() (<-chan 
 		logMessages:     []string{},
 		logger:          logger,
 		streamGenerator: streamGenerator,
+		logsWritten:     map[int]time.Time{},
 	}
 }
 
@@ -111,6 +122,7 @@ func (s *Spammer) Start() error {
 					continue
 				}
 
+				s.logsWritten[s.logWritten] = timeNow()
 				s.logWritten++
 			}
 		}
@@ -153,21 +165,21 @@ func (s *Spammer) Check() (error, error) {
 	receivedLogNumbers := s.getReceivedLogNumbers()
 	logMissing := helpers.ErrorSet{}
 
-	missingLogNumbers := []int{}
+	missingLogs := []time.Time{}
 	for expectedLogNumber := 0; expectedLogNumber < s.logWritten; expectedLogNumber++ {
 		if _, found := receivedLogNumbers[expectedLogNumber]; !found {
-			missingLogNumbers = append(missingLogNumbers, expectedLogNumber)
+			missingLogs = append(missingLogs, s.logsWritten[expectedLogNumber])
 		}
 	}
 
-	if len(missingLogNumbers) > 0 {
+	if len(missingLogs) > 0 {
 		s.logger.Write([]byte(fmt.Sprintf("total logs written %d, received logs %d, diff %d\n",
 			s.logWritten,
 			len(receivedLogNumbers),
 			s.logWritten-len(receivedLogNumbers))))
 
-		for _, logNum := range missingLogNumbers {
-			logMissing.Add(fmt.Errorf("missing log number %d", logNum))
+		for _, log := range missingLogs {
+			logMissing.Add(fmt.Errorf("missing log entry: %s", log.Format(TimeFormat)))
 		}
 	}
 
