@@ -59,8 +59,8 @@ var _ = Describe("KillVm", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMsWithOps(boshClient, turbulenceManifestName)
-				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(turbulenceManifest)))
+					return helpers.DeploymentVMs(boshClient, turbulenceManifestName)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(turbulenceManifest)))
 
 				turbulencePassword, err := ops.FindOp(turbulenceManifest, "/instance_groups/name=api/properties/password")
 				Expect(err).NotTo(HaveOccurred())
@@ -72,17 +72,17 @@ var _ = Describe("KillVm", func() {
 			})
 
 			By("deploying 3 node etcd", func() {
-				etcdManifest, err = helpers.DeployEtcdWithOpsWithInstanceCount(deploymentSuffix, 3, enableSSL, boshClient)
+				etcdManifest, err = helpers.DeployEtcdWithInstanceCount(deploymentSuffix, 3, enableSSL, boshClient)
 				Expect(err).NotTo(HaveOccurred())
 
 				etcdManifestName, err = ops.ManifestName(etcdManifest)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+					return helpers.DeploymentVMs(boshClient, etcdManifestName)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
-				testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, etcdManifestName, "testconsumer")
+				testConsumerIPs, err := helpers.GetVMIPs(boshClient, etcdManifestName, "testconsumer")
 				Expect(err).NotTo(HaveOccurred())
 
 				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", testConsumerIPs[0]))
@@ -101,8 +101,8 @@ var _ = Describe("KillVm", func() {
 					}, "12m", "1m").ShouldNot(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-					}, "10m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+						return helpers.DeploymentVMs(boshClient, etcdManifestName)
+					}, "10m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
 					err := boshClient.DeleteDeployment(etcdManifestName)
 					Expect(err).NotTo(HaveOccurred())
@@ -154,8 +154,8 @@ var _ = Describe("KillVm", func() {
 					}, "12m", "1m").ShouldNot(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-					}, "10m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+						return helpers.DeploymentVMs(boshClient, etcdManifestName)
+					}, "10m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 				})
 
 				By("reading each value from the resurrected VM", func() {

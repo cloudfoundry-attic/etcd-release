@@ -5,7 +5,7 @@ import (
 	"github.com/pivotal-cf-experimental/destiny/ops"
 )
 
-func DeploymentVMsWithOps(boshClient bosh.Client, deploymentName string) ([]bosh.VM, error) {
+func DeploymentVMs(boshClient bosh.Client, deploymentName string) ([]bosh.VM, error) {
 	vms, err := boshClient.DeploymentVMs(deploymentName)
 	if err != nil {
 		return nil, err
@@ -19,7 +19,7 @@ func DeploymentVMsWithOps(boshClient bosh.Client, deploymentName string) ([]bosh
 	return vms, nil
 }
 
-func GetVMsFromManifestWithOps(manifest string) []bosh.VM {
+func GetVMsFromManifest(manifest string) []bosh.VM {
 	var vms []bosh.VM
 
 	instanceGroups, err := ops.InstanceGroups(manifest)
@@ -36,7 +36,7 @@ func GetVMsFromManifestWithOps(manifest string) []bosh.VM {
 	return vms
 }
 
-func GetNonErrandVMsFromManifestWithOps(manifest string) []bosh.VM {
+func GetNonErrandVMsFromManifest(manifest string) []bosh.VM {
 	var vms []bosh.VM
 
 	instanceGroups, err := ops.InstanceGroups(manifest)
@@ -55,7 +55,7 @@ func GetNonErrandVMsFromManifestWithOps(manifest string) []bosh.VM {
 	return vms
 }
 
-func GetVMIPsWithOps(boshClient bosh.Client, deploymentName, jobName string) ([]string, error) {
+func GetVMIPs(boshClient bosh.Client, deploymentName, jobName string) ([]string, error) {
 	vms, err := boshClient.DeploymentVMs(deploymentName)
 	if err != nil {
 		return []string{}, err
@@ -71,7 +71,7 @@ func GetVMIPsWithOps(boshClient bosh.Client, deploymentName, jobName string) ([]
 	return ips, nil
 }
 
-func GetVMIDByIndicesWithOps(boshClient bosh.Client, deploymentName, jobName string, indices []int) ([]string, error) {
+func GetVMIDByIndices(boshClient bosh.Client, deploymentName, jobName string, indices []int) ([]string, error) {
 	vms, err := boshClient.DeploymentVMs(deploymentName)
 	if err != nil {
 		return []string{}, err

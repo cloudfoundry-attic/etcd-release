@@ -40,7 +40,7 @@ var _ = Describe("consistency checker", func() {
 				}
 
 				var err error
-				manifest, err = helpers.NewEtcdManifestWithOpsWithInstanceCount(deploymentName, 3, enableSSL, boshClient)
+				manifest, err = helpers.NewEtcdManifestWithInstanceCount(deploymentName, 3, enableSSL, boshClient)
 				Expect(err).NotTo(HaveOccurred())
 
 				manifestName, err = ops.ManifestName(manifest)
@@ -59,7 +59,7 @@ var _ = Describe("consistency checker", func() {
 				_, err = boshClient.Deploy([]byte(manifest))
 				Expect(err).NotTo(HaveOccurred())
 
-				testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "testconsumer")
+				testConsumerIPs, err := helpers.GetVMIPs(boshClient, manifestName, "testconsumer")
 				Expect(err).NotTo(HaveOccurred())
 
 				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", testConsumerIPs[0]))
@@ -67,8 +67,8 @@ var _ = Describe("consistency checker", func() {
 
 			By("checking if etcd consistency check reports no split brain", func() {
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+					return helpers.DeploymentVMs(boshClient, manifestName)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 			})
 
 			By("blocking all network traffic on a random etcd node", func() {
@@ -106,7 +106,7 @@ var _ = Describe("consistency checker", func() {
 
 			By("checking if etcd consistency check reports a split brain", func() {
 				vms := []bosh.VM{}
-				for _, vm := range helpers.GetVMsFromManifestWithOps(manifest) {
+				for _, vm := range helpers.GetVMsFromManifest(manifest) {
 					if vm.JobName == "etcd" {
 						vm.State = "failing"
 					}
@@ -114,7 +114,7 @@ var _ = Describe("consistency checker", func() {
 				}
 
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMsWithOps(boshClient, manifestName)
+					return helpers.DeploymentVMs(boshClient, manifestName)
 				}, "5m", "10s").Should(ConsistOf(vms))
 			})
 

@@ -41,7 +41,7 @@ var _ = Describe("TLS Upgrade", func() {
 	It("keeps writing to an etcd cluster without interruption", func() {
 		By("deploy non tls etcd", func() {
 			var err error
-			manifest, err = helpers.NewEtcdManifestWithOpsWithInstanceCount("tls-upgrade", 3, false, boshClient)
+			manifest, err = helpers.NewEtcdManifestWithInstanceCount("tls-upgrade", 3, false, boshClient)
 			Expect(err).NotTo(HaveOccurred())
 
 			manifestName, err = ops.ManifestName(manifest)
@@ -58,19 +58,19 @@ var _ = Describe("TLS Upgrade", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+				return helpers.DeploymentVMs(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 		})
 
 		By("setup watcher to save keys from the non tls cluster", func() {
-			etcdIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "etcd")
+			etcdIPs, err := helpers.GetVMIPs(boshClient, manifestName, "etcd")
 			Expect(err).NotTo(HaveOccurred())
 
 			watcher = helpers.NewEtcdWatcher(etcdIPs)
 		})
 
 		By("spamming the cluster", func() {
-			testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "testconsumer")
+			testConsumerIPs, err := helpers.GetVMIPs(boshClient, manifestName, "testconsumer")
 			Expect(err).NotTo(HaveOccurred())
 
 			for i, ip := range testConsumerIPs {
@@ -84,7 +84,7 @@ var _ = Describe("TLS Upgrade", func() {
 
 		By("deploy tls etcd, scale down non-tls etcd, deploy proxy, and switch clients to tls etcd", func() {
 			var err error
-			manifest, err = helpers.NewEtcdManifestWithOpsWithInstanceCount("tls-upgrade", 3, true, boshClient)
+			manifest, err = helpers.NewEtcdManifestWithInstanceCount("tls-upgrade", 3, true, boshClient)
 			Expect(err).NotTo(HaveOccurred())
 
 			caCert, err := ops.FindOp(manifest, "/instance_groups/name=etcd/properties/etcd/ca_cert")
@@ -165,14 +165,14 @@ var _ = Describe("TLS Upgrade", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+				return helpers.DeploymentVMs(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 		})
 
 		By("migrating the non tls data to the tls cluster", func() {
 			watcher.Stop <- true
 
-			etcdIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "etcd")
+			etcdIPs, err := helpers.GetVMIPs(boshClient, manifestName, "etcd")
 			Expect(err).NotTo(HaveOccurred())
 
 			etcdClient := helpers.NewEtcdClient([]string{fmt.Sprintf("http://%s:4001", etcdIPs[0])})
@@ -195,8 +195,8 @@ var _ = Describe("TLS Upgrade", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+				return helpers.DeploymentVMs(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 		})
 
 		By("stopping the spammers", func() {

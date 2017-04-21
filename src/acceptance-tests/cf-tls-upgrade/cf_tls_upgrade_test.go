@@ -121,8 +121,8 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetNonErrandVMsFromManifestWithOps(nonTLSManifest)))
+				return helpers.DeploymentVMs(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetNonErrandVMsFromManifest(nonTLSManifest)))
 		})
 
 		By("logging into cf and preparing the environment", func() {
@@ -273,8 +273,8 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 
 		By("checking if the expected etcd-tls VMs are running", func() {
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetNonErrandVMsFromManifestWithOps(etcdTLSManifest)))
+				return helpers.DeploymentVMs(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetNonErrandVMsFromManifest(etcdTLSManifest)))
 		})
 
 		By("scaling down the non-TLS etcd cluster to 1 node and converting it to a proxy", func() {
@@ -481,8 +481,8 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 
 		By("checking if the expected proxy-tls VMs are running", func() {
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetNonErrandVMsFromManifestWithOps(proxyTLSManifest)))
+				return helpers.DeploymentVMs(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetNonErrandVMsFromManifest(proxyTLSManifest)))
 		})
 
 		By("stopping spammer and checking for errors", func() {

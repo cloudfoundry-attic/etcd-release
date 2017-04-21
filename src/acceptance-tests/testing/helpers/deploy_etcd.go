@@ -9,7 +9,7 @@ import (
 	"github.com/pivotal-cf-experimental/destiny/ops"
 )
 
-func NewEtcdManifestWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client, releaseVersion string) (string, error) {
+func NewEtcdManifestWithInstanceCountAndReleaseVersion(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client, releaseVersion string) (string, error) {
 	manifestName := fmt.Sprintf("etcd-%s", deploymentPrefix)
 
 	//TODO: AZs should be pulled from integration_config
@@ -53,12 +53,12 @@ func NewEtcdManifestWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix s
 	return string(manifestYAML), nil
 }
 
-func NewEtcdManifestWithOpsWithInstanceCount(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client) (string, error) {
-	return NewEtcdManifestWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix, instanceCount, enableSSL, boshClient, EtcdDevReleaseVersion())
+func NewEtcdManifestWithInstanceCount(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client) (string, error) {
+	return NewEtcdManifestWithInstanceCountAndReleaseVersion(deploymentPrefix, instanceCount, enableSSL, boshClient, EtcdDevReleaseVersion())
 }
 
-func DeployEtcdWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client, releaseVersion string) (string, error) {
-	manifest, err := NewEtcdManifestWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix, instanceCount, enableSSL, boshClient, releaseVersion)
+func DeployEtcdWithInstanceCountAndReleaseVersion(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client, releaseVersion string) (string, error) {
+	manifest, err := NewEtcdManifestWithInstanceCountAndReleaseVersion(deploymentPrefix, instanceCount, enableSSL, boshClient, releaseVersion)
 	if err != nil {
 		return "", err
 	}
@@ -71,8 +71,8 @@ func DeployEtcdWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix string
 	return manifest, nil
 }
 
-func DeployEtcdWithOpsWithInstanceCount(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client) (string, error) {
-	return DeployEtcdWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix, instanceCount, enableSSL, boshClient, EtcdDevReleaseVersion())
+func DeployEtcdWithInstanceCount(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client) (string, error) {
+	return DeployEtcdWithInstanceCountAndReleaseVersion(deploymentPrefix, instanceCount, enableSSL, boshClient, EtcdDevReleaseVersion())
 }
 
 func VerifyDeploymentRelease(client bosh.Client, deploymentName string, releaseVersion string) (err error) {

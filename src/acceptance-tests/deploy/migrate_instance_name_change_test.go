@@ -34,17 +34,17 @@ var _ = Describe("Migrate instance name change", func() {
 		testKey = "etcd-key-" + guid
 		testValue = "etcd-value-" + guid
 
-		manifest, err = helpers.DeployEtcdWithOpsWithInstanceCount("migrate-instance-name-change", 3, false, boshClient)
+		manifest, err = helpers.DeployEtcdWithInstanceCount("migrate-instance-name-change", 3, false, boshClient)
 		Expect(err).NotTo(HaveOccurred())
 
 		manifestName, err = ops.ManifestName(manifest)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() ([]bosh.VM, error) {
-			return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+			return helpers.DeploymentVMs(boshClient, manifestName)
+		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 
-		testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "testconsumer")
+		testConsumerIPs, err := helpers.GetVMIPs(boshClient, manifestName, "testconsumer")
 		Expect(err).NotTo(HaveOccurred())
 
 		etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", testConsumerIPs[0]))
@@ -94,8 +94,8 @@ var _ = Describe("Migrate instance name change", func() {
 			spammer.Spam()
 
 			Eventually(func() ([]bosh.VM, error) {
-				return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+				return helpers.DeploymentVMs(boshClient, manifestName)
+			}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 
 			spammer.Stop()
 		})

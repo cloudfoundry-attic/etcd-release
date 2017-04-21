@@ -48,8 +48,8 @@ var _ = Describe("quorum loss", func() {
 				turbulenceManifestName, err = ops.ManifestName(turbulenceManifest)
 
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMsWithOps(boshClient, turbulenceManifestName)
-				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(turbulenceManifest)))
+					return helpers.DeploymentVMs(boshClient, turbulenceManifestName)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(turbulenceManifest)))
 
 				turbulencePassword, err := ops.FindOp(turbulenceManifest, "/instance_groups/name=api/properties/password")
 				Expect(err).NotTo(HaveOccurred())
@@ -63,17 +63,17 @@ var _ = Describe("quorum loss", func() {
 			By("deploying a 5 node etcd", func() {
 				var err error
 
-				etcdManifest, err = helpers.DeployEtcdWithOpsWithInstanceCount(deploymentSuffix, 5, enableSSL, boshClient)
+				etcdManifest, err = helpers.DeployEtcdWithInstanceCount(deploymentSuffix, 5, enableSSL, boshClient)
 				Expect(err).NotTo(HaveOccurred())
 
 				etcdManifestName, err = ops.ManifestName(etcdManifest)
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(func() ([]bosh.VM, error) {
-					return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+					return helpers.DeploymentVMs(boshClient, etcdManifestName)
+				}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
-				testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, etcdManifestName, "testconsumer")
+				testConsumerIPs, err := helpers.GetVMIPs(boshClient, etcdManifestName, "testconsumer")
 				Expect(err).NotTo(HaveOccurred())
 
 				etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", testConsumerIPs[0]))
@@ -93,8 +93,8 @@ var _ = Describe("quorum loss", func() {
 					}, "12m", "1m").ShouldNot(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
-					}, "10m", "1m").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(etcdManifest)))
+						return helpers.DeploymentVMs(boshClient, etcdManifestName)
+					}, "10m", "1m").Should(ConsistOf(helpers.GetVMsFromManifest(etcdManifest)))
 
 					Eventually(func() ([]string, error) {
 						return lockedDeployments(boshClient)
@@ -159,7 +159,7 @@ var _ = Describe("quorum loss", func() {
 					}, "12m", "1m").ShouldNot(HaveOccurred())
 
 					Eventually(func() ([]bosh.VM, error) {
-						return helpers.DeploymentVMsWithOps(boshClient, etcdManifestName)
+						return helpers.DeploymentVMs(boshClient, etcdManifestName)
 					}, "10m", "1m").Should(ContainElement(bosh.VM{JobName: "etcd", Index: jobIndexToResurrect, State: "running"}))
 				})
 

@@ -261,17 +261,17 @@ var _ = Describe("TLS rotation", func() {
 
 	BeforeEach(func() {
 		var err error
-		manifest, err = helpers.DeployEtcdWithOpsWithInstanceCount("tls-rotation", 3, true, boshClient)
+		manifest, err = helpers.DeployEtcdWithInstanceCount("tls-rotation", 3, true, boshClient)
 		Expect(err).NotTo(HaveOccurred())
 
 		manifestName, err = ops.ManifestName(manifest)
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() ([]bosh.VM, error) {
-			return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+			return helpers.DeploymentVMs(boshClient, manifestName)
+		}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 
-		testConsumerIPs, err := helpers.GetVMIPsWithOps(boshClient, manifestName, "testconsumer")
+		testConsumerIPs, err := helpers.GetVMIPs(boshClient, manifestName, "testconsumer")
 		Expect(err).NotTo(HaveOccurred())
 
 		etcdClient = etcdclient.NewClient(fmt.Sprintf("http://%s:6769", testConsumerIPs[0]))
@@ -438,6 +438,6 @@ func deployManifest(manifest string) {
 	Expect(err).NotTo(HaveOccurred())
 
 	Eventually(func() ([]bosh.VM, error) {
-		return helpers.DeploymentVMsWithOps(boshClient, manifestName)
-	}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifestWithOps(manifest)))
+		return helpers.DeploymentVMs(boshClient, manifestName)
+	}, "1m", "10s").Should(ConsistOf(helpers.GetVMsFromManifest(manifest)))
 }
