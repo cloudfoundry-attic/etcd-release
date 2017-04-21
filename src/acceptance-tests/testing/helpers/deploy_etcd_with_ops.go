@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
@@ -72,4 +73,28 @@ func DeployEtcdWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix string
 
 func DeployEtcdWithOpsWithInstanceCount(deploymentPrefix string, instanceCount int, enableSSL bool, boshClient bosh.Client) (string, error) {
 	return DeployEtcdWithOpsWithInstanceCountAndReleaseVersion(deploymentPrefix, instanceCount, enableSSL, boshClient, EtcdDevReleaseVersion())
+}
+
+func VerifyDeploymentRelease(client bosh.Client, deploymentName string, releaseVersion string) (err error) {
+	deployments, err := client.Deployments()
+	if err != nil {
+		return
+	}
+
+	for _, deployment := range deployments {
+		if deployment.Name == deploymentName {
+			for _, release := range deployment.Releases {
+				if release.Name == "etcd" {
+					switch {
+					case len(release.Versions) > 1:
+						err = errors.New("too many releases")
+					case len(release.Versions) == 1 && release.Versions[0] != releaseVersion:
+						err = fmt.Errorf("expected etcd-release version %q but got %q", releaseVersion, release.Versions[0])
+					}
+				}
+			}
+		}
+	}
+
+	return
 }
