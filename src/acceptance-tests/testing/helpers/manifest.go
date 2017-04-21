@@ -1,12 +1,11 @@
 package helpers
 
 import (
-	"github.com/go-yaml/yaml"
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	"github.com/pivotal-cf-experimental/destiny/etcd"
+	"github.com/pivotal-cf-experimental/destiny/ops"
 )
 
-func DeploymentVMs(boshClient bosh.Client, deploymentName string) ([]bosh.VM, error) {
+func DeploymentVMsWithOps(boshClient bosh.Client, deploymentName string) ([]bosh.VM, error) {
 	vms, err := boshClient.DeploymentVMs(deploymentName)
 	if err != nil {
 		return nil, err
@@ -14,42 +13,16 @@ func DeploymentVMs(boshClient bosh.Client, deploymentName string) ([]bosh.VM, er
 
 	for index := range vms {
 		vms[index].IPs = nil
+		vms[index].ID = ""
 	}
 
 	return vms, nil
 }
 
-func GetVMIPs(boshClient bosh.Client, deploymentName, jobName string) ([]string, error) {
-	vms, err := boshClient.DeploymentVMs(deploymentName)
-	if err != nil {
-		return []string{}, err
-	}
-
-	for _, vm := range vms {
-		if vm.JobName == jobName {
-			return vm.IPs, nil
-		}
-	}
-
-	return []string{}, nil
-}
-
-func GetVMsFromManifest(manifest etcd.Manifest) []bosh.VM {
+func GetVMsFromManifestWithOps(manifest string) []bosh.VM {
 	var vms []bosh.VM
 
-	for _, job := range manifest.Jobs {
-		for i := 0; i < job.Instances; i++ {
-			vms = append(vms, bosh.VM{JobName: job.Name, Index: i, State: "running"})
-		}
-	}
-
-	return vms
-}
-
-func GetVMsFromManifestV2(manifest string) []bosh.VM {
-	var vms []bosh.VM
-
-	instanceGroups, err := etcd.InstanceGroups(manifest)
+	instanceGroups, err := ops.InstanceGroups(manifest)
 	if err != nil {
 		panic(err)
 	}
@@ -63,27 +36,42 @@ func GetVMsFromManifestV2(manifest string) []bosh.VM {
 	return vms
 }
 
-func GetNonErrandVMsFromRawManifest(rawManifest []byte) ([]bosh.VM, error) {
+func GetNonErrandVMsFromManifestWithOps(manifest string) []bosh.VM {
 	var vms []bosh.VM
 
-	var manifest Manifest
-	err := yaml.Unmarshal(rawManifest, &manifest)
+	instanceGroups, err := ops.InstanceGroups(manifest)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	for _, job := range manifest.Jobs {
-		for i := 0; i < job.Instances; i++ {
-			if job.Lifecycle != "errand" {
-				vms = append(vms, bosh.VM{JobName: job.Name, Index: i, State: "running"})
+	for _, ig := range instanceGroups {
+		if ig.Lifecycle != "errand" {
+			for i := 0; i < ig.Instances; i++ {
+				vms = append(vms, bosh.VM{JobName: ig.Name, Index: i, State: "running"})
 			}
 		}
 	}
 
-	return vms, nil
+	return vms
 }
 
-func GetVMIDByIndices(boshClient bosh.Client, deploymentName, jobName string, indices []int) ([]string, error) {
+func GetVMIPsWithOps(boshClient bosh.Client, deploymentName, jobName string) ([]string, error) {
+	vms, err := boshClient.DeploymentVMs(deploymentName)
+	if err != nil {
+		return []string{}, err
+	}
+
+	ips := []string{}
+	for _, vm := range vms {
+		if vm.JobName == jobName {
+			ips = append(ips, vm.IPs...)
+		}
+	}
+
+	return ips, nil
+}
+
+func GetVMIDByIndicesWithOps(boshClient bosh.Client, deploymentName, jobName string, indices []int) ([]string, error) {
 	vms, err := boshClient.DeploymentVMs(deploymentName)
 	if err != nil {
 		return []string{}, err

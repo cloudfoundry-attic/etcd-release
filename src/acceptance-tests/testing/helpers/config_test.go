@@ -37,7 +37,6 @@ var _ = Describe("configuration", func() {
 						"username": "some-bosh-username",
 						"password": "some-bosh-password",
 						"director_ca_cert": "some-ca-cert",
-						"deployment_name": "some-bosh-deployment-name"
 					},
 					"aws": {
 						"subnet": "some-awssubnet",
@@ -77,7 +76,6 @@ var _ = Describe("configuration", func() {
 						Username:       "some-bosh-username",
 						Password:       "some-bosh-password",
 						DirectorCACert: "some-ca-cert",
-						DeploymentName: "some-bosh-deployment-name",
 					},
 					AWS: helpers.ConfigAWS{
 						Subnet:                "some-awssubnet",
