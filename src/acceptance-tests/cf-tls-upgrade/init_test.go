@@ -1,7 +1,6 @@
 package cf_tls_upgrade_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
@@ -13,8 +12,8 @@ import (
 )
 
 var (
-	config helpers.Config
-	client bosh.Client
+	config     helpers.Config
+	boshClient bosh.Client
 )
 
 func TestCFTLSUpgrade(t *testing.T) {
@@ -29,8 +28,9 @@ var _ = BeforeSuite(func() {
 	config, err = helpers.LoadConfig(configPath)
 	Expect(err).NotTo(HaveOccurred())
 
-	client = bosh.NewClient(bosh.Config{
-		URL:              fmt.Sprintf("https://%s:25555", config.BOSH.Target),
+	boshClient = bosh.NewClient(bosh.Config{
+		URL:              config.BOSH.Target,
+		Host:             config.BOSH.Host,
 		Username:         config.BOSH.Username,
 		Password:         config.BOSH.Password,
 		AllowInsecureSSL: true,

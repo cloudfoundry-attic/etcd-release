@@ -19,12 +19,12 @@ type Config struct {
 }
 
 type ConfigBOSH struct {
-	Target         string `json:"target"`
-	Host           string `json:"host"`
-	Username       string `json:"username"`
-	Password       string `json:"password"`
-	DirectorCACert string `json:"director_ca_cert"`
-	DeploymentName string `json:"deployment_name"`
+	Target             string `json:"target"`
+	Host               string `json:"host"`
+	Username           string `json:"username"`
+	Password           string `json:"password"`
+	DirectorCACert     string `json:"director_ca_cert"`
+	DeploymentVarsPath string `json:"deployment_vars_path"`
 }
 
 type ConfigAWS struct {

@@ -6,5 +6,5 @@ applications:
   disk_quota: 128M
   memory: 256M
   env:
-    GOVERSION: go1.6
+    GOVERSION: go1.8
     GOPACKAGENAME: main

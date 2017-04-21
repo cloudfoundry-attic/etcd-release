@@ -6,5 +6,5 @@ applications:
   instances: 4
   path: .
   env:
-    GOVERSION: go1.6
+    GOVERSION: go1.8
     GOPACKAGENAME: main
