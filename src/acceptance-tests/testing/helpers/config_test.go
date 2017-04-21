@@ -36,7 +36,7 @@ var _ = Describe("configuration", func() {
 						"target": "https://some-bosh-target:25555",
 						"username": "some-bosh-username",
 						"password": "some-bosh-password",
-						"director_ca_cert": "some-ca-cert",
+						"director_ca_cert": "some-ca-cert"
 					},
 					"aws": {
 						"subnet": "some-awssubnet",
