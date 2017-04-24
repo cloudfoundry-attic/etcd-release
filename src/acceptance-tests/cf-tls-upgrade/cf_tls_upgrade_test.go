@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/logspammer"
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/cf-tls-upgrade/syslogchecker"
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
@@ -108,11 +110,21 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 		})
 
 		By("logging into cf and preparing the environment", func() {
-			Eventually(
-				cf.Cf("login", "-a", fmt.Sprintf("api.%s", config.CF.Domain),
-					"-u", config.CF.Username, "-p", config.CF.Password,
-					"--skip-ssl-validation"),
-				DEFAULT_TIMEOUT).Should(gexec.Exit(0))
+			var boshVars map[string]interface{}
+			err := yaml.Unmarshal(varsStoreBytes, &boshVars)
+			Expect(err).NotTo(HaveOccurred())
+
+			if _, ok := boshVars["uaa_scim_users_admin_password"]; !ok {
+				Fail("Missing \"uaa_scim_users_admin_password\" key in vars store.")
+			}
+
+			cmd := exec.Command("cf", "login", "-a", fmt.Sprintf("api.%s", config.CF.Domain),
+				"-u", "admin", "-p", boshVars["uaa_scim_users_admin_password"].(string),
+				"--skip-ssl-validation")
+			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(session, DEFAULT_TIMEOUT).Should(gexec.Exit(0))
 
 			Eventually(cf.Cf("create-org", "EATS_org"), DEFAULT_TIMEOUT).Should(gexec.Exit(0))
 			Eventually(cf.Cf("target", "-o", "EATS_org"), DEFAULT_TIMEOUT).Should(gexec.Exit(0))
