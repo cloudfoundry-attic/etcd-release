@@ -44,9 +44,7 @@ type ConfigRegistry struct {
 }
 
 type ConfigCF struct {
-	Domain   string `json:"domain"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Domain string `json:"domain"`
 }
 
 func checkAbsolutePath(configValue, jsonKey string) error {

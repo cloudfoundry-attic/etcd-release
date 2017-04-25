@@ -53,9 +53,7 @@ var _ = Describe("configuration", func() {
 						"password": "some-registry-password"
 					},
 					"cf" : {
-						"domain": "api.some.domain.com",
-						"username": "cf_username",
-						"password": "cf_password"
+						"domain": "api.some.domain.com"
 					}
 				}`)
 				Expect(err).NotTo(HaveOccurred())
@@ -93,9 +91,7 @@ var _ = Describe("configuration", func() {
 					},
 					TurbulenceReleaseName: "turbulence",
 					CF: helpers.ConfigCF{
-						Domain:   "api.some.domain.com",
-						Username: "cf_username",
-						Password: "cf_password",
+						Domain: "api.some.domain.com",
 					},
 				}))
 			})
