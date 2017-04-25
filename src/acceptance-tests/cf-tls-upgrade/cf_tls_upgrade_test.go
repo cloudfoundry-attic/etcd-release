@@ -182,7 +182,8 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 		})
 
 		By("deploying a TLS etcd cluster", func() {
-			etcdTLSManifest, err := addEtcdTLSInstanceGroup(nonTLSManifest, varsStore)
+			var err error
+			etcdTLSManifest, err = addEtcdTLSInstanceGroup(nonTLSManifest, varsStore)
 			Expect(err).NotTo(HaveOccurred())
 
 			err = ioutil.WriteFile("add-tls-etcd-deploy-manifest.yml", []byte(etcdTLSManifest), 0644)
@@ -199,7 +200,8 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 		})
 
 		By("scaling down the non-TLS etcd cluster to 1 node and converting it to a proxy", func() {
-			proxyTLSManifest, err := convertNonTLSEtcdToProxy(nonTLSManifest, varsStore)
+			var err error
+			proxyTLSManifest, err = convertNonTLSEtcdToProxy(nonTLSManifest, varsStore)
 			Expect(err).NotTo(HaveOccurred())
 
 			err = ioutil.WriteFile("proxy-etcd-deploy-manifest.yml", []byte(proxyTLSManifest), 0644)
