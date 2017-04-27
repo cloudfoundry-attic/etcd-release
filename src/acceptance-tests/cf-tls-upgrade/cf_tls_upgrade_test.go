@@ -36,7 +36,7 @@ const (
 	GUID_NOT_FOUND_ERROR_THRESHOLD        = 1
 	GATEWAY_TIMEOUT_ERROR_COUNT_THRESHOLD = 2
 	BAD_GATEWAY_ERROR_COUNT_THRESHOLD     = 2
-	MISSING_LOG_THRESHOLD                 = 300 // Frequency of spammer is 100ms (allow 30s of missing logs)
+	MISSING_LOG_THRESHOLD                 = 500 // Frequency of spammer is 100ms (allow 50s of missing logs)
 )
 
 type gen struct{}
