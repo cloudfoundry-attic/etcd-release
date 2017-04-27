@@ -14,6 +14,7 @@ templates:
 packages:
   - etcd-common
   - etcd
+  - etcdfab
   - etcd-dns-checker
   - etcd-consistency-checker
 

@@ -52,3 +52,12 @@
 [submodule "src/acceptance-tests/vendor/github.com/nu7hatch/gouuid"]
 	path = src/acceptance-tests/vendor/github.com/nu7hatch/gouuid
 	url = https://github.com/nu7hatch/gouuid
+[submodule "src/etcdfab/vendor/code.cloudfoundry.org/lager"]
+	path = src/etcdfab/vendor/code.cloudfoundry.org/lager
+	url = https://github.com/cloudfoundry/lager.git
+[submodule "src/etcdfab/vendor/github.com/onsi/ginkgo"]
+	path = src/etcdfab/vendor/github.com/onsi/ginkgo
+	url = https://github.com/onsi/ginkgo
+[submodule "src/etcdfab/vendor/github.com/onsi/gomega"]
+	path = src/etcdfab/vendor/github.com/onsi/gomega
+	url = https://github.com/onsi/gomega

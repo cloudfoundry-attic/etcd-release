@@ -92,18 +92,19 @@ function main() {
       # the server subsequently expects all peers to agree on the cluster members
       sleep 2
 
-      /var/vcap/packages/etcd/etcd ${etcd_sec_flags}                                              \
-          --name                        ${node_name}                                              \
-          --data-dir                    ${DATA_DIR}                                               \
-          --heartbeat-interval          <%= p("etcd.heartbeat_interval_in_milliseconds") %>       \
-          --election-timeout            <%= p("etcd.election_timeout_in_milliseconds") %>         \
-          --listen-peer-urls            ${listen_peer_url}                                        \
-          --listen-client-urls          ${listen_client_url}                                      \
-          --initial-advertise-peer-urls ${advertise_peer_url}                                     \
-          --advertise-client-urls       ${advertise_client_url}                                   \
-          --initial-cluster             ${cluster}                                                \
-          --initial-cluster-state       ${cluster_state}                                          \
-          2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)             \
+      /var/vcap/packages/etcdfab/bin/etcdfab /var/vcap/packages/etcd/etcd                   \
+          ${etcd_sec_flags}                                                                 \
+          --name                        ${node_name}                                        \
+          --data-dir                    ${DATA_DIR}                                         \
+          --heartbeat-interval          <%= p("etcd.heartbeat_interval_in_milliseconds") %> \
+          --election-timeout            <%= p("etcd.election_timeout_in_milliseconds") %>   \
+          --listen-peer-urls            ${listen_peer_url}                                  \
+          --listen-client-urls          ${listen_client_url}                                \
+          --initial-advertise-peer-urls ${advertise_peer_url}                               \
+          --advertise-client-urls       ${advertise_client_url}                             \
+          --initial-cluster             ${cluster}                                          \
+          --initial-cluster-state       ${cluster_state}                                    \
+          2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \
           1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd) &
 
       etcd_pid=$!
