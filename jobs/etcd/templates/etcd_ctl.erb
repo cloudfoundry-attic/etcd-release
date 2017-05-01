@@ -92,7 +92,11 @@ function main() {
       # the server subsequently expects all peers to agree on the cluster members
       sleep 2
 
+      local tmp_pid_file
+      tmp_pid_file="/tmp/etcd_pid"
+
       /var/vcap/packages/etcdfab/bin/etcdfab /var/vcap/packages/etcd/etcd                   \
+          ${tmp_pid_file}                                                                   \
           ${etcd_sec_flags}                                                                 \
           --name                        ${node_name}                                        \
           --data-dir                    ${DATA_DIR}                                         \
@@ -107,7 +111,12 @@ function main() {
           2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \
           1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd) &
 
-      etcd_pid=$!
+      if [ -r ${tmp_pid_file} ]; then
+        etcd_pid=$(cat ${tmp_pid_file})
+      else
+        echo "etcdfab didn't write the etcd pid to file"
+        exit 1
+      fi
 
       synced=false
       wait_for_this_node_to_synchronize # mutates $synced

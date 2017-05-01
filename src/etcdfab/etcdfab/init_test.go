@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes/etcd/backend"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gexec"
@@ -32,7 +33,7 @@ var _ = BeforeSuite(func() {
 		"--ldflags", fmt.Sprintf("-X main.backendURL=%s", etcdBackendServer.ServerURL()))
 	Expect(err).NotTo(HaveOccurred())
 
-	pathToEtcdFab, err = gexec.Build("github.com/cloudfoundry-incubator/etcd-release/src/etcdfab")
+	pathToEtcdFab, err = gexec.Build("github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/etcdfab")
 	Expect(err).NotTo(HaveOccurred())
 })
 
