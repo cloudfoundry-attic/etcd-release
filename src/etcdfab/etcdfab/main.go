@@ -28,12 +28,6 @@ func main() {
 		CommandPidPath: etcdPidPath,
 	})
 	err := app.Start()
-
-	// etcdCommand := generateCommand(etcdPath, etcdArgs...)
-	// etcdCommand.Stdout = os.Stdout
-	// etcdCommand.Stderr = os.Stderr
-
-	// err := etcdCommand.Run()
 	if err != nil {
 		logger.Error("main", err)
 		os.Exit(1)
