@@ -109,7 +109,7 @@ function main() {
           --initial-cluster             ${cluster}                                          \
           --initial-cluster-state       ${cluster_state}                                    \
           2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \
-          1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd) &
+          1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
 
       if [ -r ${tmp_pid_file} ]; then
         etcd_pid=$(cat ${tmp_pid_file})
