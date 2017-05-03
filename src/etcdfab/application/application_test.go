@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"code.cloudfoundry.org/lager"
+
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/application"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes"
 
@@ -21,6 +23,7 @@ var _ = Describe("Application", func() {
 			etcdPidPath    string
 			configFileName string
 			fakeCommand    *fakes.CommandWrapper
+			fakeLogger     *fakes.Logger
 
 			outWriter bytes.Buffer
 			errWriter bytes.Buffer
@@ -30,8 +33,9 @@ var _ = Describe("Application", func() {
 
 		BeforeEach(func() {
 			fakeCommand = &fakes.CommandWrapper{}
-
 			fakeCommand.StartCall.Returns.Pid = 12345
+
+			fakeLogger = &fakes.Logger{}
 
 			tmpDir, err := ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
@@ -76,6 +80,7 @@ var _ = Describe("Application", func() {
 				EtcdArgs:       []string{"arg-1", "arg-2"},
 				OutWriter:      &outWriter,
 				ErrWriter:      &errWriter,
+				Logger:         fakeLogger,
 			})
 		})
 
@@ -113,45 +118,41 @@ var _ = Describe("Application", func() {
 			Expect(string(etcdPid)).To(Equal("12345"))
 		})
 
+		It("writes informational log messages", func() {
+			err := app.Start()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
+				{
+					Action: "application.build-etcd-flags",
+					Data: []lager.Data{{
+						"node-name": "some-name-3",
+					}},
+				},
+			}))
+		})
+
 		Context("failure cases", func() {
-			Context("when commandWrapper.Start returns an error", func() {
-				BeforeEach(func() {
-					fakeCommand.StartCall.Returns.Error = errors.New("failed to start command")
-				})
-
-				It("returns the error to the caller", func() {
-					err := app.Start()
-					Expect(err).To(MatchError("failed to start command"))
-				})
-			})
-
-			Context("when it cannot write to the specified PID file", func() {
-				BeforeEach(func() {
-					app = application.New(application.NewArgs{
-						Command:        fakeCommand,
-						CommandPidPath: "/path/to/missing/file",
-						ConfigFilePath: configFileName,
-					})
-				})
-
-				It("returns the error to the caller", func() {
-					err := app.Start()
-					Expect(err).To(MatchError("open /path/to/missing/file: no such file or directory"))
-				})
-			})
-
 			Context("when it cannot read the config file", func() {
 				BeforeEach(func() {
 					app = application.New(application.NewArgs{
 						Command:        fakeCommand,
 						CommandPidPath: etcdPidPath,
 						ConfigFilePath: "/path/to/missing/file",
+						Logger:         fakeLogger,
 					})
 				})
 
-				It("returns the error to the caller", func() {
+				It("returns the error to the caller and logs a helpful message", func() {
 					err := app.Start()
 					Expect(err).To(MatchError("open /path/to/missing/file: no such file or directory"))
+
+					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
+						{
+							Action: "application.read-config-file.failed",
+							Error:  err,
+						},
+					}))
 				})
 			})
 
@@ -164,12 +165,73 @@ var _ = Describe("Application", func() {
 						Command:        fakeCommand,
 						CommandPidPath: etcdPidPath,
 						ConfigFilePath: configFileName,
+						Logger:         fakeLogger,
 					})
 				})
 
-				It("returns the error to the caller", func() {
+				It("returns the error to the caller and logs a helpful message", func() {
 					err := app.Start()
 					Expect(err).To(MatchError("invalid character '%' looking for beginning of value"))
+
+					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
+						{
+							Action: "application.unmarshal-config-file.failed",
+							Error:  err,
+						},
+					}))
+				})
+			})
+
+			Context("when commandWrapper.Start returns an error", func() {
+				BeforeEach(func() {
+					fakeCommand.StartCall.Returns.Error = errors.New("failed to start command")
+				})
+
+				It("returns the error to the caller and logs a helpful message", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("failed to start command"))
+
+					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
+						{
+							Action: "application.build-etcd-flags",
+							Data: []lager.Data{{
+								"node-name": "some-name-3",
+							}},
+						},
+						{
+							Action: "application.start.failed",
+							Error:  err,
+						},
+					}))
+				})
+			})
+
+			Context("when it cannot write to the specified PID file", func() {
+				BeforeEach(func() {
+					app = application.New(application.NewArgs{
+						Command:        fakeCommand,
+						CommandPidPath: "/path/to/missing/file",
+						ConfigFilePath: configFileName,
+						Logger:         fakeLogger,
+					})
+				})
+
+				It("returns the error to the caller and logs a helpful message", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("open /path/to/missing/file: no such file or directory"))
+
+					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
+						{
+							Action: "application.build-etcd-flags",
+							Data: []lager.Data{{
+								"node-name": "some-name-3",
+							}},
+						},
+						{
+							Action: "application.write-pid-file.failed",
+							Error:  err,
+						},
+					}))
 				})
 			})
 		})

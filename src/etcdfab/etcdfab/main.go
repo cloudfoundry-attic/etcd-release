@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/application"
@@ -32,11 +33,13 @@ func main() {
 		EtcdArgs:       etcdArgs,
 		OutWriter:      os.Stdout,
 		ErrWriter:      os.Stderr,
+		Logger:         logger,
 	})
 
 	err := app.Start()
 	if err != nil {
-		logger.Error("main", err)
+		stderr := log.New(os.Stderr, "", 0)
+		stderr.Printf("error during start: %s", err)
 		os.Exit(1)
 	}
 }

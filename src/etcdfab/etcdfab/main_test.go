@@ -91,9 +91,10 @@ var _ = Describe("EtcdFab", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-		Expect(session.Out.Contents()).To(ContainSubstring("starting fake etcd"))
-		Expect(session.Out.Contents()).To(ContainSubstring("stopping fake etcd"))
-		Expect(session.Err.Contents()).To(ContainSubstring("fake error in stderr"))
+		Expect(string(session.Out.Contents())).To(ContainSubstring("application.build-etcd-flags"))
+		Expect(string(session.Out.Contents())).To(ContainSubstring("starting fake etcd"))
+		Expect(string(session.Out.Contents())).To(ContainSubstring("stopping fake etcd"))
+		Expect(string(session.Err.Contents())).To(ContainSubstring("fake error in stderr"))
 	})
 
 	It("writes the pid of etcd to the file provided", func() {
@@ -139,7 +140,7 @@ var _ = Describe("EtcdFab", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Eventually(session, 10*time.Second).Should(gexec.Exit(1))
 
-				Expect(session.Out.Contents()).To(MatchRegexp(`{"timestamp":".*","source":"etcdfab","message":"etcdfab\.main","log_level":2,"data":{"error":"exec: \\"bogus\\": executable file not found in \$PATH"}}`))
+				Expect(string(session.Err.Contents())).To(ContainSubstring("error during start: exec: \"bogus\": executable file not found in $PATH"))
 			})
 		})
 	})

@@ -18,6 +18,7 @@ type Application struct {
 	etcdArgs       []string
 	outWriter      io.Writer
 	errWriter      io.Writer
+	logger         logger
 }
 
 type configNode struct {
@@ -46,6 +47,7 @@ type command interface {
 }
 
 type logger interface {
+	Info(string, ...lager.Data)
 	Error(string, error, ...lager.Data)
 }
 
@@ -57,6 +59,7 @@ type NewArgs struct {
 	EtcdArgs       []string
 	OutWriter      io.Writer
 	ErrWriter      io.Writer
+	Logger         logger
 }
 
 func New(args NewArgs) Application {
@@ -68,21 +71,25 @@ func New(args NewArgs) Application {
 		etcdArgs:       args.EtcdArgs,
 		outWriter:      args.OutWriter,
 		errWriter:      args.ErrWriter,
+		logger:         args.Logger,
 	}
 }
 
 func (a Application) Start() error {
 	configFileContents, err := ioutil.ReadFile(a.configFilePath)
 	if err != nil {
+		a.logger.Error("application.read-config-file.failed", err)
 		return err
 	}
 
 	var config config
 	if err := json.Unmarshal(configFileContents, &config); err != nil {
+		a.logger.Error("application.unmarshal-config-file.failed", err)
 		return err
 	}
 
 	nodeName := fmt.Sprintf("%s-%d", strings.Replace(config.Node.Name, "_", "-", -1), config.Node.Index)
+	a.logger.Info("application.build-etcd-flags", lager.Data{"node-name": nodeName})
 
 	peerProtocol := "http"
 	if config.Etcd.PeerRequireSSL {
@@ -130,11 +137,13 @@ func (a Application) Start() error {
 
 	pid, err := a.command.Start(a.etcdPath, a.etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {
+		a.logger.Error("application.start.failed", err)
 		return err
 	}
 
 	err = ioutil.WriteFile(a.commandPidPath, []byte(fmt.Sprintf("%d", pid)), 0644)
 	if err != nil {
+		a.logger.Error("application.write-pid-file.failed", err)
 		return err
 	}
 
