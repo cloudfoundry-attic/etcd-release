@@ -71,6 +71,22 @@ func GetVMIPs(boshClient bosh.Client, deploymentName, jobName string) ([]string,
 	return ips, nil
 }
 
+func GetVMIPByIndex(boshClient bosh.Client, deploymentName, jobName string, index int) (string, error) {
+	vms, err := boshClient.DeploymentVMs(deploymentName)
+	if err != nil {
+		return "", err
+	}
+
+	var ip string
+	for _, vm := range vms {
+		if vm.JobName == jobName && vm.Index == index {
+			ip = vm.IPs[0]
+		}
+	}
+
+	return ip, nil
+}
+
 func GetVMIDByIndices(boshClient bosh.Client, deploymentName, jobName string, indices []int) ([]string, error) {
 	vms, err := boshClient.DeploymentVMs(deploymentName)
 	if err != nil {
