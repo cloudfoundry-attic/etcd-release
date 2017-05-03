@@ -54,6 +54,8 @@ var _ = Describe("Application", func() {
 				"etcd": map[string]interface{}{
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
+					"peer_require_ssl":                   false,
+					"peer_ip":                            "some-peer-ip",
 				},
 			}
 			configData, err := json.Marshal(configuration)
@@ -86,6 +88,7 @@ var _ = Describe("Application", func() {
 				"--data-dir", "/var/vcap/store/etcd",
 				"--heartbeat-interval", "10",
 				"--election-timeout", "20",
+				"--listen-peer-urls", "http://some-peer-ip:7001",
 			}))
 			Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
 			Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))

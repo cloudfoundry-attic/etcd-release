@@ -26,8 +26,10 @@ type configNode struct {
 }
 
 type configEtcd struct {
-	HeartbeatInterval int `json:"heartbeat_interval_in_milliseconds"`
-	ElectionTimeout   int `json:"election_timeout_in_milliseconds"`
+	HeartbeatInterval int    `json:"heartbeat_interval_in_milliseconds"`
+	ElectionTimeout   int    `json:"election_timeout_in_milliseconds"`
+	PeerRequireSSL    bool   `json:"peer_require_ssl"`
+	PeerIP            string `json:"peer_ip"`
 }
 
 type config struct {
@@ -84,6 +86,13 @@ func (a Application) Start() error {
 	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", config.Etcd.HeartbeatInterval))
 	a.etcdArgs = append(a.etcdArgs, "--election-timeout")
 	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", config.Etcd.ElectionTimeout))
+
+	protocol := "http"
+	if config.Etcd.PeerRequireSSL {
+		protocol = "https"
+	}
+	a.etcdArgs = append(a.etcdArgs, "--listen-peer-urls")
+	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%s://%s:7001", protocol, config.Etcd.PeerIP))
 
 	pid, err := a.command.Start(a.etcdPath, a.etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {

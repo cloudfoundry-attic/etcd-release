@@ -39,6 +39,8 @@ var _ = Describe("EtcdFab", func() {
 			"etcd": map[string]interface{}{
 				"heartbeat_interval_in_milliseconds": 10,
 				"election_timeout_in_milliseconds":   20,
+				"peer_require_ssl":                   true,
+				"peer_ip":                            "some-peer-ip",
 			},
 		})
 	})
@@ -52,7 +54,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--listen-peer-urls", "some-listen-peer-urls",
 			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
@@ -65,7 +66,6 @@ var _ = Describe("EtcdFab", func() {
 
 		Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 		Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-			"--listen-peer-urls", "some-listen-peer-urls",
 			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
@@ -75,6 +75,7 @@ var _ = Describe("EtcdFab", func() {
 			"--data-dir", "/var/vcap/store/etcd",
 			"--heartbeat-interval", "10",
 			"--election-timeout", "20",
+			"--listen-peer-urls", "https://some-peer-ip:7001",
 		}))
 	})
 
@@ -83,7 +84,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--listen-peer-urls", "some-listen-peer-urls",
 			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
@@ -104,7 +104,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--listen-peer-urls", "some-listen-peer-urls",
 			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
