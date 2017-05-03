@@ -43,6 +43,7 @@ var _ = Describe("EtcdFab", func() {
 				"peer_ip":                            "some-peer-ip",
 				"require_ssl":                        true,
 				"client_ip":                          "some-client-ip",
+				"advertise_urls_dns_suffix":          "some-dns-suffix",
 			},
 		})
 	})
@@ -56,7 +57,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
@@ -67,7 +67,6 @@ var _ = Describe("EtcdFab", func() {
 
 		Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 		Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
@@ -77,6 +76,7 @@ var _ = Describe("EtcdFab", func() {
 			"--election-timeout", "20",
 			"--listen-peer-urls", "https://some-peer-ip:7001",
 			"--listen-client-urls", "https://some-client-ip:4001",
+			"--initial-advertise-peer-urls", "https://some-name-3.some-dns-suffix:7001",
 		}))
 	})
 
@@ -85,7 +85,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
@@ -104,7 +103,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",

@@ -100,7 +100,6 @@ function main() {
           ${tmp_pid_file}                                                                   \
           ${JOB_DIR}/config/etcdfab.json                                                    \
           ${etcd_sec_flags}                                                                 \
-          --initial-advertise-peer-urls ${advertise_peer_url}                               \
           --advertise-client-urls       ${advertise_client_url}                             \
           --initial-cluster             ${cluster}                                          \
           --initial-cluster-state       ${cluster_state}                                    \

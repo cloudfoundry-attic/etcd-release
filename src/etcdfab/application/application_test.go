@@ -48,8 +48,9 @@ var _ = Describe("Application", func() {
 
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
-					"name":  "some_name",
-					"index": 3,
+					"name":        "some_name",
+					"index":       3,
+					"external_ip": "some-external-ip",
 				},
 				"etcd": map[string]interface{}{
 					"heartbeat_interval_in_milliseconds": 10,
@@ -58,6 +59,7 @@ var _ = Describe("Application", func() {
 					"peer_ip":                            "some-peer-ip",
 					"require_ssl":                        false,
 					"client_ip":                          "some-client-ip",
+					"advertise_urls_dns_suffix":          "some-dns-suffix",
 				},
 			}
 			configData, err := json.Marshal(configuration)
@@ -92,6 +94,7 @@ var _ = Describe("Application", func() {
 				"--election-timeout", "20",
 				"--listen-peer-urls", "http://some-peer-ip:7001",
 				"--listen-client-urls", "http://some-client-ip:4001",
+				"--initial-advertise-peer-urls", "http://some-external-ip:7001",
 			}))
 			Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
 			Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
