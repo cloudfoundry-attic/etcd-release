@@ -95,6 +95,7 @@ var _ = Describe("Application", func() {
 				"--listen-peer-urls", "http://some-peer-ip:7001",
 				"--listen-client-urls", "http://some-client-ip:4001",
 				"--initial-advertise-peer-urls", "http://some-external-ip:7001",
+				"--advertise-client-urls", "http://some-external-ip:4001",
 			}))
 			Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
 			Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))

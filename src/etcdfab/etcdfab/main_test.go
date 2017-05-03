@@ -57,7 +57,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
 		)
@@ -67,7 +66,6 @@ var _ = Describe("EtcdFab", func() {
 
 		Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 		Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
 			"--name", "some-name-3",
@@ -77,6 +75,7 @@ var _ = Describe("EtcdFab", func() {
 			"--listen-peer-urls", "https://some-peer-ip:7001",
 			"--listen-client-urls", "https://some-client-ip:4001",
 			"--initial-advertise-peer-urls", "https://some-name-3.some-dns-suffix:7001",
+			"--advertise-client-urls", "https://some-name-3.some-dns-suffix:4001",
 		}))
 	})
 
@@ -85,7 +84,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
 		)
@@ -103,7 +101,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
 		)

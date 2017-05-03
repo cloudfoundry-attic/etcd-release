@@ -100,7 +100,6 @@ function main() {
           ${tmp_pid_file}                                                                   \
           ${JOB_DIR}/config/etcdfab.json                                                    \
           ${etcd_sec_flags}                                                                 \
-          --advertise-client-urls       ${advertise_client_url}                             \
           --initial-cluster             ${cluster}                                          \
           --initial-cluster-state       ${cluster_state}                                    \
           2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \

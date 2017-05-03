@@ -99,6 +99,11 @@ func (a Application) Start() error {
 		peerUrl = fmt.Sprintf("https://%s.%s:7001", nodeName, config.Etcd.AdvertiseUrlsDNSSuffix)
 	}
 
+	clientUrl := fmt.Sprintf("http://%s:4001", config.Node.ExternalIP)
+	if config.Etcd.PeerRequireSSL || config.Etcd.RequireSSL {
+		clientUrl = fmt.Sprintf("https://%s.%s:4001", nodeName, config.Etcd.AdvertiseUrlsDNSSuffix)
+	}
+
 	a.etcdArgs = append(a.etcdArgs, "--name")
 	a.etcdArgs = append(a.etcdArgs, nodeName)
 
@@ -119,6 +124,9 @@ func (a Application) Start() error {
 
 	a.etcdArgs = append(a.etcdArgs, "--initial-advertise-peer-urls")
 	a.etcdArgs = append(a.etcdArgs, peerUrl)
+
+	a.etcdArgs = append(a.etcdArgs, "--advertise-client-urls")
+	a.etcdArgs = append(a.etcdArgs, clientUrl)
 
 	pid, err := a.command.Start(a.etcdPath, a.etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {
