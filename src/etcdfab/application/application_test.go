@@ -156,32 +156,6 @@ var _ = Describe("Application", func() {
 				})
 			})
 
-			Context("when it cannot unmarshal the config file", func() {
-				BeforeEach(func() {
-					err := ioutil.WriteFile(configFileName, []byte("%%%"), os.ModePerm)
-					Expect(err).NotTo(HaveOccurred())
-
-					app = application.New(application.NewArgs{
-						Command:        fakeCommand,
-						CommandPidPath: etcdPidPath,
-						ConfigFilePath: configFileName,
-						Logger:         fakeLogger,
-					})
-				})
-
-				It("returns the error to the caller and logs a helpful message", func() {
-					err := app.Start()
-					Expect(err).To(MatchError("invalid character '%' looking for beginning of value"))
-
-					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
-						{
-							Action: "application.unmarshal-config-file.failed",
-							Error:  err,
-						},
-					}))
-				})
-			})
-
 			Context("when commandWrapper.Start returns an error", func() {
 				BeforeEach(func() {
 					fakeCommand.StartCall.Returns.Error = errors.New("failed to start command")

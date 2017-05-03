@@ -121,6 +121,32 @@ var _ = Describe("EtcdFab", func() {
 	})
 
 	Context("failure cases", func() {
+		Context("when the config file is invalid", func() {
+			BeforeEach(func() {
+				etcdBackendServer.EnableFastFail()
+
+				err := ioutil.WriteFile(configFile.Name(), []byte("%%%"), os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				etcdBackendServer.DisableFastFail()
+			})
+
+			It("exits 1 and prints an error", func() {
+				command := exec.Command(pathToEtcdFab,
+					"bogus",
+					pathToEtcdPid,
+					configFile.Name(),
+				)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+				Expect(string(session.Err.Contents())).To(ContainSubstring("error during start: invalid character '%' looking for beginning of value"))
+			})
+		})
+
 		Context("when the etcd process fails", func() {
 			BeforeEach(func() {
 				etcdBackendServer.EnableFastFail()
