@@ -10,6 +10,7 @@ templates:
   etcd_consistency_checker_ctl.sh.erb: bin/etcd_consistency_checker_ctl
   etcd_network_diagnostics_run_ctl.sh.erb: bin/etcd_network_diagnostics_run_ctl.sh
   etcd_network_diagnostics_run.sh.erb: bin/etcd_network_diagnostics_run.sh
+  etcdfab.json.erb: config/etcdfab.json
 
 packages:
   - etcd-common
