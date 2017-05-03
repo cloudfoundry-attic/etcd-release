@@ -62,6 +62,24 @@ func (a Application) Start() error {
 		return err
 	}
 
+	etcdArgs := a.buildEtcdArgs(cfg)
+
+	pid, err := a.command.Start(a.etcdPath, etcdArgs, a.outWriter, a.errWriter)
+	if err != nil {
+		a.logger.Error("application.start.failed", err)
+		return err
+	}
+
+	err = ioutil.WriteFile(a.commandPidPath, []byte(fmt.Sprintf("%d", pid)), 0644)
+	if err != nil {
+		a.logger.Error("application.write-pid-file.failed", err)
+		return err
+	}
+
+	return nil
+}
+
+func (a Application) buildEtcdArgs(cfg config.Config) []string {
 	nodeName := fmt.Sprintf("%s-%d", strings.Replace(cfg.Node.Name, "_", "-", -1), cfg.Node.Index)
 	a.logger.Info("application.build-etcd-flags", lager.Data{"node-name": nodeName})
 
@@ -85,41 +103,29 @@ func (a Application) Start() error {
 		clientUrl = fmt.Sprintf("https://%s.%s:4001", nodeName, cfg.Etcd.AdvertiseURLsDNSSuffix)
 	}
 
-	a.etcdArgs = append(a.etcdArgs, "--name")
-	a.etcdArgs = append(a.etcdArgs, nodeName)
+	etcdArgs := append(a.etcdArgs, "--name")
+	etcdArgs = append(etcdArgs, nodeName)
 
-	a.etcdArgs = append(a.etcdArgs, "--data-dir")
-	a.etcdArgs = append(a.etcdArgs, "/var/vcap/store/etcd")
+	etcdArgs = append(etcdArgs, "--data-dir")
+	etcdArgs = append(etcdArgs, "/var/vcap/store/etcd")
 
-	a.etcdArgs = append(a.etcdArgs, "--heartbeat-interval")
-	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", cfg.Etcd.HeartbeatInterval))
+	etcdArgs = append(etcdArgs, "--heartbeat-interval")
+	etcdArgs = append(etcdArgs, fmt.Sprintf("%d", cfg.Etcd.HeartbeatInterval))
 
-	a.etcdArgs = append(a.etcdArgs, "--election-timeout")
-	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", cfg.Etcd.ElectionTimeout))
+	etcdArgs = append(etcdArgs, "--election-timeout")
+	etcdArgs = append(etcdArgs, fmt.Sprintf("%d", cfg.Etcd.ElectionTimeout))
 
-	a.etcdArgs = append(a.etcdArgs, "--listen-peer-urls")
-	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%s://%s:7001", peerProtocol, cfg.Etcd.PeerIP))
+	etcdArgs = append(etcdArgs, "--listen-peer-urls")
+	etcdArgs = append(etcdArgs, fmt.Sprintf("%s://%s:7001", peerProtocol, cfg.Etcd.PeerIP))
 
-	a.etcdArgs = append(a.etcdArgs, "--listen-client-urls")
-	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%s://%s:4001", clientProtocol, cfg.Etcd.ClientIP))
+	etcdArgs = append(etcdArgs, "--listen-client-urls")
+	etcdArgs = append(etcdArgs, fmt.Sprintf("%s://%s:4001", clientProtocol, cfg.Etcd.ClientIP))
 
-	a.etcdArgs = append(a.etcdArgs, "--initial-advertise-peer-urls")
-	a.etcdArgs = append(a.etcdArgs, peerUrl)
+	etcdArgs = append(etcdArgs, "--initial-advertise-peer-urls")
+	etcdArgs = append(etcdArgs, peerUrl)
 
-	a.etcdArgs = append(a.etcdArgs, "--advertise-client-urls")
-	a.etcdArgs = append(a.etcdArgs, clientUrl)
+	etcdArgs = append(etcdArgs, "--advertise-client-urls")
+	etcdArgs = append(etcdArgs, clientUrl)
 
-	pid, err := a.command.Start(a.etcdPath, a.etcdArgs, a.outWriter, a.errWriter)
-	if err != nil {
-		a.logger.Error("application.start.failed", err)
-		return err
-	}
-
-	err = ioutil.WriteFile(a.commandPidPath, []byte(fmt.Sprintf("%d", pid)), 0644)
-	if err != nil {
-		a.logger.Error("application.write-pid-file.failed", err)
-		return err
-	}
-
-	return nil
+	return etcdArgs
 }
