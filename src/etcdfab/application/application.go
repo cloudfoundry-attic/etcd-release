@@ -20,13 +20,18 @@ type Application struct {
 	errWriter      io.Writer
 }
 
-type node struct {
+type configNode struct {
 	Name  string
 	Index int
 }
 
+type configEtcd struct {
+	Heartbeat int `json:"heartbeat_interval_in_milliseconds"`
+}
+
 type config struct {
-	Node node
+	Node configNode
+	Etcd configEtcd
 }
 
 type command interface {
@@ -72,6 +77,10 @@ func (a Application) Start() error {
 
 	a.etcdArgs = append(a.etcdArgs, "--name")
 	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%s-%d", strings.Replace(config.Node.Name, "_", "-", -1), config.Node.Index))
+	a.etcdArgs = append(a.etcdArgs, "--data-dir")
+	a.etcdArgs = append(a.etcdArgs, "/var/vcap/store/etcd")
+	a.etcdArgs = append(a.etcdArgs, "--heartbeat-interval")
+	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", config.Etcd.Heartbeat))
 
 	pid, err := a.command.Start(a.etcdPath, a.etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {

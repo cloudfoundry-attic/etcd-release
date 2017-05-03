@@ -51,6 +51,9 @@ var _ = Describe("Application", func() {
 					"name":  "some_name",
 					"index": 3,
 				},
+				"etcd": map[string]interface{}{
+					"heartbeat_interval_in_milliseconds": 10,
+				},
 			}
 			configData, err := json.Marshal(configuration)
 			Expect(err).NotTo(HaveOccurred())
@@ -75,7 +78,13 @@ var _ = Describe("Application", func() {
 
 			Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
 			Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
-			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{"arg-1", "arg-2", "--name", "some-name-3"}))
+			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
+				"arg-1",
+				"arg-2",
+				"--name", "some-name-3",
+				"--data-dir", "/var/vcap/store/etcd",
+				"--heartbeat-interval", "10",
+			}))
 			Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
 			Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
 		})
