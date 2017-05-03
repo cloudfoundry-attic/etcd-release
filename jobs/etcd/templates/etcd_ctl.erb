@@ -100,7 +100,6 @@ function main() {
           ${tmp_pid_file}                                                                   \
           ${JOB_DIR}/config/etcdfab.json                                                    \
           ${etcd_sec_flags}                                                                 \
-          --election-timeout            <%= p("etcd.election_timeout_in_milliseconds") %>   \
           --listen-peer-urls            ${listen_peer_url}                                  \
           --listen-client-urls          ${listen_client_url}                                \
           --initial-advertise-peer-urls ${advertise_peer_url}                               \

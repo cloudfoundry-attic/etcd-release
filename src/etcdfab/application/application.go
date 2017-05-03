@@ -26,7 +26,8 @@ type configNode struct {
 }
 
 type configEtcd struct {
-	Heartbeat int `json:"heartbeat_interval_in_milliseconds"`
+	HeartbeatInterval int `json:"heartbeat_interval_in_milliseconds"`
+	ElectionTimeout   int `json:"election_timeout_in_milliseconds"`
 }
 
 type config struct {
@@ -80,7 +81,9 @@ func (a Application) Start() error {
 	a.etcdArgs = append(a.etcdArgs, "--data-dir")
 	a.etcdArgs = append(a.etcdArgs, "/var/vcap/store/etcd")
 	a.etcdArgs = append(a.etcdArgs, "--heartbeat-interval")
-	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", config.Etcd.Heartbeat))
+	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", config.Etcd.HeartbeatInterval))
+	a.etcdArgs = append(a.etcdArgs, "--election-timeout")
+	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", config.Etcd.ElectionTimeout))
 
 	pid, err := a.command.Start(a.etcdPath, a.etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {
