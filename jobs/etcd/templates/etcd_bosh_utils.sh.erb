@@ -98,7 +98,6 @@ DATA_DIR=${STORE_DIR}/etcd
 %>
 
 node_name="<%= node_name %>"
-listen_client_url="<%= "#{client_protocol}://#{p("etcd.client_ip")}:4001" %>"
 advertise_peer_url="<%= advertise_peer_url %>"
 advertise_client_url="<%= advertise_client_url %>"
 this_node="${node_name}=${advertise_peer_url}"

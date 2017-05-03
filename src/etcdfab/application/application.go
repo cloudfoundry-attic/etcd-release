@@ -30,6 +30,8 @@ type configEtcd struct {
 	ElectionTimeout   int    `json:"election_timeout_in_milliseconds"`
 	PeerRequireSSL    bool   `json:"peer_require_ssl"`
 	PeerIP            string `json:"peer_ip"`
+	RequireSSL        bool   `json:"require_ssl"`
+	ClientIP          string `json:"client_ip"`
 }
 
 type config struct {
@@ -87,12 +89,19 @@ func (a Application) Start() error {
 	a.etcdArgs = append(a.etcdArgs, "--election-timeout")
 	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%d", config.Etcd.ElectionTimeout))
 
-	protocol := "http"
+	peerProtocol := "http"
 	if config.Etcd.PeerRequireSSL {
-		protocol = "https"
+		peerProtocol = "https"
 	}
 	a.etcdArgs = append(a.etcdArgs, "--listen-peer-urls")
-	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%s://%s:7001", protocol, config.Etcd.PeerIP))
+	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%s://%s:7001", peerProtocol, config.Etcd.PeerIP))
+
+	clientProtocol := "http"
+	if config.Etcd.RequireSSL {
+		clientProtocol = "https"
+	}
+	a.etcdArgs = append(a.etcdArgs, "--listen-client-urls")
+	a.etcdArgs = append(a.etcdArgs, fmt.Sprintf("%s://%s:4001", clientProtocol, config.Etcd.ClientIP))
 
 	pid, err := a.command.Start(a.etcdPath, a.etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {

@@ -41,6 +41,8 @@ var _ = Describe("EtcdFab", func() {
 				"election_timeout_in_milliseconds":   20,
 				"peer_require_ssl":                   true,
 				"peer_ip":                            "some-peer-ip",
+				"require_ssl":                        true,
+				"client_ip":                          "some-client-ip",
 			},
 		})
 	})
@@ -54,7 +56,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
@@ -66,7 +67,6 @@ var _ = Describe("EtcdFab", func() {
 
 		Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 		Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
@@ -76,6 +76,7 @@ var _ = Describe("EtcdFab", func() {
 			"--heartbeat-interval", "10",
 			"--election-timeout", "20",
 			"--listen-peer-urls", "https://some-peer-ip:7001",
+			"--listen-client-urls", "https://some-client-ip:4001",
 		}))
 	})
 
@@ -84,7 +85,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
@@ -104,7 +104,6 @@ var _ = Describe("EtcdFab", func() {
 			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--listen-client-urls", "some-listen-client-urls",
 			"--initial-advertise-peer-urls", "some-initial-advertise-peer-urls",
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
