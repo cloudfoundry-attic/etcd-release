@@ -1,10 +1,11 @@
 package main_test
 
 import (
+	"encoding/json"
 	"fmt"
-	"os/exec"
+	"io/ioutil"
+	"os"
 	"testing"
-	"time"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes/etcd/backend"
 
@@ -41,11 +42,10 @@ var _ = AfterSuite(func() {
 	gexec.CleanupBuildArtifacts()
 })
 
-func etcdFab(args []string, exitCode int) *gexec.Session {
-	command := exec.Command(pathToEtcdFab, args...)
-	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+func writeConfigurationFile(filename string, configuration map[string]interface{}) {
+	configData, err := json.Marshal(configuration)
 	Expect(err).NotTo(HaveOccurred())
-	Eventually(session, 10*time.Second).Should(gexec.Exit(exitCode))
 
-	return session
+	err = ioutil.WriteFile(filename, configData, os.ModePerm)
+	Expect(err).NotTo(HaveOccurred())
 }

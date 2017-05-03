@@ -5,23 +5,25 @@ import "io"
 type CommandWrapper struct {
 	StartCall struct {
 		CallCount int
-		Returns   struct {
+		Receives  struct {
+			CommandPath string
+			CommandArgs []string
+			OutWriter   io.Writer
+			ErrWriter   io.Writer
+		}
+		Returns struct {
+			Pid   int
 			Error error
 		}
 	}
-	Process struct {
-		Pid int
-	}
-	Stdout io.Writer
-	Stderr io.Writer
 }
 
-func (c *CommandWrapper) Start() error {
+func (c *CommandWrapper) Start(commandPath string, commandArgs []string, outWriter, errWriter io.Writer) (int, error) {
 	c.StartCall.CallCount++
+	c.StartCall.Receives.CommandPath = commandPath
+	c.StartCall.Receives.CommandArgs = commandArgs
+	c.StartCall.Receives.OutWriter = outWriter
+	c.StartCall.Receives.ErrWriter = errWriter
 
-	return c.StartCall.Returns.Error
-}
-
-func (c *CommandWrapper) GetProcessID() int {
-	return c.Process.Pid
+	return c.StartCall.Returns.Pid, c.StartCall.Returns.Error
 }

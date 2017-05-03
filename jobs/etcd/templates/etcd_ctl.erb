@@ -2,6 +2,7 @@
 
 SCRIPT_NAME=$(basename $0)
 RUN_DIR=/var/vcap/sys/run/etcd
+JOB_DIR=/var/vcap/jobs/etcd
 PIDFILE=${RUN_DIR}/etcd.pid
 
 source /var/vcap/packages/etcd-common/utils.sh
@@ -98,7 +99,7 @@ function main() {
       /var/vcap/packages/etcdfab/bin/etcdfab /var/vcap/packages/etcd/etcd                   \
           ${tmp_pid_file}                                                                   \
           ${etcd_sec_flags}                                                                 \
-          --name                        ${node_name}                                        \
+          ${JOB_DIR}/etcdfab.json                                                           \
           --data-dir                    ${DATA_DIR}                                         \
           --heartbeat-interval          <%= p("etcd.heartbeat_interval_in_milliseconds") %> \
           --election-timeout            <%= p("etcd.election_timeout_in_milliseconds") %>   \

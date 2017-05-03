@@ -16,9 +16,10 @@ import (
 func main() {
 	etcdPath := os.Args[1]
 	etcdPidPath := os.Args[2]
-	etcdArgs := os.Args[3:]
+	configFilePath := os.Args[3]
+	etcdArgs := os.Args[4:]
 
-	commandWrapper := command.NewWrapper(etcdPath, etcdArgs, os.Stdout, os.Stderr)
+	commandWrapper := command.NewWrapper()
 
 	logger := lager.NewLogger("etcdfab")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
@@ -26,7 +27,13 @@ func main() {
 	app := application.New(application.NewArgs{
 		Command:        commandWrapper,
 		CommandPidPath: etcdPidPath,
+		ConfigFilePath: configFilePath,
+		EtcdPath:       etcdPath,
+		EtcdArgs:       etcdArgs,
+		OutWriter:      os.Stdout,
+		ErrWriter:      os.Stderr,
 	})
+
 	err := app.Start()
 	if err != nil {
 		logger.Error("main", err)

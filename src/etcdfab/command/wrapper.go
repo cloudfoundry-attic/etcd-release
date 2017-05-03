@@ -6,24 +6,22 @@ import (
 )
 
 type Wrapper struct {
-	ExecCmd *exec.Cmd
 }
 
-func NewWrapper(commandPath string, commandArgs []string, outWriter, errWriter io.Writer) Wrapper {
+func NewWrapper() Wrapper {
+	return Wrapper{}
+}
+
+func (w Wrapper) Start(commandPath string, commandArgs []string, outWriter, errWriter io.Writer) (int, error) {
 	cmd := exec.Command(commandPath, commandArgs...)
 
 	cmd.Stdout = outWriter
 	cmd.Stderr = errWriter
 
-	return Wrapper{
-		ExecCmd: cmd,
+	err := cmd.Start()
+	if err != nil {
+		return 0, err
 	}
-}
 
-func (w Wrapper) Start() error {
-	return w.ExecCmd.Start()
-}
-
-func (w Wrapper) GetProcessID() int {
-	return w.ExecCmd.Process.Pid
+	return cmd.Process.Pid, nil
 }

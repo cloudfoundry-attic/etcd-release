@@ -3,27 +3,51 @@ package main_test
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"os/exec"
 	"strconv"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gexec"
 )
 
 var _ = Describe("EtcdFab", func() {
-	var pathToEtcdPid string
+	var (
+		pathToEtcdPid string
+		configFile    *os.File
+	)
 
 	BeforeEach(func() {
 		tmpDir, err := ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
 		pathToEtcdPid = fmt.Sprintf("%s/etcd-pid", tmpDir)
+
+		configFile, err = ioutil.TempFile(tmpDir, "config-file")
+		Expect(err).NotTo(HaveOccurred())
+
+		err = configFile.Close()
+		Expect(err).NotTo(HaveOccurred())
+
+		writeConfigurationFile(configFile.Name(), map[string]interface{}{
+			"node": map[string]interface{}{
+				"name":  "some_name",
+				"index": 3,
+			},
+		})
+	})
+
+	AfterEach(func() {
+		Expect(os.Remove(configFile.Name())).NotTo(HaveOccurred())
 	})
 
 	It("shells out to etcd with provided flags", func() {
-		_ = etcdFab([]string{
+		command := exec.Command(pathToEtcdFab,
 			pathToFakeEtcd,
 			pathToEtcdPid,
-			"--name", "some-name",
+			configFile.Name(),
 			"--data-dir", "some-data-dir",
 			"--heartbeat-interval", "some-heartbeat-interval",
 			"--election-timeout", "some-election-timeout",
@@ -33,11 +57,13 @@ var _ = Describe("EtcdFab", func() {
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
-		}, 0)
+		)
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 		Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 		Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-			"--name", "some-name",
 			"--data-dir", "some-data-dir",
 			"--heartbeat-interval", "some-heartbeat-interval",
 			"--election-timeout", "some-election-timeout",
@@ -47,14 +73,15 @@ var _ = Describe("EtcdFab", func() {
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
+			"--name", "some-name-3",
 		}))
 	})
 
 	It("writes etcd stdout/stderr", func() {
-		session := etcdFab([]string{
+		command := exec.Command(pathToEtcdFab,
 			pathToFakeEtcd,
 			pathToEtcdPid,
-			"--name", "some-name",
+			configFile.Name(),
 			"--data-dir", "some-data-dir",
 			"--heartbeat-interval", "some-heartbeat-interval",
 			"--election-timeout", "some-election-timeout",
@@ -64,7 +91,10 @@ var _ = Describe("EtcdFab", func() {
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
-		}, 0)
+		)
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 		Expect(session.Out.Contents()).To(ContainSubstring("starting fake etcd"))
 		Expect(session.Out.Contents()).To(ContainSubstring("stopping fake etcd"))
@@ -72,10 +102,10 @@ var _ = Describe("EtcdFab", func() {
 	})
 
 	It("writes the pid of etcd to the file provided", func() {
-		_ = etcdFab([]string{
+		command := exec.Command(pathToEtcdFab,
 			pathToFakeEtcd,
 			pathToEtcdPid,
-			"--name", "some-name",
+			configFile.Name(),
 			"--data-dir", "some-data-dir",
 			"--heartbeat-interval", "some-heartbeat-interval",
 			"--election-timeout", "some-election-timeout",
@@ -85,7 +115,10 @@ var _ = Describe("EtcdFab", func() {
 			"--advertise-client-urls", "some-advertise-client-urls",
 			"--initial-cluster", "some-initial-cluster",
 			"--initial-cluster-state", "some-initial-cluster-state",
-		}, 0)
+		)
+		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
 		Expect(pathToEtcdPid).To(BeARegularFile())
 
@@ -109,10 +142,14 @@ var _ = Describe("EtcdFab", func() {
 			})
 
 			It("exits 1 and prints an error", func() {
-				session := etcdFab([]string{
+				command := exec.Command(pathToEtcdFab,
 					"bogus",
 					pathToEtcdPid,
-				}, 1)
+					configFile.Name(),
+				)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(1))
 
 				Expect(session.Out.Contents()).To(MatchRegexp(`{"timestamp":".*","source":"etcdfab","message":"etcdfab\.main","log_level":2,"data":{"error":"exec: \\"bogus\\": executable file not found in \$PATH"}}`))
 			})

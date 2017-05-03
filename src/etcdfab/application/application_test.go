@@ -1,9 +1,12 @@
 package application_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/application"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes"
@@ -15,8 +18,12 @@ import (
 var _ = Describe("Application", func() {
 	Describe("Start", func() {
 		var (
-			etcdPidPath string
-			fakeCommand *fakes.CommandWrapper
+			etcdPidPath    string
+			configFileName string
+			fakeCommand    *fakes.CommandWrapper
+
+			outWriter bytes.Buffer
+			errWriter bytes.Buffer
 
 			app application.Application
 		)
@@ -24,14 +31,41 @@ var _ = Describe("Application", func() {
 		BeforeEach(func() {
 			fakeCommand = &fakes.CommandWrapper{}
 
+			fakeCommand.StartCall.Returns.Pid = 12345
+
 			tmpDir, err := ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
 
 			etcdPidPath = fmt.Sprintf("%s/etcd-pid", tmpDir)
 
+			configFile, err := ioutil.TempFile(tmpDir, "config-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = configFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+
+			configFileName = configFile.Name()
+
+			configuration := map[string]interface{}{
+				"node": map[string]interface{}{
+					"name":  "some_name",
+					"index": 3,
+				},
+			}
+			configData, err := json.Marshal(configuration)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ioutil.WriteFile(configFileName, configData, os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
 			app = application.New(application.NewArgs{
-				CommandPidPath: etcdPidPath,
 				Command:        fakeCommand,
+				CommandPidPath: etcdPidPath,
+				ConfigFilePath: configFileName,
+				EtcdPath:       "path-to-etcd",
+				EtcdArgs:       []string{"arg-1", "arg-2"},
+				OutWriter:      &outWriter,
+				ErrWriter:      &errWriter,
 			})
 		})
 
@@ -40,11 +74,13 @@ var _ = Describe("Application", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
+			Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
+			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{"arg-1", "arg-2", "--name", "some-name-3"}))
+			Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
+			Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
 		})
 
 		It("writes the pid of etcd to the file provided", func() {
-			fakeCommand.Process.Pid = 12345
-
 			err := app.Start()
 			Expect(err).NotTo(HaveOccurred())
 
@@ -58,24 +94,61 @@ var _ = Describe("Application", func() {
 
 		Context("failure cases", func() {
 			Context("when commandWrapper.Start returns an error", func() {
-				It("returns the error to the caller", func() {
+				BeforeEach(func() {
 					fakeCommand.StartCall.Returns.Error = errors.New("failed to start command")
+				})
 
+				It("returns the error to the caller", func() {
 					err := app.Start()
 					Expect(err).To(MatchError("failed to start command"))
 				})
 			})
 
 			Context("when it cannot write to the specified PID file", func() {
-				It("returns the error to the caller", func() {
-					fakeCommand.Process.Pid = 12345
+				BeforeEach(func() {
 					app = application.New(application.NewArgs{
-						CommandPidPath: "/path/to/missing/file",
 						Command:        fakeCommand,
+						CommandPidPath: "/path/to/missing/file",
+						ConfigFilePath: configFileName,
 					})
+				})
 
+				It("returns the error to the caller", func() {
 					err := app.Start()
 					Expect(err).To(MatchError("open /path/to/missing/file: no such file or directory"))
+				})
+			})
+
+			Context("when it cannot read the config file", func() {
+				BeforeEach(func() {
+					app = application.New(application.NewArgs{
+						Command:        fakeCommand,
+						CommandPidPath: etcdPidPath,
+						ConfigFilePath: "/path/to/missing/file",
+					})
+				})
+
+				It("returns the error to the caller", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("open /path/to/missing/file: no such file or directory"))
+				})
+			})
+
+			Context("when it cannot unmarshal the config file", func() {
+				BeforeEach(func() {
+					err := ioutil.WriteFile(configFileName, []byte("%%%"), os.ModePerm)
+					Expect(err).NotTo(HaveOccurred())
+
+					app = application.New(application.NewArgs{
+						Command:        fakeCommand,
+						CommandPidPath: etcdPidPath,
+						ConfigFilePath: configFileName,
+					})
+				})
+
+				It("returns the error to the caller", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("invalid character '%' looking for beginning of value"))
 				})
 			})
 		})
