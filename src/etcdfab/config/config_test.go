@@ -36,6 +36,7 @@ var _ = Describe("Config", func() {
 					"external_ip": "some-external-ip",
 				},
 				"etcd": map[string]interface{}{
+					"etcd_path":                          "path-to-etcd",
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -63,6 +64,7 @@ var _ = Describe("Config", func() {
 					ExternalIP: "some-external-ip",
 				},
 				Etcd: config.Etcd{
+					EtcdPath:               "path-to-etcd",
 					HeartbeatInterval:      10,
 					ElectionTimeout:        20,
 					PeerRequireSSL:         false,
@@ -72,6 +74,16 @@ var _ = Describe("Config", func() {
 					AdvertiseURLsDNSSuffix: "some-dns-suffix",
 				},
 			}))
+		})
+
+		It("defaults values that are not specified in the JSON file", func() {
+			err := ioutil.WriteFile(configFilePath, []byte("{}"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg, err := config.ConfigFromJSON(configFilePath)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(cfg.Etcd.EtcdPath).To(Equal("/var/vcap/packages/etcd/etcd"))
 		})
 
 		Context("failure cases", func() {

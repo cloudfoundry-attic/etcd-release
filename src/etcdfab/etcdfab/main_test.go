@@ -37,6 +37,7 @@ var _ = Describe("EtcdFab", func() {
 				"index": 3,
 			},
 			"etcd": map[string]interface{}{
+				"etcd_path":                          pathToFakeEtcd,
 				"heartbeat_interval_in_milliseconds": 10,
 				"election_timeout_in_milliseconds":   20,
 				"peer_require_ssl":                   true,
@@ -54,7 +55,6 @@ var _ = Describe("EtcdFab", func() {
 
 	It("shells out to etcd with provided flags", func() {
 		command := exec.Command(pathToEtcdFab,
-			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
 			"--initial-cluster", "some-initial-cluster",
@@ -81,7 +81,6 @@ var _ = Describe("EtcdFab", func() {
 
 	It("writes etcd stdout/stderr", func() {
 		command := exec.Command(pathToEtcdFab,
-			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
 			"--initial-cluster", "some-initial-cluster",
@@ -99,7 +98,6 @@ var _ = Describe("EtcdFab", func() {
 
 	It("writes the pid of etcd to the file provided", func() {
 		command := exec.Command(pathToEtcdFab,
-			pathToFakeEtcd,
 			pathToEtcdPid,
 			configFile.Name(),
 			"--initial-cluster", "some-initial-cluster",
@@ -135,7 +133,6 @@ var _ = Describe("EtcdFab", func() {
 
 			It("exits 1 and prints an error", func() {
 				command := exec.Command(pathToEtcdFab,
-					"bogus",
 					pathToEtcdPid,
 					configFile.Name(),
 				)
@@ -150,6 +147,12 @@ var _ = Describe("EtcdFab", func() {
 		Context("when the etcd process fails", func() {
 			BeforeEach(func() {
 				etcdBackendServer.EnableFastFail()
+
+				writeConfigurationFile(configFile.Name(), map[string]interface{}{
+					"etcd": map[string]interface{}{
+						"etcd_path": "bogus",
+					},
+				})
 			})
 
 			AfterEach(func() {
@@ -158,7 +161,6 @@ var _ = Describe("EtcdFab", func() {
 
 			It("exits 1 and prints an error", func() {
 				command := exec.Command(pathToEtcdFab,
-					"bogus",
 					pathToEtcdPid,
 					configFile.Name(),
 				)

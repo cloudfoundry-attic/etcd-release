@@ -96,7 +96,7 @@ function main() {
       local tmp_pid_file
       tmp_pid_file="/tmp/etcd_pid"
 
-      /var/vcap/packages/etcdfab/bin/etcdfab /var/vcap/packages/etcd/etcd                   \
+      /var/vcap/packages/etcdfab/bin/etcdfab                                                \
           ${tmp_pid_file}                                                                   \
           ${JOB_DIR}/config/etcdfab.json                                                    \
           ${etcd_sec_flags}                                                                 \

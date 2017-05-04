@@ -15,10 +15,9 @@ import (
 // var generateCommand = exec.Command
 
 func main() {
-	etcdPath := os.Args[1]
-	etcdPidPath := os.Args[2]
-	configFilePath := os.Args[3]
-	etcdArgs := os.Args[4:]
+	etcdPidPath := os.Args[1]
+	configFilePath := os.Args[2]
+	etcdArgs := os.Args[3:]
 
 	commandWrapper := command.NewWrapper()
 
@@ -29,7 +28,6 @@ func main() {
 		Command:        commandWrapper,
 		CommandPidPath: etcdPidPath,
 		ConfigFilePath: configFilePath,
-		EtcdPath:       etcdPath,
 		EtcdArgs:       etcdArgs,
 		OutWriter:      os.Stdout,
 		ErrWriter:      os.Stderr,

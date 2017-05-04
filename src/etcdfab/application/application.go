@@ -15,7 +15,6 @@ type Application struct {
 	command        command
 	commandPidPath string
 	configFilePath string
-	etcdPath       string
 	etcdArgs       []string
 	outWriter      io.Writer
 	errWriter      io.Writer
@@ -35,7 +34,6 @@ type NewArgs struct {
 	Command        command
 	CommandPidPath string
 	ConfigFilePath string
-	EtcdPath       string
 	EtcdArgs       []string
 	OutWriter      io.Writer
 	ErrWriter      io.Writer
@@ -47,7 +45,6 @@ func New(args NewArgs) Application {
 		command:        args.Command,
 		commandPidPath: args.CommandPidPath,
 		configFilePath: args.ConfigFilePath,
-		etcdPath:       args.EtcdPath,
 		etcdArgs:       args.EtcdArgs,
 		outWriter:      args.OutWriter,
 		errWriter:      args.ErrWriter,
@@ -64,7 +61,7 @@ func (a Application) Start() error {
 
 	etcdArgs := a.buildEtcdArgs(cfg)
 
-	pid, err := a.command.Start(a.etcdPath, etcdArgs, a.outWriter, a.errWriter)
+	pid, err := a.command.Start(cfg.Etcd.EtcdPath, etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {
 		a.logger.Error("application.start.failed", err)
 		return err

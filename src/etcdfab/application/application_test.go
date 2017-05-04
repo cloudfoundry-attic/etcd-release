@@ -57,6 +57,7 @@ var _ = Describe("Application", func() {
 					"external_ip": "some-external-ip",
 				},
 				"etcd": map[string]interface{}{
+					"etcd_path":                          "path-to-etcd",
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -76,7 +77,6 @@ var _ = Describe("Application", func() {
 				Command:        fakeCommand,
 				CommandPidPath: etcdPidPath,
 				ConfigFilePath: configFileName,
-				EtcdPath:       "path-to-etcd",
 				EtcdArgs:       []string{"arg-1", "arg-2"},
 				OutWriter:      &outWriter,
 				ErrWriter:      &errWriter,

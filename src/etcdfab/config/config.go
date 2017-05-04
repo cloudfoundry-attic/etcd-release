@@ -12,6 +12,7 @@ type Node struct {
 }
 
 type Etcd struct {
+	EtcdPath               string `json:"etcd_path"`
 	HeartbeatInterval      int    `json:"heartbeat_interval_in_milliseconds"`
 	ElectionTimeout        int    `json:"election_timeout_in_milliseconds"`
 	PeerRequireSSL         bool   `json:"peer_require_ssl"`
@@ -32,7 +33,12 @@ func ConfigFromJSON(configFilePath string) (Config, error) {
 		return Config{}, err
 	}
 
-	var config Config
+	config := Config{
+		Etcd: Etcd{
+			EtcdPath: "/var/vcap/packages/etcd/etcd",
+		},
+	}
+
 	if err := json.Unmarshal(configFileContents, &config); err != nil {
 		return Config{}, err
 	}
