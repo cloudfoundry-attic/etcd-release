@@ -139,7 +139,7 @@ var _ = Describe("split brain one leader", func() {
 
 			Eventually(func() string {
 				return monitJobStatus(followerIP, "consul_agent")
-			}, "1m", "10s").Should(Equal("not monitored"))
+			}, "2m", "10s").Should(Equal("not monitored"))
 		})
 
 		By("restarting the leader in the 2-member cluster", func() {
@@ -150,13 +150,13 @@ var _ = Describe("split brain one leader", func() {
 
 			Eventually(func() string {
 				return monitJobStatus(leaderIP, "etcd")
-			}, "1m", "10s").Should(Equal("not monitored"))
+			}, "2m", "10s").Should(Equal("not monitored"))
 
 			monit("start", leaderIP, "etcd", true)
 
 			Eventually(func() string {
 				return monitJobStatus(leaderIP, "etcd")
-			}, "1m", "10s").Should(Equal("running"))
+			}, "2m", "10s").Should(Equal("running"))
 		})
 
 		By("unblocking traffic between leader and follower in the 2-member cluster", func() {
@@ -172,7 +172,7 @@ var _ = Describe("split brain one leader", func() {
 
 			Eventually(func() string {
 				return monitJobStatus(followerIP, "consul_agent")
-			}, "1m", "10s").Should(Equal("running"))
+			}, "2m", "10s").Should(Equal("running"))
 		})
 	})
 
