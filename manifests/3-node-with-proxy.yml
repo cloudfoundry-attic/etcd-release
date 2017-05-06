@@ -35,6 +35,7 @@ instance_groups:
       consul_common: {from: common_link}
       consul_server: {from: server_link}
       consul_client: {from: client_link}
+      consul: nil
     properties:
       consul:
         agent:
@@ -195,6 +196,7 @@ instance_groups:
       consul_common: {from: common_link}
       consul_server: nil
       consul_client: {from: client_link}
+      consul: nil
     properties:
       consul:
         agent:
@@ -451,6 +453,7 @@ instance_groups:
       consul_common: {from: common_link}
       consul_server: nil
       consul_client: {from: client_link}
+      consul: nil
   - name: etcd_proxy
     release: etcd
     properties:
