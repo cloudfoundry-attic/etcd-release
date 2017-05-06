@@ -85,7 +85,7 @@ func addEtcdTLSInstanceGroup(manifest, varsStore string) (string, error) {
 				"release": "consul",
 				"consumes": map[string]interface{}{
 					"consul": map[string]string{
-						"from": "consul_server",
+						"from": "consul_link",
 					},
 				},
 				"properties": map[string]interface{}{
@@ -264,7 +264,7 @@ func convertNonTLSEtcdToProxy(manifest, varsStore string) (string, error) {
 				"release": "consul",
 				"consumes": map[string]interface{}{
 					"consul": map[string]string{
-						"from": "consul_server",
+						"from": "consul_link",
 					},
 				},
 			},
