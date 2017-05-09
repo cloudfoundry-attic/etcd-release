@@ -117,7 +117,14 @@ var _ = Describe("TLS Upgrade", func() {
 								"name":    "consul_agent",
 								"release": "consul",
 								"consumes": map[string]interface{}{
-									"consul": map[string]string{"from": "consul_server"},
+									"consul": "nil",
+									"consul_common": map[string]string{
+										"from": "consul_common_link",
+									},
+									"consul_server": "nil",
+									"consul_client": map[string]string{
+										"from": "consul_client_link",
+									},
 								},
 							},
 							{
