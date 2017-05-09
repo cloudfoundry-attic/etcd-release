@@ -15,6 +15,7 @@ function create_directories_and_chown_to_vcap() {
     <% if p("etcd.require_ssl") || p("etcd.peer_require_ssl") %>
     mkdir -p ${CERT_DIR}
     chown -R vcap:vcap ${CERT_DIR}
+    chmod 640 ${CERT_DIR}/*.{crt,key}
     <% end %>
 
     # This is here for upgrade purposes to ensure RUN_DIR is owned by vcap

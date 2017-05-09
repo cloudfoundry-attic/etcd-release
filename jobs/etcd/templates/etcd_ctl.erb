@@ -59,8 +59,6 @@ function main() {
 
       export GOMAXPROCS=$(nproc)
 
-      create_cert_files
-
       prior_member_list=""
       for i in $(seq 5); do
         prior_member_list=$(member_list)

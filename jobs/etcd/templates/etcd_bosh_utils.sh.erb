@@ -142,30 +142,6 @@ etcd_peer_sec_flags=" \
 etcd_sec_flags="${etcd_sec_flags} ${etcd_peer_sec_flags}"
 <% end %>
 
-create_cert_files() {
-  true
-  set +x
-  <% if p("etcd.require_ssl") %>
-  echo -n '<%= p("etcd.ca_cert") %>' > ${ca_cert_file}
-  echo -n '<%= p("etcd.server_cert") %>' > ${server_cert_file}
-  echo -n '<%= p("etcd.server_key") %>' > ${server_key_file}
-  echo -n '<%= p("etcd.client_cert") %>' > ${client_cert_file}
-  echo -n '<%= p("etcd.client_key") %>' > ${client_key_file}
-  <% end %>
-
-  <% if p("etcd.peer_require_ssl") %>
-  echo -n '<%= p("etcd.peer_ca_cert") %>' > ${peer_ca_cert_file}
-  echo -n '<%= p("etcd.peer_cert") %>' > ${peer_cert_file}
-  echo -n '<%= p("etcd.peer_key") %>' > ${peer_key_file}
-  <% end %>
-
-  <% if p("etcd.require_ssl") || p("etcd.peer_require_ssl") %>
-  chown vcap:vcap ${CERT_DIR}/*.{crt,key}
-  chmod 640 ${CERT_DIR}/*.{crt,key}
-  <% end %>
-  set -x
-}
-
 member_list() {
   for cluster_member in <%= cluster_members %>
   do
