@@ -59,11 +59,11 @@ properties:
     default: 300
 
   etcd.heartbeat_interval_in_milliseconds:
-    description: "Interval between heartbeats in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
+    description: "Interval between heartbeats in milliseconds. See https://coreos.com/etcd/docs/2.2.5/tuning.html"
     default: 50
 
   etcd.election_timeout_in_milliseconds:
-    description: "Time without receiving a heartbeat before peer should attempt to become leader in milliseconds. See https://coreos.com/docs/cluster-management/debugging/etcd-tuning"
+    description: "Time without receiving a heartbeat before peer should attempt to become leader in milliseconds. See https://coreos.com/etcd/docs/2.2.5/tuning.html"
     default: 1000
 
   etcd.machines:
