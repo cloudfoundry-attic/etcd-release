@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pivotal-cf-experimental/bosh-test/bosh"
-	"github.com/pivotal-cf-experimental/destiny/etcdwithops"
+	"github.com/pivotal-cf-experimental/destiny/etcd"
 	"github.com/pivotal-cf-experimental/destiny/ops"
 )
 
@@ -17,7 +17,7 @@ func NewEtcdManifestWithInstanceCountAndReleaseVersion(deploymentPrefix string, 
 		manifest string
 		err      error
 	)
-	manifest, err = etcdwithops.NewManifestV2(etcdwithops.ConfigV2{
+	manifest, err = etcd.NewManifestV2(etcd.ConfigV2{
 		Name:      manifestName,
 		AZs:       []string{"z1", "z2"},
 		EnableSSL: enableSSL,
