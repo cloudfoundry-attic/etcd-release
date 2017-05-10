@@ -64,7 +64,7 @@ var _ = Describe("logspinner", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
-		Expect(session.Out.Contents()).To(ContainSubstring("hello"))
+		Expect(string(session.Out.Contents())).To(ContainSubstring("hello"))
 	})
 
 	Context("failure cases", func() {
