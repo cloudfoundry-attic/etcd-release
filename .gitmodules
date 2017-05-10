@@ -61,3 +61,6 @@
 [submodule "src/etcdfab/vendor/github.com/onsi/gomega"]
 	path = src/etcdfab/vendor/github.com/onsi/gomega
 	url = https://github.com/onsi/gomega
+[submodule "src/etcdfab/vendor/github.com/pivotal-cf-experimental/gomegamatchers"]
+	path = src/etcdfab/vendor/github.com/pivotal-cf-experimental/gomegamatchers
+	url = https://github.com/pivotal-cf-experimental/gomegamatchers

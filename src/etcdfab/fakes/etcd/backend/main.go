@@ -9,9 +9,7 @@ import (
 	"sync/atomic"
 )
 
-type EtcdBackendServer struct {
-	server *httptest.Server
-
+type etcdBackend struct {
 	callCount int32
 	args      []string
 	fastFail  bool
@@ -19,13 +17,24 @@ type EtcdBackendServer struct {
 	mutex sync.Mutex
 }
 
+type EtcdBackendServer struct {
+	server  *httptest.Server
+	backend *etcdBackend
+}
+
 func NewEtcdBackendServer() *EtcdBackendServer {
-	etcdBackendServer := &EtcdBackendServer{}
+	etcdBackendServer := &EtcdBackendServer{
+		backend: &etcdBackend{},
+	}
 	etcdBackendServer.server = httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
 		etcdBackendServer.ServeHTTP(responseWriter, request)
 	}))
 
 	return etcdBackendServer
+}
+
+func (e *EtcdBackendServer) Reset() {
+	e.backend = &etcdBackend{}
 }
 
 func (e *EtcdBackendServer) ServeHTTP(responseWriter http.ResponseWriter, request *http.Request) {
@@ -36,7 +45,7 @@ func (e *EtcdBackendServer) ServeHTTP(responseWriter http.ResponseWriter, reques
 }
 
 func (e *EtcdBackendServer) call(responseWriter http.ResponseWriter, request *http.Request) {
-	atomic.AddInt32(&e.callCount, 1)
+	atomic.AddInt32(&e.backend.callCount, 1)
 	argsJSON, err := ioutil.ReadAll(request.Body)
 	if err != nil {
 		panic(err)
@@ -58,27 +67,27 @@ func (e *EtcdBackendServer) call(responseWriter http.ResponseWriter, request *ht
 }
 
 func (e *EtcdBackendServer) setArgs(args []string) {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	e.args = args
+	e.backend.mutex.Lock()
+	defer e.backend.mutex.Unlock()
+	e.backend.args = args
 }
 
 func (e *EtcdBackendServer) EnableFastFail() {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	e.fastFail = true
+	e.backend.mutex.Lock()
+	defer e.backend.mutex.Unlock()
+	e.backend.fastFail = true
 }
 
 func (e *EtcdBackendServer) DisableFastFail() {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	e.fastFail = false
+	e.backend.mutex.Lock()
+	defer e.backend.mutex.Unlock()
+	e.backend.fastFail = false
 }
 
 func (e *EtcdBackendServer) FastFail() bool {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	return e.fastFail
+	e.backend.mutex.Lock()
+	defer e.backend.mutex.Unlock()
+	return e.backend.fastFail
 }
 
 func (e *EtcdBackendServer) ServerURL() string {
@@ -86,11 +95,11 @@ func (e *EtcdBackendServer) ServerURL() string {
 }
 
 func (e *EtcdBackendServer) GetCallCount() int {
-	return int(atomic.LoadInt32(&e.callCount))
+	return int(atomic.LoadInt32(&e.backend.callCount))
 }
 
 func (e *EtcdBackendServer) GetArgs() []string {
-	e.mutex.Lock()
-	defer e.mutex.Unlock()
-	return e.args
+	e.backend.mutex.Lock()
+	defer e.backend.mutex.Unlock()
+	return e.backend.args
 }

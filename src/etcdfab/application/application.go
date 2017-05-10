@@ -61,6 +61,10 @@ func (a Application) Start() error {
 
 	etcdArgs := a.buildEtcdArgs(cfg)
 
+	a.logger.Info("application.start", lager.Data{
+		"etcd-path": cfg.Etcd.EtcdPath,
+		"etcd-args": etcdArgs,
+	})
 	pid, err := a.command.Start(cfg.Etcd.EtcdPath, etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {
 		a.logger.Error("application.start.failed", err)
@@ -91,12 +95,12 @@ func (a Application) buildEtcdArgs(cfg config.Config) []string {
 	}
 
 	peerUrl := fmt.Sprintf("http://%s:7001", cfg.Node.ExternalIP)
-	if cfg.Etcd.PeerRequireSSL || cfg.Etcd.RequireSSL {
+	if cfg.Etcd.PeerRequireSSL {
 		peerUrl = fmt.Sprintf("https://%s.%s:7001", nodeName, cfg.Etcd.AdvertiseURLsDNSSuffix)
 	}
 
 	clientUrl := fmt.Sprintf("http://%s:4001", cfg.Node.ExternalIP)
-	if cfg.Etcd.PeerRequireSSL || cfg.Etcd.RequireSSL {
+	if cfg.Etcd.RequireSSL {
 		clientUrl = fmt.Sprintf("https://%s.%s:4001", nodeName, cfg.Etcd.AdvertiseURLsDNSSuffix)
 	}
 
@@ -123,6 +127,26 @@ func (a Application) buildEtcdArgs(cfg config.Config) []string {
 
 	etcdArgs = append(etcdArgs, "--advertise-client-urls")
 	etcdArgs = append(etcdArgs, clientUrl)
+
+	if cfg.Etcd.RequireSSL {
+		etcdArgs = append(etcdArgs, "--client-cert-auth")
+		etcdArgs = append(etcdArgs, "--trusted-ca-file")
+		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/server-ca.crt")
+		etcdArgs = append(etcdArgs, "--cert-file")
+		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/server.crt")
+		etcdArgs = append(etcdArgs, "--key-file")
+		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/server.key")
+	}
+
+	if cfg.Etcd.PeerRequireSSL {
+		etcdArgs = append(etcdArgs, "--peer-client-cert-auth")
+		etcdArgs = append(etcdArgs, "--peer-trusted-ca-file")
+		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/peer-ca.crt")
+		etcdArgs = append(etcdArgs, "--peer-cert-file")
+		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/peer.crt")
+		etcdArgs = append(etcdArgs, "--peer-key-file")
+		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/peer.key")
+	}
 
 	return etcdArgs
 }

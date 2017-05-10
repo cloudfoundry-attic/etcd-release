@@ -33,16 +33,17 @@ var _ = Describe("EtcdFab", func() {
 
 		writeConfigurationFile(configFile.Name(), map[string]interface{}{
 			"node": map[string]interface{}{
-				"name":  "some_name",
-				"index": 3,
+				"name":        "some_name",
+				"index":       3,
+				"external_ip": "some-external-ip",
 			},
 			"etcd": map[string]interface{}{
 				"etcd_path":                          pathToFakeEtcd,
 				"heartbeat_interval_in_milliseconds": 10,
 				"election_timeout_in_milliseconds":   20,
-				"peer_require_ssl":                   true,
+				"peer_require_ssl":                   false,
 				"peer_ip":                            "some-peer-ip",
-				"require_ssl":                        true,
+				"require_ssl":                        false,
 				"client_ip":                          "some-client-ip",
 				"advertise_urls_dns_suffix":          "some-dns-suffix",
 			},
@@ -50,33 +51,97 @@ var _ = Describe("EtcdFab", func() {
 	})
 
 	AfterEach(func() {
+		etcdBackendServer.Reset()
 		Expect(os.Remove(configFile.Name())).NotTo(HaveOccurred())
 	})
 
-	It("shells out to etcd with provided flags", func() {
-		command := exec.Command(pathToEtcdFab,
-			pathToEtcdPid,
-			configFile.Name(),
-			"--initial-cluster", "some-initial-cluster",
-			"--initial-cluster-state", "some-initial-cluster-state",
-		)
-		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+	Context("when configured to be a non tls etcd cluster", func() {
+		It("shells out to etcd with provided flags", func() {
+			command := exec.Command(pathToEtcdFab,
+				pathToEtcdPid,
+				configFile.Name(),
+				"--initial-cluster", "some-initial-cluster",
+				"--initial-cluster-state", "some-initial-cluster-state",
+			)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-		Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
-		Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-			"--initial-cluster", "some-initial-cluster",
-			"--initial-cluster-state", "some-initial-cluster-state",
-			"--name", "some-name-3",
-			"--data-dir", "/var/vcap/store/etcd",
-			"--heartbeat-interval", "10",
-			"--election-timeout", "20",
-			"--listen-peer-urls", "https://some-peer-ip:7001",
-			"--listen-client-urls", "https://some-client-ip:4001",
-			"--initial-advertise-peer-urls", "https://some-name-3.some-dns-suffix:7001",
-			"--advertise-client-urls", "https://some-name-3.some-dns-suffix:4001",
-		}))
+			Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
+			Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
+				"--initial-cluster", "some-initial-cluster",
+				"--initial-cluster-state", "some-initial-cluster-state",
+				"--name", "some-name-3",
+				"--data-dir", "/var/vcap/store/etcd",
+				"--heartbeat-interval", "10",
+				"--election-timeout", "20",
+				"--listen-peer-urls", "http://some-peer-ip:7001",
+				"--listen-client-urls", "http://some-client-ip:4001",
+				"--initial-advertise-peer-urls", "http://some-external-ip:7001",
+				"--advertise-client-urls", "http://some-external-ip:4001",
+			}))
+		})
+	})
+
+	Context("when configured to be a tls etcd cluster", func() {
+		BeforeEach(func() {
+			writeConfigurationFile(configFile.Name(), map[string]interface{}{
+				"node": map[string]interface{}{
+					"name":  "some_name",
+					"index": 3,
+				},
+				"etcd": map[string]interface{}{
+					"etcd_path":                          pathToFakeEtcd,
+					"heartbeat_interval_in_milliseconds": 10,
+					"election_timeout_in_milliseconds":   20,
+					"peer_require_ssl":                   true,
+					"peer_ip":                            "some-peer-ip",
+					"require_ssl":                        true,
+					"client_ip":                          "some-client-ip",
+					"advertise_urls_dns_suffix":          "some-dns-suffix",
+					"ca_cert":                            "some-ca-cert",
+					"server_cert":                        "some-server-cert",
+					"server_key":                         "some-server-key",
+					"peer_ca_cert":                       "some-peer-ca-cert",
+					"peer_cert":                          "some-peer-cert",
+					"peer_key":                           "some-peer-key",
+				},
+			})
+		})
+
+		It("shells out to etcd with provided flags", func() {
+			command := exec.Command(pathToEtcdFab,
+				pathToEtcdPid,
+				configFile.Name(),
+				"--initial-cluster", "some-initial-cluster",
+				"--initial-cluster-state", "some-initial-cluster-state",
+			)
+			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+
+			Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
+			Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
+				"--initial-cluster", "some-initial-cluster",
+				"--initial-cluster-state", "some-initial-cluster-state",
+				"--name", "some-name-3",
+				"--data-dir", "/var/vcap/store/etcd",
+				"--heartbeat-interval", "10",
+				"--election-timeout", "20",
+				"--listen-peer-urls", "https://some-peer-ip:7001",
+				"--listen-client-urls", "https://some-client-ip:4001",
+				"--initial-advertise-peer-urls", "https://some-name-3.some-dns-suffix:7001",
+				"--advertise-client-urls", "https://some-name-3.some-dns-suffix:4001",
+				"--client-cert-auth",
+				"--trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/server-ca.crt",
+				"--cert-file", "/var/vcap/jobs/etcd/config/certs/server.crt",
+				"--key-file", "/var/vcap/jobs/etcd/config/certs/server.key",
+				"--peer-client-cert-auth",
+				"--peer-trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/peer-ca.crt",
+				"--peer-cert-file", "/var/vcap/jobs/etcd/config/certs/peer.crt",
+				"--peer-key-file", "/var/vcap/jobs/etcd/config/certs/peer.key",
+			}))
+		})
 	})
 
 	It("writes etcd stdout/stderr", func() {
