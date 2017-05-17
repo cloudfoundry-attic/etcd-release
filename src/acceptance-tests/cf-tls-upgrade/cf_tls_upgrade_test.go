@@ -114,12 +114,12 @@ var _ = Describe("CF TLS Upgrade Test", func() {
 			err := yaml.Unmarshal(varsStoreBytes, &boshVars)
 			Expect(err).NotTo(HaveOccurred())
 
-			if _, ok := boshVars["uaa_scim_users_admin_password"]; !ok {
-				Fail("Missing \"uaa_scim_users_admin_password\" key in vars store.")
+			if _, ok := boshVars["cf_admin_password"]; !ok {
+				Fail("Missing \"cf_admin_password\" key in vars store.")
 			}
 
 			cmd := exec.Command("cf", "login", "-a", fmt.Sprintf("api.%s", config.CF.Domain),
-				"-u", "admin", "-p", boshVars["uaa_scim_users_admin_password"].(string),
+				"-u", "admin", "-p", boshVars["cf_admin_password"].(string),
 				"--skip-ssl-validation")
 			session, err := gexec.Start(cmd, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
