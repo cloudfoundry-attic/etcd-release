@@ -101,9 +101,10 @@ director and the path to your iaas_settings stub. An example config json for BOS
 cat > integration_config.json << EOF
 {
   "bosh":{
-    "target": "192.168.50.4",
+    "target": "https://192.168.50.4:25555",
     "username": "admin",
-    "password": "admin"
+    "password": "admin",
+    "director_ca_cert": "$GOPATH/src/github.com/cloudfoundry/bosh-lite/ca/certs/ca.crt"
   }
 }
 EOF
