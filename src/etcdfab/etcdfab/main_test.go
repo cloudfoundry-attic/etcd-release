@@ -83,9 +83,8 @@ var _ = Describe("EtcdFab", func() {
 			It("starts etcd with proper flags and initial-cluster-state new", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
-					configFile.Name(),
-					"--config-etcd-link-json",
-					linkConfigFile.Name(),
+					"--config-file", configFile.Name(),
+					"--config-link-file", linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -148,9 +147,8 @@ var _ = Describe("EtcdFab", func() {
 			It("starts etcd with proper flags and initial-cluster-state existing", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
-					configFile.Name(),
-					"--config-etcd-link-json",
-					linkConfigFile.Name(),
+					"--config-file", configFile.Name(),
+					"--config-link-file", linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -213,9 +211,8 @@ var _ = Describe("EtcdFab", func() {
 		It("shells out to etcd with provided flags", func() {
 			command := exec.Command(pathToEtcdFab,
 				pathToEtcdPid,
-				configFile.Name(),
-				"--config-etcd-link-json",
-				linkConfigFile.Name(),
+				"--config-file", configFile.Name(),
+				"--config-link-file", linkConfigFile.Name(),
 			)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
@@ -248,9 +245,8 @@ var _ = Describe("EtcdFab", func() {
 	It("writes etcd stdout/stderr", func() {
 		command := exec.Command(pathToEtcdFab,
 			pathToEtcdPid,
-			configFile.Name(),
-			"--config-etcd-link-json",
-			linkConfigFile.Name(),
+			"--config-file", configFile.Name(),
+			"--config-link-file", linkConfigFile.Name(),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
@@ -265,9 +261,8 @@ var _ = Describe("EtcdFab", func() {
 	It("writes the pid of etcd to the file provided", func() {
 		command := exec.Command(pathToEtcdFab,
 			pathToEtcdPid,
-			configFile.Name(),
-			"--config-etcd-link-json",
-			linkConfigFile.Name(),
+			"--config-file", configFile.Name(),
+			"--config-link-file", linkConfigFile.Name(),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
@@ -285,6 +280,33 @@ var _ = Describe("EtcdFab", func() {
 	})
 
 	Context("failure cases", func() {
+		Context("when no flags are provided", func() {
+			It("exits 1 and prints an error", func() {
+				command := exec.Command(pathToEtcdFab,
+					pathToEtcdPid,
+				)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+				Expect(string(session.Err.Contents())).To(ContainSubstring("Usage of flags:"))
+			})
+		})
+
+		Context("when invalid flag is provided", func() {
+			It("exits 1 and prints an error", func() {
+				command := exec.Command(pathToEtcdFab,
+					pathToEtcdPid,
+					"--invalid-flag",
+				)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+				Expect(string(session.Err.Contents())).To(ContainSubstring("flag provided but not defined: -invalid-flag"))
+			})
+		})
+
 		Context("when the config file is invalid", func() {
 			BeforeEach(func() {
 				etcdBackendServer.EnableFastFail()
@@ -300,9 +322,8 @@ var _ = Describe("EtcdFab", func() {
 			It("exits 1 and prints an error", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
-					configFile.Name(),
-					"--config-etcd-link-json",
-					linkConfigFile.Name(),
+					"--config-file", configFile.Name(),
+					"--config-link-file", linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -327,9 +348,8 @@ var _ = Describe("EtcdFab", func() {
 			It("exits 1 and prints an error", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
-					configFile.Name(),
-					"--config-etcd-link-json",
-					linkConfigFile.Name(),
+					"--config-file", configFile.Name(),
+					"--config-link-file", linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -367,9 +387,8 @@ var _ = Describe("EtcdFab", func() {
 			It("exits 1 and prints an error", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
-					configFile.Name(),
-					"--config-etcd-link-json",
-					linkConfigFile.Name(),
+					"--config-file", configFile.Name(),
+					"--config-link-file", linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())

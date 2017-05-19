@@ -64,8 +64,8 @@ function main() {
 
       /var/vcap/packages/etcdfab/bin/etcdfab                                                \
           ${tmp_pid_file}                                                                   \
-          ${JOB_DIR}/config/etcdfab.json                                                    \
-          --config-etcd-link-json "${JOB_DIR}/config/etcd_link.json"                        \
+          --config-file ${JOB_DIR}/config/etcdfab.json                                      \
+          --config-link-file "${JOB_DIR}/config/etcd_link.json"                             \
           2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \
           1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
 
