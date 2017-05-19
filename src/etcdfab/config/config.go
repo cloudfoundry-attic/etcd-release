@@ -75,3 +75,26 @@ func (c Config) AdvertisePeerURL() string {
 	}
 	return fmt.Sprintf("http://%s:7001", c.Node.ExternalIP)
 }
+
+func (c Config) AdvertiseClientURL() string {
+	if c.Etcd.RequireSSL {
+		return fmt.Sprintf("https://%s.%s:4001", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix)
+	}
+	return fmt.Sprintf("http://%s:4001", c.Node.ExternalIP)
+}
+
+func (c Config) ListenPeerURL() string {
+	protocol := "http"
+	if c.Etcd.PeerRequireSSL {
+		protocol = "https"
+	}
+	return fmt.Sprintf("%s://%s:7001", protocol, c.Etcd.PeerIP)
+}
+
+func (c Config) ListenClientURL() string {
+	protocol := "http"
+	if c.Etcd.RequireSSL {
+		protocol = "https"
+	}
+	return fmt.Sprintf("%s://%s:4001", protocol, c.Etcd.ClientIP)
+}

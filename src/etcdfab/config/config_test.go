@@ -318,4 +318,245 @@ var _ = Describe("Config", func() {
 			})
 		})
 	})
+
+	Describe("AdvertiseClientURL", func() {
+		var (
+			cfg                config.Config
+			configFilePath     string
+			linkConfigFilePath string
+		)
+
+		BeforeEach(func() {
+			tmpDir, err := ioutil.TempDir("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			configFile, err := ioutil.TempFile(tmpDir, "config-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = configFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+
+			configFilePath = configFile.Name()
+
+			configuration := map[string]interface{}{
+				"node": map[string]interface{}{
+					"name":        "some_name",
+					"index":       3,
+					"external_ip": "some-external-ip",
+				},
+			}
+			configData, err := json.Marshal(configuration)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = linkConfigFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+
+			linkConfigFilePath = linkConfigFile.Name()
+
+			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the advertise peer url based on config", func() {
+			Expect(cfg.AdvertiseClientURL()).To(Equal("http://some-external-ip:4001"))
+		})
+
+		Context("when it RequireSSL is true", func() {
+			BeforeEach(func() {
+				configuration := map[string]interface{}{
+					"node": map[string]interface{}{
+						"name":  "some_name",
+						"index": 3,
+					},
+					"etcd": map[string]interface{}{
+						"require_ssl":               true,
+						"advertise_urls_dns_suffix": "some-dns-suffix",
+					},
+				}
+				configData, err := json.Marshal(configuration)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+
+				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns the advertise client url based on config", func() {
+				Expect(cfg.AdvertiseClientURL()).To(Equal("https://some-name-3.some-dns-suffix:4001"))
+			})
+		})
+	})
+
+	Describe("ListenPeerURL", func() {
+		var (
+			cfg                config.Config
+			configFilePath     string
+			linkConfigFilePath string
+		)
+
+		BeforeEach(func() {
+			tmpDir, err := ioutil.TempDir("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			configFile, err := ioutil.TempFile(tmpDir, "config-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = configFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+
+			configFilePath = configFile.Name()
+
+			configuration := map[string]interface{}{
+				"node": map[string]interface{}{
+					"name":  "some_name",
+					"index": 3,
+				},
+				"etcd": map[string]interface{}{
+					"peer_ip": "some-peer-ip",
+				},
+			}
+			configData, err := json.Marshal(configuration)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = linkConfigFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+
+			linkConfigFilePath = linkConfigFile.Name()
+
+			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the listen peer url based on config", func() {
+			Expect(cfg.ListenPeerURL()).To(Equal("http://some-peer-ip:7001"))
+		})
+
+		Context("when PeerRequireSSL is true", func() {
+			BeforeEach(func() {
+				configuration := map[string]interface{}{
+					"node": map[string]interface{}{
+						"name":  "some_name",
+						"index": 3,
+					},
+					"etcd": map[string]interface{}{
+						"peer_require_ssl": true,
+						"peer_ip":          "some-peer-ip",
+					},
+				}
+				configData, err := json.Marshal(configuration)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+
+				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns the listen peer url based on config", func() {
+				Expect(cfg.ListenPeerURL()).To(Equal("https://some-peer-ip:7001"))
+			})
+		})
+	})
+
+	Describe("ListenClientURL", func() {
+		var (
+			cfg                config.Config
+			configFilePath     string
+			linkConfigFilePath string
+		)
+
+		BeforeEach(func() {
+			tmpDir, err := ioutil.TempDir("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			configFile, err := ioutil.TempFile(tmpDir, "config-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = configFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+
+			configFilePath = configFile.Name()
+
+			configuration := map[string]interface{}{
+				"node": map[string]interface{}{
+					"name":  "some_name",
+					"index": 3,
+				},
+				"etcd": map[string]interface{}{
+					"client_ip": "some-client-ip",
+				},
+			}
+			configData, err := json.Marshal(configuration)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
+			Expect(err).NotTo(HaveOccurred())
+
+			err = linkConfigFile.Close()
+			Expect(err).NotTo(HaveOccurred())
+
+			linkConfigFilePath = linkConfigFile.Name()
+
+			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
+			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the listen peer url based on config", func() {
+			Expect(cfg.ListenClientURL()).To(Equal("http://some-client-ip:4001"))
+		})
+
+		Context("when RequireSSL is true", func() {
+			BeforeEach(func() {
+				configuration := map[string]interface{}{
+					"node": map[string]interface{}{
+						"name":  "some_name",
+						"index": 3,
+					},
+					"etcd": map[string]interface{}{
+						"require_ssl": true,
+						"client_ip":   "some-client-ip",
+					},
+				}
+				configData, err := json.Marshal(configuration)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+
+				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns the listen peer url based on config", func() {
+				Expect(cfg.ListenClientURL()).To(Equal("https://some-client-ip:4001"))
+			})
+		})
+	})
 })

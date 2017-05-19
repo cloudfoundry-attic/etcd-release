@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"strings"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/config"
@@ -113,31 +112,11 @@ func (a Application) Start() error {
 }
 
 func (a Application) buildEtcdArgs(cfg config.Config) []string {
-	nodeName := fmt.Sprintf("%s-%d", strings.Replace(cfg.Node.Name, "_", "-", -1), cfg.Node.Index)
-	a.logger.Info("application.build-etcd-flags", lager.Data{"node-name": nodeName})
+	a.logger.Info("application.build-etcd-flags", lager.Data{"node-name": cfg.NodeName()})
 
-	peerProtocol := "http"
-	if cfg.Etcd.PeerRequireSSL {
-		peerProtocol = "https"
-	}
-
-	clientProtocol := "http"
-	if cfg.Etcd.RequireSSL {
-		clientProtocol = "https"
-	}
-
-	peerUrl := fmt.Sprintf("http://%s:7001", cfg.Node.ExternalIP)
-	if cfg.Etcd.PeerRequireSSL {
-		peerUrl = fmt.Sprintf("https://%s.%s:7001", nodeName, cfg.Etcd.AdvertiseURLsDNSSuffix)
-	}
-
-	clientUrl := fmt.Sprintf("http://%s:4001", cfg.Node.ExternalIP)
-	if cfg.Etcd.RequireSSL {
-		clientUrl = fmt.Sprintf("https://%s.%s:4001", nodeName, cfg.Etcd.AdvertiseURLsDNSSuffix)
-	}
-
-	etcdArgs := []string{"--name"}
-	etcdArgs = append(etcdArgs, nodeName)
+	var etcdArgs []string
+	etcdArgs = append(etcdArgs, "--name")
+	etcdArgs = append(etcdArgs, cfg.NodeName())
 
 	etcdArgs = append(etcdArgs, "--data-dir")
 	etcdArgs = append(etcdArgs, "/var/vcap/store/etcd")
@@ -149,16 +128,16 @@ func (a Application) buildEtcdArgs(cfg config.Config) []string {
 	etcdArgs = append(etcdArgs, fmt.Sprintf("%d", cfg.Etcd.ElectionTimeout))
 
 	etcdArgs = append(etcdArgs, "--listen-peer-urls")
-	etcdArgs = append(etcdArgs, fmt.Sprintf("%s://%s:7001", peerProtocol, cfg.Etcd.PeerIP))
+	etcdArgs = append(etcdArgs, cfg.ListenPeerURL())
 
 	etcdArgs = append(etcdArgs, "--listen-client-urls")
-	etcdArgs = append(etcdArgs, fmt.Sprintf("%s://%s:4001", clientProtocol, cfg.Etcd.ClientIP))
+	etcdArgs = append(etcdArgs, cfg.ListenClientURL())
 
 	etcdArgs = append(etcdArgs, "--initial-advertise-peer-urls")
-	etcdArgs = append(etcdArgs, peerUrl)
+	etcdArgs = append(etcdArgs, cfg.AdvertisePeerURL())
 
 	etcdArgs = append(etcdArgs, "--advertise-client-urls")
-	etcdArgs = append(etcdArgs, clientUrl)
+	etcdArgs = append(etcdArgs, cfg.AdvertiseClientURL())
 
 	if cfg.Etcd.RequireSSL {
 		etcdArgs = append(etcdArgs, "--client-cert-auth")
