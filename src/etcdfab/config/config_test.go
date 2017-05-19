@@ -11,6 +11,24 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+func writeConfigurationFile(tmpDir, name string, configuration map[string]interface{}) string {
+	file, err := ioutil.TempFile(tmpDir, name)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = file.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	fileName := file.Name()
+
+	configData, err := json.Marshal(configuration)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = ioutil.WriteFile(fileName, configData, os.ModePerm)
+	Expect(err).NotTo(HaveOccurred())
+
+	return fileName
+}
+
 var _ = Describe("Config", func() {
 	Describe("ConfigFromJSONs", func() {
 		var (
@@ -21,14 +39,6 @@ var _ = Describe("Config", func() {
 		BeforeEach(func() {
 			tmpDir, err := ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
-
-			configFile, err := ioutil.TempFile(tmpDir, "config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = configFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			configFilePath = configFile.Name()
 
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
@@ -47,19 +57,7 @@ var _ = Describe("Config", func() {
 					"advertise_urls_dns_suffix":          "some-dns-suffix",
 				},
 			}
-			configData, err := json.Marshal(configuration)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = linkConfigFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFilePath = linkConfigFile.Name()
+			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
 			linkConfiguration := map[string]interface{}{
 				"machines": []string{
@@ -76,11 +74,7 @@ var _ = Describe("Config", func() {
 				"client_ip":                          "some-client-ip-from-link",
 				"advertise_urls_dns_suffix":          "some-dns-suffix-from-link",
 			}
-			linkConfigData, err := json.Marshal(linkConfiguration)
-			Expect(err).NotTo(HaveOccurred())
-
-			err = ioutil.WriteFile(linkConfigFilePath, linkConfigData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
+			linkConfigFilePath = writeConfigurationFile(tmpDir, "link-config-file", linkConfiguration)
 		})
 
 		It("returns a configuration populated with values from the specified files", func() {
@@ -200,36 +194,15 @@ var _ = Describe("Config", func() {
 			tmpDir, err := ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
 
-			configFile, err := ioutil.TempFile(tmpDir, "config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = configFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			configFilePath := configFile.Name()
-
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
 					"name":  "some_name",
 					"index": 3,
 				},
 			}
-			configData, err := json.Marshal(configuration)
-			Expect(err).NotTo(HaveOccurred())
+			configFilePath := writeConfigurationFile(tmpDir, "config-file", configuration)
 
-			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = linkConfigFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFilePath := linkConfigFile.Name()
-
-			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
+			linkConfigFilePath := writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
 
 			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 			Expect(err).NotTo(HaveOccurred())
@@ -251,14 +224,6 @@ var _ = Describe("Config", func() {
 			tmpDir, err := ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
 
-			configFile, err := ioutil.TempFile(tmpDir, "config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = configFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			configFilePath = configFile.Name()
-
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
 					"name":        "some_name",
@@ -266,22 +231,9 @@ var _ = Describe("Config", func() {
 					"external_ip": "some-external-ip",
 				},
 			}
-			configData, err := json.Marshal(configuration)
-			Expect(err).NotTo(HaveOccurred())
+			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
-			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = linkConfigFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFilePath = linkConfigFile.Name()
-
-			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
+			linkConfigFilePath = writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
 
 			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 			Expect(err).NotTo(HaveOccurred())
@@ -322,21 +274,15 @@ var _ = Describe("Config", func() {
 	Describe("AdvertiseClientURL", func() {
 		var (
 			cfg                config.Config
+			tmpDir             string
 			configFilePath     string
 			linkConfigFilePath string
 		)
 
 		BeforeEach(func() {
-			tmpDir, err := ioutil.TempDir("", "")
+			var err error
+			tmpDir, err = ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
-
-			configFile, err := ioutil.TempFile(tmpDir, "config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = configFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			configFilePath = configFile.Name()
 
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
@@ -345,22 +291,9 @@ var _ = Describe("Config", func() {
 					"external_ip": "some-external-ip",
 				},
 			}
-			configData, err := json.Marshal(configuration)
-			Expect(err).NotTo(HaveOccurred())
+			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
-			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = linkConfigFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFilePath = linkConfigFile.Name()
-
-			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
+			linkConfigFilePath = writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
 
 			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 			Expect(err).NotTo(HaveOccurred())
@@ -382,12 +315,9 @@ var _ = Describe("Config", func() {
 						"advertise_urls_dns_suffix": "some-dns-suffix",
 					},
 				}
-				configData, err := json.Marshal(configuration)
-				Expect(err).NotTo(HaveOccurred())
+				configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
-				err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-				Expect(err).NotTo(HaveOccurred())
-
+				var err error
 				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -401,21 +331,15 @@ var _ = Describe("Config", func() {
 	Describe("ListenPeerURL", func() {
 		var (
 			cfg                config.Config
+			tmpDir             string
 			configFilePath     string
 			linkConfigFilePath string
 		)
 
 		BeforeEach(func() {
-			tmpDir, err := ioutil.TempDir("", "")
+			var err error
+			tmpDir, err = ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
-
-			configFile, err := ioutil.TempFile(tmpDir, "config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = configFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			configFilePath = configFile.Name()
 
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
@@ -426,22 +350,9 @@ var _ = Describe("Config", func() {
 					"peer_ip": "some-peer-ip",
 				},
 			}
-			configData, err := json.Marshal(configuration)
-			Expect(err).NotTo(HaveOccurred())
+			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
-			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = linkConfigFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFilePath = linkConfigFile.Name()
-
-			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
+			linkConfigFilePath = writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
 
 			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 			Expect(err).NotTo(HaveOccurred())
@@ -463,12 +374,9 @@ var _ = Describe("Config", func() {
 						"peer_ip":          "some-peer-ip",
 					},
 				}
-				configData, err := json.Marshal(configuration)
-				Expect(err).NotTo(HaveOccurred())
+				configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
-				err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-				Expect(err).NotTo(HaveOccurred())
-
+				var err error
 				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -482,21 +390,15 @@ var _ = Describe("Config", func() {
 	Describe("ListenClientURL", func() {
 		var (
 			cfg                config.Config
+			tmpDir             string
 			configFilePath     string
 			linkConfigFilePath string
 		)
 
 		BeforeEach(func() {
-			tmpDir, err := ioutil.TempDir("", "")
+			var err error
+			tmpDir, err = ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
-
-			configFile, err := ioutil.TempFile(tmpDir, "config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = configFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			configFilePath = configFile.Name()
 
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
@@ -507,22 +409,9 @@ var _ = Describe("Config", func() {
 					"client_ip": "some-client-ip",
 				},
 			}
-			configData, err := json.Marshal(configuration)
-			Expect(err).NotTo(HaveOccurred())
+			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
-			err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFile, err := ioutil.TempFile(tmpDir, "link-config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = linkConfigFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			linkConfigFilePath = linkConfigFile.Name()
-
-			err = ioutil.WriteFile(linkConfigFilePath, []byte("{}"), os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
+			linkConfigFilePath = writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
 
 			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 			Expect(err).NotTo(HaveOccurred())
@@ -544,12 +433,9 @@ var _ = Describe("Config", func() {
 						"client_ip":   "some-client-ip",
 					},
 				}
-				configData, err := json.Marshal(configuration)
-				Expect(err).NotTo(HaveOccurred())
+				configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
 
-				err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
-				Expect(err).NotTo(HaveOccurred())
-
+				var err error
 				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
 				Expect(err).NotTo(HaveOccurred())
 			})
