@@ -19,7 +19,6 @@ type Application struct {
 	linkConfigFilePath string
 	etcdClient         etcdClient
 	clusterController  clusterController
-	etcdArgs           []string
 	outWriter          io.Writer
 	errWriter          io.Writer
 	logger             logger
@@ -49,7 +48,6 @@ type NewArgs struct {
 	LinkConfigFilePath string
 	EtcdClient         etcdClient
 	ClusterController  clusterController
-	EtcdArgs           []string
 	OutWriter          io.Writer
 	ErrWriter          io.Writer
 	Logger             logger
@@ -63,7 +61,6 @@ func New(args NewArgs) Application {
 		linkConfigFilePath: args.LinkConfigFilePath,
 		etcdClient:         args.EtcdClient,
 		clusterController:  args.ClusterController,
-		etcdArgs:           args.EtcdArgs,
 		outWriter:          args.OutWriter,
 		errWriter:          args.ErrWriter,
 		logger:             args.Logger,
@@ -139,7 +136,7 @@ func (a Application) buildEtcdArgs(cfg config.Config) []string {
 		clientUrl = fmt.Sprintf("https://%s.%s:4001", nodeName, cfg.Etcd.AdvertiseURLsDNSSuffix)
 	}
 
-	etcdArgs := append(a.etcdArgs, "--name")
+	etcdArgs := []string{"--name"}
 	etcdArgs = append(etcdArgs, nodeName)
 
 	etcdArgs = append(etcdArgs, "--data-dir")

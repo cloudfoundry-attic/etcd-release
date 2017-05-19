@@ -60,17 +60,15 @@ var _ = Describe("EtcdFab", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
-			"etcd": map[string]interface{}{
-				"etcd_path":                          pathToFakeEtcd,
-				"heartbeat_interval_in_milliseconds": 10,
-				"election_timeout_in_milliseconds":   20,
-				"peer_require_ssl":                   false,
-				"peer_ip":                            "some-peer-ip",
-				"require_ssl":                        false,
-				"client_ip":                          "some-client-ip",
-				"advertise_urls_dns_suffix":          "some-dns-suffix",
-				"machines":                           []string{"some-ip-1", "some-ip-2"},
-			},
+			"etcd_path":                          pathToFakeEtcd,
+			"heartbeat_interval_in_milliseconds": 10,
+			"election_timeout_in_milliseconds":   20,
+			"peer_require_ssl":                   false,
+			"peer_ip":                            "some-peer-ip",
+			"require_ssl":                        false,
+			"client_ip":                          "some-client-ip",
+			"advertise_urls_dns_suffix":          "some-dns-suffix",
+			"machines":                           []string{"some-ip-1", "some-ip-2"},
 		})
 	})
 
@@ -86,6 +84,7 @@ var _ = Describe("EtcdFab", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
 					configFile.Name(),
+					"--config-etcd-link-json",
 					linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -134,17 +133,15 @@ var _ = Describe("EtcdFab", func() {
 				}`, http.StatusCreated)
 
 				writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
-					"etcd": map[string]interface{}{
-						"etcd_path":                          pathToFakeEtcd,
-						"heartbeat_interval_in_milliseconds": 10,
-						"election_timeout_in_milliseconds":   20,
-						"peer_require_ssl":                   false,
-						"peer_ip":                            "some-peer-ip",
-						"require_ssl":                        false,
-						"client_ip":                          "some-client-ip",
-						"advertise_urls_dns_suffix":          "some-dns-suffix",
-						"machines":                           []string{etcdServer.URL()},
-					},
+					"etcd_path":                          pathToFakeEtcd,
+					"heartbeat_interval_in_milliseconds": 10,
+					"election_timeout_in_milliseconds":   20,
+					"peer_require_ssl":                   false,
+					"peer_ip":                            "some-peer-ip",
+					"require_ssl":                        false,
+					"client_ip":                          "some-client-ip",
+					"advertise_urls_dns_suffix":          "some-dns-suffix",
+					"machines":                           []string{etcdServer.URL()},
 				})
 			})
 
@@ -152,6 +149,7 @@ var _ = Describe("EtcdFab", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
 					configFile.Name(),
+					"--config-etcd-link-json",
 					linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -200,17 +198,15 @@ var _ = Describe("EtcdFab", func() {
 				},
 			})
 			writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
-				"etcd": map[string]interface{}{
-					"etcd_path":                          pathToFakeEtcd,
-					"heartbeat_interval_in_milliseconds": 10,
-					"election_timeout_in_milliseconds":   20,
-					"peer_require_ssl":                   true,
-					"peer_ip":                            "some-peer-ip",
-					"require_ssl":                        true,
-					"client_ip":                          "some-client-ip",
-					"advertise_urls_dns_suffix":          "some-dns-suffix",
-					"machines":                           []string{"some-ip-1", "some-ip-2"},
-				},
+				"etcd_path":                          pathToFakeEtcd,
+				"heartbeat_interval_in_milliseconds": 10,
+				"election_timeout_in_milliseconds":   20,
+				"peer_require_ssl":                   true,
+				"peer_ip":                            "some-peer-ip",
+				"require_ssl":                        true,
+				"client_ip":                          "some-client-ip",
+				"advertise_urls_dns_suffix":          "some-dns-suffix",
+				"machines":                           []string{"some-ip-1", "some-ip-2"},
 			})
 		})
 
@@ -218,6 +214,7 @@ var _ = Describe("EtcdFab", func() {
 			command := exec.Command(pathToEtcdFab,
 				pathToEtcdPid,
 				configFile.Name(),
+				"--config-etcd-link-json",
 				linkConfigFile.Name(),
 			)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -252,6 +249,7 @@ var _ = Describe("EtcdFab", func() {
 		command := exec.Command(pathToEtcdFab,
 			pathToEtcdPid,
 			configFile.Name(),
+			"--config-etcd-link-json",
 			linkConfigFile.Name(),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -268,6 +266,7 @@ var _ = Describe("EtcdFab", func() {
 		command := exec.Command(pathToEtcdFab,
 			pathToEtcdPid,
 			configFile.Name(),
+			"--config-etcd-link-json",
 			linkConfigFile.Name(),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -302,6 +301,7 @@ var _ = Describe("EtcdFab", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
 					configFile.Name(),
+					"--config-etcd-link-json",
 					linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -328,6 +328,7 @@ var _ = Describe("EtcdFab", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
 					configFile.Name(),
+					"--config-etcd-link-json",
 					linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
@@ -367,6 +368,7 @@ var _ = Describe("EtcdFab", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
 					configFile.Name(),
+					"--config-etcd-link-json",
 					linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)

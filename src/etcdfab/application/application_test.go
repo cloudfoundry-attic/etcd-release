@@ -96,9 +96,7 @@ var _ = Describe("Application", func() {
 			configFileName = createConfig(tmpDir, "config-file", configuration)
 
 			linkConfiguration := map[string]interface{}{
-				"etcd": map[string]interface{}{
-					"machines": []string{"some-ip-1", "some-ip-2"},
-				},
+				"machines": []string{"some-ip-1", "some-ip-2"},
 			}
 			linkConfigFileName = createConfig(tmpDir, "config-link-file", linkConfiguration)
 
@@ -128,7 +126,6 @@ var _ = Describe("Application", func() {
 				LinkConfigFilePath: linkConfigFileName,
 				EtcdClient:         fakeEtcdClient,
 				ClusterController:  fakeClusterController,
-				EtcdArgs:           []string{"arg-1", "arg-2"},
 				OutWriter:          &outWriter,
 				ErrWriter:          &errWriter,
 				Logger:             fakeLogger,
@@ -150,8 +147,6 @@ var _ = Describe("Application", func() {
 			Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
 			Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
 			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
-				"arg-1",
-				"arg-2",
 				"--name", "some-name-3",
 				"--data-dir", "/var/vcap/store/etcd",
 				"--heartbeat-interval", "10",
@@ -175,8 +170,6 @@ var _ = Describe("Application", func() {
 			Expect(fakeClusterController.GetInitialClusterStateCall.Receives.Config).To(Equal(etcdfabConfig))
 
 			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
-				"arg-1",
-				"arg-2",
 				"--name", "some-name-3",
 				"--data-dir", "/var/vcap/store/etcd",
 				"--heartbeat-interval", "10",
@@ -228,7 +221,6 @@ var _ = Describe("Application", func() {
 					LinkConfigFilePath: linkConfigFileName,
 					EtcdClient:         fakeEtcdClient,
 					ClusterController:  fakeClusterController,
-					EtcdArgs:           []string{"arg-1", "arg-2"},
 					OutWriter:          &outWriter,
 					ErrWriter:          &errWriter,
 					Logger:             fakeLogger,
@@ -242,8 +234,6 @@ var _ = Describe("Application", func() {
 				Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
 				Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
 				Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
-					"arg-1",
-					"arg-2",
 					"--name", "some-name-3",
 					"--data-dir", "/var/vcap/store/etcd",
 					"--heartbeat-interval", "10",
@@ -296,8 +286,6 @@ var _ = Describe("Application", func() {
 					Data: []lager.Data{{
 						"etcd-path": "path-to-etcd",
 						"etcd-args": []string{
-							"arg-1",
-							"arg-2",
 							"--name", "some-name-3",
 							"--data-dir", "/var/vcap/store/etcd",
 							"--heartbeat-interval", "10",

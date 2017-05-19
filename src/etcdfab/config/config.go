@@ -31,16 +31,20 @@ type Config struct {
 	Etcd Etcd
 }
 
-func ConfigFromJSONs(configFilePath, linkConfigFilePath string) (Config, error) {
-	configFileContents, err := ioutil.ReadFile(configFilePath)
-	if err != nil {
-		return Config{}, errors.New(fmt.Sprintf("error reading config file: %s", err))
-	}
-
-	config := Config{
+func defaultConfig() Config {
+	return Config{
 		Etcd: Etcd{
 			EtcdPath: "/var/vcap/packages/etcd/etcd",
 		},
+	}
+}
+
+func ConfigFromJSONs(configFilePath, linkConfigFilePath string) (Config, error) {
+	config := defaultConfig()
+
+	configFileContents, err := ioutil.ReadFile(configFilePath)
+	if err != nil {
+		return Config{}, errors.New(fmt.Sprintf("error reading config file: %s", err))
 	}
 
 	if err := json.Unmarshal(configFileContents, &config); err != nil {
@@ -52,8 +56,10 @@ func ConfigFromJSONs(configFilePath, linkConfigFilePath string) (Config, error) 
 		return Config{}, errors.New(fmt.Sprintf("error reading link config file: %s", err))
 	}
 
-	if err := json.Unmarshal(linkConfigFileContents, &config); err != nil {
-		return Config{}, err
+	if len(linkConfigFileContents) > 0 {
+		if err := json.Unmarshal(linkConfigFileContents, &config.Etcd); err != nil {
+			return Config{}, err
+		}
 	}
 
 	return config, nil

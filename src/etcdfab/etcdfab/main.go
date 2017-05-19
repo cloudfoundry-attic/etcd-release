@@ -16,8 +16,7 @@ import (
 func main() {
 	etcdPidPath := os.Args[1]
 	configFilePath := os.Args[2]
-	linkConfigFilePath := os.Args[3]
-	etcdArgs := os.Args[4:]
+	linkConfigFilePath := os.Args[4]
 
 	logger := lager.NewLogger("etcdfab")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
@@ -33,7 +32,6 @@ func main() {
 		LinkConfigFilePath: linkConfigFilePath,
 		EtcdClient:         etcdClient,
 		ClusterController:  clusterController,
-		EtcdArgs:           etcdArgs,
 		OutWriter:          os.Stdout,
 		ErrWriter:          os.Stderr,
 		Logger:             logger,

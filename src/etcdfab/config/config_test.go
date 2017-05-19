@@ -62,21 +62,19 @@ var _ = Describe("Config", func() {
 			linkConfigFilePath = linkConfigFile.Name()
 
 			linkConfiguration := map[string]interface{}{
-				"etcd": map[string]interface{}{
-					"machines": []string{
-						"some-ip-1",
-						"some-ip-2",
-						"some-ip-3",
-					},
-					"etcd_path":                          "path-to-etcd",
-					"heartbeat_interval_in_milliseconds": 10,
-					"election_timeout_in_milliseconds":   33,
-					"peer_require_ssl":                   false,
-					"peer_ip":                            "some-peer-ip-from-link",
-					"require_ssl":                        false,
-					"client_ip":                          "some-client-ip-from-link",
-					"advertise_urls_dns_suffix":          "some-dns-suffix-from-link",
+				"machines": []string{
+					"some-ip-1",
+					"some-ip-2",
+					"some-ip-3",
 				},
+				"etcd_path":                          "path-to-etcd",
+				"heartbeat_interval_in_milliseconds": 10,
+				"election_timeout_in_milliseconds":   33,
+				"peer_require_ssl":                   false,
+				"peer_ip":                            "some-peer-ip-from-link",
+				"require_ssl":                        false,
+				"client_ip":                          "some-client-ip-from-link",
+				"advertise_urls_dns_suffix":          "some-dns-suffix-from-link",
 			}
 			linkConfigData, err := json.Marshal(linkConfiguration)
 			Expect(err).NotTo(HaveOccurred())
