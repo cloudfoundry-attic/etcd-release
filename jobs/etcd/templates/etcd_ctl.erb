@@ -59,46 +59,13 @@ function main() {
 
       export GOMAXPROCS=$(nproc)
 
-      prior_member_list=""
-      for i in $(seq 5); do
-        prior_member_list=$(member_list)
-        if [ -n "${prior_member_list}" ]; then
-          break
-        fi
-        sleep 1
-      done
-
-      if [ -z "${prior_member_list}" ]; then
-        cluster_state=new
-        cluster="${this_node}"
-      else
-        cluster_state=existing
-        cluster=$(extract_cluster_from_member_list "${prior_member_list}")
-
-        # If this node is not in the existing cluster, add it. It generally should
-        # not be in the cluster, but if a prior shutdown failed to remove it, we
-        # don't want to have it duplicated in the list (etcd server will fail to
-        # start). Note extract_my_id determines membership solely based on IP, so
-        # this logic is not future-proof against changing node names or ports.
-        my_id=$(extract_my_id "${prior_member_list}")
-        if [ -z "${my_id}" ]; then
-          member_add
-          cluster="${cluster},${this_node}"
-        fi
-      fi
-
-      # Sleep to allow member_add to propagate to entire cluster because starting
-      # the server subsequently expects all peers to agree on the cluster members
-      sleep 2
-
       local tmp_pid_file
       tmp_pid_file="/tmp/etcd_pid"
 
       /var/vcap/packages/etcdfab/bin/etcdfab                                                \
           ${tmp_pid_file}                                                                   \
           ${JOB_DIR}/config/etcdfab.json                                                    \
-          --initial-cluster             ${cluster}                                          \
-          --initial-cluster-state       ${cluster_state}                                    \
+          --config-etcd-link-json "${JOB_DIR}/config/etcd_link.json"                        \
           2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \
           1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
 
@@ -109,6 +76,8 @@ function main() {
         exit 1
       fi
 
+      # The sync will move into etcdfab so we can teardown the member list
+      #
       synced=false
       wait_for_this_node_to_synchronize # mutates $synced
 

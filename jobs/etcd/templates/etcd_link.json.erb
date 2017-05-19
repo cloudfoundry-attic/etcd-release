@@ -1,0 +1,10 @@
+<%=
+  etcd_hash = {}
+
+  respond_to?(:if_link) && if_link('etcd') do |etcd_link|
+    etcd_hash.merge!(etcd_link.p('etcd'))
+	  etcd_hash['machines'] = etcd_link.instances.map(&:address)
+  end
+
+  etcd_hash.to_json
+%>

@@ -11,6 +11,7 @@ templates:
   etcd_network_diagnostics_run_ctl.sh.erb: bin/etcd_network_diagnostics_run_ctl.sh
   etcd_network_diagnostics_run.sh.erb: bin/etcd_network_diagnostics_run.sh
   etcdfab.json.erb: config/etcdfab.json
+  etcd_link.json.erb: config/etcd_link.json
   server-ca.crt.erb: config/certs/server-ca.crt
   server.crt.erb: config/certs/server.crt
   server.key.erb: config/certs/server.key

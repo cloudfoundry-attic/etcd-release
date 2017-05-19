@@ -2,7 +2,10 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
+	"strings"
 )
 
 type Node struct {
@@ -20,6 +23,7 @@ type Etcd struct {
 	RequireSSL             bool   `json:"require_ssl"`
 	ClientIP               string `json:"client_ip"`
 	AdvertiseURLsDNSSuffix string `json:"advertise_urls_dns_suffix"`
+	Machines               []string
 }
 
 type Config struct {
@@ -27,10 +31,10 @@ type Config struct {
 	Etcd Etcd
 }
 
-func ConfigFromJSON(configFilePath string) (Config, error) {
+func ConfigFromJSONs(configFilePath, linkConfigFilePath string) (Config, error) {
 	configFileContents, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
-		return Config{}, err
+		return Config{}, errors.New(fmt.Sprintf("error reading config file: %s", err))
 	}
 
 	config := Config{
@@ -43,5 +47,25 @@ func ConfigFromJSON(configFilePath string) (Config, error) {
 		return Config{}, err
 	}
 
+	linkConfigFileContents, err := ioutil.ReadFile(linkConfigFilePath)
+	if err != nil {
+		return Config{}, errors.New(fmt.Sprintf("error reading link config file: %s", err))
+	}
+
+	if err := json.Unmarshal(linkConfigFileContents, &config); err != nil {
+		return Config{}, err
+	}
+
 	return config, nil
+}
+
+func (c Config) NodeName() string {
+	return fmt.Sprintf("%s-%d", strings.Replace(c.Node.Name, "_", "-", -1), c.Node.Index)
+}
+
+func (c Config) AdvertisePeerURL() string {
+	if c.Etcd.PeerRequireSSL {
+		return fmt.Sprintf("https://%s.%s:7001", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix)
+	}
+	return fmt.Sprintf("http://%s:7001", c.Node.ExternalIP)
 }

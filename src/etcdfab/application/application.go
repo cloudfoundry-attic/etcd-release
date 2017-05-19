@@ -6,23 +6,35 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/config"
 
 	"code.cloudfoundry.org/lager"
 )
 
 type Application struct {
-	command        command
-	commandPidPath string
-	configFilePath string
-	etcdArgs       []string
-	outWriter      io.Writer
-	errWriter      io.Writer
-	logger         logger
+	command            command
+	commandPidPath     string
+	configFilePath     string
+	linkConfigFilePath string
+	etcdClient         etcdClient
+	clusterController  clusterController
+	etcdArgs           []string
+	outWriter          io.Writer
+	errWriter          io.Writer
+	logger             logger
 }
 
 type command interface {
 	Start(string, []string, io.Writer, io.Writer) (int, error)
+}
+
+type clusterController interface {
+	GetInitialClusterState(config.Config) (cluster.InitialClusterState, error)
+}
+
+type etcdClient interface {
+	Configure(config.Config) error
 }
 
 type logger interface {
@@ -31,35 +43,58 @@ type logger interface {
 }
 
 type NewArgs struct {
-	Command        command
-	CommandPidPath string
-	ConfigFilePath string
-	EtcdArgs       []string
-	OutWriter      io.Writer
-	ErrWriter      io.Writer
-	Logger         logger
+	Command            command
+	CommandPidPath     string
+	ConfigFilePath     string
+	LinkConfigFilePath string
+	EtcdClient         etcdClient
+	ClusterController  clusterController
+	EtcdArgs           []string
+	OutWriter          io.Writer
+	ErrWriter          io.Writer
+	Logger             logger
 }
 
 func New(args NewArgs) Application {
 	return Application{
-		command:        args.Command,
-		commandPidPath: args.CommandPidPath,
-		configFilePath: args.ConfigFilePath,
-		etcdArgs:       args.EtcdArgs,
-		outWriter:      args.OutWriter,
-		errWriter:      args.ErrWriter,
-		logger:         args.Logger,
+		command:            args.Command,
+		commandPidPath:     args.CommandPidPath,
+		configFilePath:     args.ConfigFilePath,
+		linkConfigFilePath: args.LinkConfigFilePath,
+		etcdClient:         args.EtcdClient,
+		clusterController:  args.ClusterController,
+		etcdArgs:           args.EtcdArgs,
+		outWriter:          args.OutWriter,
+		errWriter:          args.ErrWriter,
+		logger:             args.Logger,
 	}
 }
 
 func (a Application) Start() error {
-	cfg, err := config.ConfigFromJSON(a.configFilePath)
+	cfg, err := config.ConfigFromJSONs(a.configFilePath, a.linkConfigFilePath)
 	if err != nil {
 		a.logger.Error("application.read-config-file.failed", err)
 		return err
 	}
 
+	err = a.etcdClient.Configure(cfg)
+	if err != nil {
+		a.logger.Error("application.etcd-client.configure.failed", err)
+		return err
+	}
+
+	initialClusterState, err := a.clusterController.GetInitialClusterState(cfg)
+	if err != nil {
+		a.logger.Error("application.cluster-controller.get-initial-cluster-state.failed", err)
+		return err
+	}
+
 	etcdArgs := a.buildEtcdArgs(cfg)
+
+	etcdArgs = append(etcdArgs, "--initial-cluster")
+	etcdArgs = append(etcdArgs, initialClusterState.Members)
+	etcdArgs = append(etcdArgs, "--initial-cluster-state")
+	etcdArgs = append(etcdArgs, initialClusterState.State)
 
 	a.logger.Info("application.start", lager.Data{
 		"etcd-path": cfg.Etcd.EtcdPath,

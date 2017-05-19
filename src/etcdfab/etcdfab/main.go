@@ -3,35 +3,40 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/application"
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/command"
 
 	"code.cloudfoundry.org/lager"
 )
 
-// var generateCommand func(name string, arg ...string) *Cmd
-// var generateCommand func(name string, arg ...string) *exec.Cmd
-// var generateCommand = exec.Command
-
 func main() {
 	etcdPidPath := os.Args[1]
 	configFilePath := os.Args[2]
-	etcdArgs := os.Args[3:]
-
-	commandWrapper := command.NewWrapper()
+	linkConfigFilePath := os.Args[3]
+	etcdArgs := os.Args[4:]
 
 	logger := lager.NewLogger("etcdfab")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
+	commandWrapper := command.NewWrapper()
+	etcdClient := client.NewEtcdClient()
+	clusterController := cluster.NewController(etcdClient, logger, time.Sleep)
+
 	app := application.New(application.NewArgs{
-		Command:        commandWrapper,
-		CommandPidPath: etcdPidPath,
-		ConfigFilePath: configFilePath,
-		EtcdArgs:       etcdArgs,
-		OutWriter:      os.Stdout,
-		ErrWriter:      os.Stderr,
-		Logger:         logger,
+		Command:            commandWrapper,
+		CommandPidPath:     etcdPidPath,
+		ConfigFilePath:     configFilePath,
+		LinkConfigFilePath: linkConfigFilePath,
+		EtcdClient:         etcdClient,
+		ClusterController:  clusterController,
+		EtcdArgs:           etcdArgs,
+		OutWriter:          os.Stdout,
+		ErrWriter:          os.Stderr,
+		Logger:             logger,
 	})
 
 	err := app.Start()

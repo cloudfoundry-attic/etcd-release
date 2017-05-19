@@ -3,10 +3,13 @@ package main_test
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"strconv"
 	"time"
+
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes/etcdserver"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,8 +18,9 @@ import (
 
 var _ = Describe("EtcdFab", func() {
 	var (
-		pathToEtcdPid string
-		configFile    *os.File
+		pathToEtcdPid  string
+		configFile     *os.File
+		linkConfigFile *os.File
 	)
 
 	BeforeEach(func() {
@@ -48,38 +52,126 @@ var _ = Describe("EtcdFab", func() {
 				"advertise_urls_dns_suffix":          "some-dns-suffix",
 			},
 		})
+
+		linkConfigFile, err = ioutil.TempFile(tmpDir, "link-config-file")
+		Expect(err).NotTo(HaveOccurred())
+
+		err = linkConfigFile.Close()
+		Expect(err).NotTo(HaveOccurred())
+
+		writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
+			"etcd": map[string]interface{}{
+				"etcd_path":                          pathToFakeEtcd,
+				"heartbeat_interval_in_milliseconds": 10,
+				"election_timeout_in_milliseconds":   20,
+				"peer_require_ssl":                   false,
+				"peer_ip":                            "some-peer-ip",
+				"require_ssl":                        false,
+				"client_ip":                          "some-client-ip",
+				"advertise_urls_dns_suffix":          "some-dns-suffix",
+				"machines":                           []string{"some-ip-1", "some-ip-2"},
+			},
+		})
 	})
 
 	AfterEach(func() {
 		etcdBackendServer.Reset()
 		Expect(os.Remove(configFile.Name())).NotTo(HaveOccurred())
+		Expect(os.Remove(linkConfigFile.Name())).NotTo(HaveOccurred())
 	})
 
 	Context("when configured to be a non tls etcd cluster", func() {
-		It("shells out to etcd with provided flags", func() {
-			command := exec.Command(pathToEtcdFab,
-				pathToEtcdPid,
-				configFile.Name(),
-				"--initial-cluster", "some-initial-cluster",
-				"--initial-cluster-state", "some-initial-cluster-state",
-			)
-			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+		Context("when no prior cluster members exist", func() {
+			It("starts etcd with proper flags and initial-cluster-state new", func() {
+				command := exec.Command(pathToEtcdFab,
+					pathToEtcdPid,
+					configFile.Name(),
+					linkConfigFile.Name(),
+				)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
 
-			Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
-			Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-				"--initial-cluster", "some-initial-cluster",
-				"--initial-cluster-state", "some-initial-cluster-state",
-				"--name", "some-name-3",
-				"--data-dir", "/var/vcap/store/etcd",
-				"--heartbeat-interval", "10",
-				"--election-timeout", "20",
-				"--listen-peer-urls", "http://some-peer-ip:7001",
-				"--listen-client-urls", "http://some-client-ip:4001",
-				"--initial-advertise-peer-urls", "http://some-external-ip:7001",
-				"--advertise-client-urls", "http://some-external-ip:4001",
-			}))
+				Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
+				Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
+					"--name", "some-name-3",
+					"--data-dir", "/var/vcap/store/etcd",
+					"--heartbeat-interval", "10",
+					"--election-timeout", "20",
+					"--listen-peer-urls", "http://some-peer-ip:7001",
+					"--listen-client-urls", "http://some-client-ip:4001",
+					"--initial-advertise-peer-urls", "http://some-external-ip:7001",
+					"--advertise-client-urls", "http://some-external-ip:4001",
+					"--initial-cluster", "some-name-3=http://some-external-ip:7001",
+					"--initial-cluster-state", "new",
+				}))
+			})
+		})
+
+		Context("when a prior cluster exists", func() {
+			var (
+				etcdServer *etcdserver.EtcdServer
+			)
+
+			BeforeEach(func() {
+				etcdServer = etcdserver.NewEtcdServer()
+				etcdServer.SetMembersReturn(`{
+					"members": [
+						{
+							"id": "some-id",
+							"name": "some-name-1",
+							"peerURLs": [
+								"http://some-external-ip-1:7001"
+							]
+						}
+					]
+				}`, http.StatusOK)
+				etcdServer.SetAddMemberReturn(`{
+					"id": "some-name-3",
+					"peerURLs": [
+						"http://some-external-ip:7001"
+					]
+				}`, http.StatusCreated)
+
+				writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
+					"etcd": map[string]interface{}{
+						"etcd_path":                          pathToFakeEtcd,
+						"heartbeat_interval_in_milliseconds": 10,
+						"election_timeout_in_milliseconds":   20,
+						"peer_require_ssl":                   false,
+						"peer_ip":                            "some-peer-ip",
+						"require_ssl":                        false,
+						"client_ip":                          "some-client-ip",
+						"advertise_urls_dns_suffix":          "some-dns-suffix",
+						"machines":                           []string{etcdServer.URL()},
+					},
+				})
+			})
+
+			It("starts etcd with proper flags and initial-cluster-state existing", func() {
+				command := exec.Command(pathToEtcdFab,
+					pathToEtcdPid,
+					configFile.Name(),
+					linkConfigFile.Name(),
+				)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+
+				Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
+				Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
+					"--name", "some-name-3",
+					"--data-dir", "/var/vcap/store/etcd",
+					"--heartbeat-interval", "10",
+					"--election-timeout", "20",
+					"--listen-peer-urls", "http://some-peer-ip:7001",
+					"--listen-client-urls", "http://some-client-ip:4001",
+					"--initial-advertise-peer-urls", "http://some-external-ip:7001",
+					"--advertise-client-urls", "http://some-external-ip:4001",
+					"--initial-cluster", "some-name-1=http://some-external-ip-1:7001,some-name-3=http://some-external-ip:7001",
+					"--initial-cluster-state", "existing",
+				}))
+			})
 		})
 	})
 
@@ -107,14 +199,26 @@ var _ = Describe("EtcdFab", func() {
 					"peer_key":                           "some-peer-key",
 				},
 			})
+			writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
+				"etcd": map[string]interface{}{
+					"etcd_path":                          pathToFakeEtcd,
+					"heartbeat_interval_in_milliseconds": 10,
+					"election_timeout_in_milliseconds":   20,
+					"peer_require_ssl":                   true,
+					"peer_ip":                            "some-peer-ip",
+					"require_ssl":                        true,
+					"client_ip":                          "some-client-ip",
+					"advertise_urls_dns_suffix":          "some-dns-suffix",
+					"machines":                           []string{"some-ip-1", "some-ip-2"},
+				},
+			})
 		})
 
 		It("shells out to etcd with provided flags", func() {
 			command := exec.Command(pathToEtcdFab,
 				pathToEtcdPid,
 				configFile.Name(),
-				"--initial-cluster", "some-initial-cluster",
-				"--initial-cluster-state", "some-initial-cluster-state",
+				linkConfigFile.Name(),
 			)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
@@ -122,8 +226,6 @@ var _ = Describe("EtcdFab", func() {
 
 			Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 			Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
-				"--initial-cluster", "some-initial-cluster",
-				"--initial-cluster-state", "some-initial-cluster-state",
 				"--name", "some-name-3",
 				"--data-dir", "/var/vcap/store/etcd",
 				"--heartbeat-interval", "10",
@@ -140,6 +242,8 @@ var _ = Describe("EtcdFab", func() {
 				"--peer-trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/peer-ca.crt",
 				"--peer-cert-file", "/var/vcap/jobs/etcd/config/certs/peer.crt",
 				"--peer-key-file", "/var/vcap/jobs/etcd/config/certs/peer.key",
+				"--initial-cluster", "some-name-3=https://some-name-3.some-dns-suffix:7001",
+				"--initial-cluster-state", "new",
 			}))
 		})
 	})
@@ -148,8 +252,7 @@ var _ = Describe("EtcdFab", func() {
 		command := exec.Command(pathToEtcdFab,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--initial-cluster", "some-initial-cluster",
-			"--initial-cluster-state", "some-initial-cluster-state",
+			linkConfigFile.Name(),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
@@ -165,8 +268,7 @@ var _ = Describe("EtcdFab", func() {
 		command := exec.Command(pathToEtcdFab,
 			pathToEtcdPid,
 			configFile.Name(),
-			"--initial-cluster", "some-initial-cluster",
-			"--initial-cluster-state", "some-initial-cluster-state",
+			linkConfigFile.Name(),
 		)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
@@ -200,6 +302,33 @@ var _ = Describe("EtcdFab", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
 					configFile.Name(),
+					linkConfigFile.Name(),
+				)
+				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+				Expect(err).NotTo(HaveOccurred())
+				Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+				Expect(string(session.Err.Contents())).To(ContainSubstring("error during start: invalid character '%' looking for beginning of value"))
+			})
+		})
+
+		Context("when the link config file is invalid", func() {
+			BeforeEach(func() {
+				etcdBackendServer.EnableFastFail()
+
+				err := ioutil.WriteFile(linkConfigFile.Name(), []byte("%%%"), os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				etcdBackendServer.DisableFastFail()
+			})
+
+			It("exits 1 and prints an error", func() {
+				command := exec.Command(pathToEtcdFab,
+					pathToEtcdPid,
+					configFile.Name(),
+					linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
@@ -215,9 +344,19 @@ var _ = Describe("EtcdFab", func() {
 
 				writeConfigurationFile(configFile.Name(), map[string]interface{}{
 					"etcd": map[string]interface{}{
-						"etcd_path": "bogus",
+						"etcd_path":                          "bogus",
+						"heartbeat_interval_in_milliseconds": 10,
+						"election_timeout_in_milliseconds":   20,
+						"peer_require_ssl":                   false,
+						"peer_ip":                            "some-peer-ip",
+						"require_ssl":                        false,
+						"client_ip":                          "some-client-ip",
+						"advertise_urls_dns_suffix":          "some-dns-suffix",
+						"machines":                           []string{"some-ip"},
 					},
 				})
+
+				writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{})
 			})
 
 			AfterEach(func() {
@@ -228,6 +367,7 @@ var _ = Describe("EtcdFab", func() {
 				command := exec.Command(pathToEtcdFab,
 					pathToEtcdPid,
 					configFile.Name(),
+					linkConfigFile.Name(),
 				)
 				session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())

@@ -100,7 +100,6 @@ DATA_DIR=${STORE_DIR}/etcd
 node_name="<%= node_name %>"
 advertise_peer_url="<%= advertise_peer_url %>"
 advertise_client_url="<%= advertise_client_url %>"
-this_node="${node_name}=${advertise_peer_url}"
 consistency_checker_cluster_members="<%= consistency_checker_cluster_members %>"
 
 <% if p("etcd.require_ssl") || p("etcd.peer_require_ssl") %>
@@ -120,19 +119,6 @@ etcdctl_sec_flags=" \
 etcdctl_sec_flags=""
 <% end %>
 
-member_list() {
-  for cluster_member in <%= cluster_members %>
-  do
-    set +e
-    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member list
-    local exitstatus=$?
-    set -e
-    if [ $exitstatus -eq 0 ]; then
-      return
-    fi
-  done
-}
-
 member_remove() {
   for cluster_member in <%= cluster_members %>
   do
@@ -144,29 +130,6 @@ member_remove() {
       return
     fi
   done
-}
-
-member_add() {
-  for cluster_member in <%= cluster_members %>
-  do
-    set +e
-    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member add ${node_name} ${advertise_peer_url}
-    local exitstatus=$?
-    set -e
-    if [ $exitstatus -eq 0 ]; then
-      return
-    fi
-  done
-}
-
-extract_cluster_from_member_list() {
-  members_with_names=$(echo "$1" | grep 'name=' | grep -v 'name= ' | sed 's/\[.*\]//')
-  name_peerURL_pairs=$(echo "$members_with_names" | sed 's/.*name=//' | sed 's/ clientURLs.*//' | sed 's/ peerURLs//')
-  echo "$name_peerURL_pairs" | tr -s "\n" "," | sed 's/,$//'
-}
-
-extract_my_id() {
-  echo "$1" | grep ${advertise_peer_url} | sed 's/:.*//' | sed 's/\[.*\]//'
 }
 
 safe_teardown() {

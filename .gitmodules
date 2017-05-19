@@ -64,3 +64,6 @@
 [submodule "src/etcdfab/vendor/github.com/pivotal-cf-experimental/gomegamatchers"]
 	path = src/etcdfab/vendor/github.com/pivotal-cf-experimental/gomegamatchers
 	url = https://github.com/pivotal-cf-experimental/gomegamatchers
+[submodule "src/etcdfab/vendor/github.com/coreos/etcd"]
+	path = src/etcdfab/vendor/github.com/coreos/etcd
+	url = https://github.com/coreos/etcd

@@ -11,6 +11,8 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/application"
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/config"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes"
 
 	. "github.com/onsi/ginkgo"
@@ -18,13 +20,37 @@ import (
 	"github.com/pivotal-cf-experimental/gomegamatchers"
 )
 
+func createConfig(tmpDir, name string, configuration map[string]interface{}) string {
+	file, err := ioutil.TempFile(tmpDir, name)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = file.Close()
+	Expect(err).NotTo(HaveOccurred())
+
+	fileName := file.Name()
+
+	configData, err := json.Marshal(configuration)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = ioutil.WriteFile(fileName, configData, os.ModePerm)
+	Expect(err).NotTo(HaveOccurred())
+
+	return fileName
+}
+
 var _ = Describe("Application", func() {
 	Describe("Start", func() {
 		var (
-			etcdPidPath    string
-			configFileName string
-			fakeCommand    *fakes.CommandWrapper
-			fakeLogger     *fakes.Logger
+			etcdPidPath        string
+			configFileName     string
+			linkConfigFileName string
+
+			etcdfabConfig config.Config
+
+			fakeCommand           *fakes.CommandWrapper
+			fakeClusterController *fakes.ClusterController
+			fakeEtcdClient        *fakes.EtcdClient
+			fakeLogger            *fakes.Logger
 
 			outWriter bytes.Buffer
 			errWriter bytes.Buffer
@@ -36,20 +62,19 @@ var _ = Describe("Application", func() {
 			fakeCommand = &fakes.CommandWrapper{}
 			fakeCommand.StartCall.Returns.Pid = 12345
 
+			fakeEtcdClient = &fakes.EtcdClient{}
+			fakeClusterController = &fakes.ClusterController{}
+			fakeClusterController.GetInitialClusterStateCall.Returns.InitialClusterState = cluster.InitialClusterState{
+				Members: "etcd-0=http://some-ip-1:7001",
+				State:   "new",
+			}
+
 			fakeLogger = &fakes.Logger{}
 
 			tmpDir, err := ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
 
 			etcdPidPath = fmt.Sprintf("%s/etcd-pid", tmpDir)
-
-			configFile, err := ioutil.TempFile(tmpDir, "config-file")
-			Expect(err).NotTo(HaveOccurred())
-
-			err = configFile.Close()
-			Expect(err).NotTo(HaveOccurred())
-
-			configFileName = configFile.Name()
 
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
@@ -68,21 +93,54 @@ var _ = Describe("Application", func() {
 					"advertise_urls_dns_suffix":          "some-dns-suffix",
 				},
 			}
-			configData, err := json.Marshal(configuration)
-			Expect(err).NotTo(HaveOccurred())
+			configFileName = createConfig(tmpDir, "config-file", configuration)
 
-			err = ioutil.WriteFile(configFileName, configData, os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
+			linkConfiguration := map[string]interface{}{
+				"etcd": map[string]interface{}{
+					"machines": []string{"some-ip-1", "some-ip-2"},
+				},
+			}
+			linkConfigFileName = createConfig(tmpDir, "config-link-file", linkConfiguration)
+
+			etcdfabConfig = config.Config{
+				Node: config.Node{
+					Name:       "some_name",
+					Index:      3,
+					ExternalIP: "some-external-ip",
+				},
+				Etcd: config.Etcd{
+					EtcdPath:               "path-to-etcd",
+					HeartbeatInterval:      10,
+					ElectionTimeout:        20,
+					PeerRequireSSL:         false,
+					PeerIP:                 "some-peer-ip",
+					RequireSSL:             false,
+					ClientIP:               "some-client-ip",
+					AdvertiseURLsDNSSuffix: "some-dns-suffix",
+					Machines:               []string{"some-ip-1", "some-ip-2"},
+				},
+			}
 
 			app = application.New(application.NewArgs{
-				Command:        fakeCommand,
-				CommandPidPath: etcdPidPath,
-				ConfigFilePath: configFileName,
-				EtcdArgs:       []string{"arg-1", "arg-2"},
-				OutWriter:      &outWriter,
-				ErrWriter:      &errWriter,
-				Logger:         fakeLogger,
+				Command:            fakeCommand,
+				CommandPidPath:     etcdPidPath,
+				ConfigFilePath:     configFileName,
+				LinkConfigFilePath: linkConfigFileName,
+				EtcdClient:         fakeEtcdClient,
+				ClusterController:  fakeClusterController,
+				EtcdArgs:           []string{"arg-1", "arg-2"},
+				OutWriter:          &outWriter,
+				ErrWriter:          &errWriter,
+				Logger:             fakeLogger,
 			})
+		})
+
+		It("configures the etcd client", func() {
+			err := app.Start()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(fakeEtcdClient.ConfigureCall.CallCount).To(Equal(1))
+			Expect(fakeEtcdClient.ConfigureCall.Receives.Config).To(Equal(etcdfabConfig))
 		})
 
 		It("calls Start on the command", func() {
@@ -102,9 +160,34 @@ var _ = Describe("Application", func() {
 				"--listen-client-urls", "http://some-client-ip:4001",
 				"--initial-advertise-peer-urls", "http://some-external-ip:7001",
 				"--advertise-client-urls", "http://some-external-ip:4001",
+				"--initial-cluster", "etcd-0=http://some-ip-1:7001",
+				"--initial-cluster-state", "new",
 			}))
 			Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
 			Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
+		})
+
+		It("calls GetInitialCluster and GetInitialClusterState on the cluster controller", func() {
+			err := app.Start()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(fakeClusterController.GetInitialClusterStateCall.CallCount).To(Equal(1))
+			Expect(fakeClusterController.GetInitialClusterStateCall.Receives.Config).To(Equal(etcdfabConfig))
+
+			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
+				"arg-1",
+				"arg-2",
+				"--name", "some-name-3",
+				"--data-dir", "/var/vcap/store/etcd",
+				"--heartbeat-interval", "10",
+				"--election-timeout", "20",
+				"--listen-peer-urls", "http://some-peer-ip:7001",
+				"--listen-client-urls", "http://some-client-ip:4001",
+				"--initial-advertise-peer-urls", "http://some-external-ip:7001",
+				"--advertise-client-urls", "http://some-external-ip:4001",
+				"--initial-cluster", "etcd-0=http://some-ip-1:7001",
+				"--initial-cluster-state", "new",
+			}))
 		})
 
 		Context("when configured to be a tls etcd cluster", func() {
@@ -139,15 +222,17 @@ var _ = Describe("Application", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				app = application.New(application.NewArgs{
-					Command:        fakeCommand,
-					CommandPidPath: etcdPidPath,
-					ConfigFilePath: configFileName,
-					EtcdArgs:       []string{"arg-1", "arg-2"},
-					OutWriter:      &outWriter,
-					ErrWriter:      &errWriter,
-					Logger:         fakeLogger,
+					Command:            fakeCommand,
+					CommandPidPath:     etcdPidPath,
+					ConfigFilePath:     configFileName,
+					LinkConfigFilePath: linkConfigFileName,
+					EtcdClient:         fakeEtcdClient,
+					ClusterController:  fakeClusterController,
+					EtcdArgs:           []string{"arg-1", "arg-2"},
+					OutWriter:          &outWriter,
+					ErrWriter:          &errWriter,
+					Logger:             fakeLogger,
 				})
-
 			})
 
 			It("calls Start on the command with etcd security flags", func() {
@@ -175,6 +260,8 @@ var _ = Describe("Application", func() {
 					"--peer-trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/peer-ca.crt",
 					"--peer-cert-file", "/var/vcap/jobs/etcd/config/certs/peer.crt",
 					"--peer-key-file", "/var/vcap/jobs/etcd/config/certs/peer.key",
+					"--initial-cluster", "etcd-0=http://some-ip-1:7001",
+					"--initial-cluster-state", "new",
 				}))
 				Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
 				Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
@@ -219,6 +306,8 @@ var _ = Describe("Application", func() {
 							"--listen-client-urls", "http://some-client-ip:4001",
 							"--initial-advertise-peer-urls", "http://some-external-ip:7001",
 							"--advertise-client-urls", "http://some-external-ip:4001",
+							"--initial-cluster", "etcd-0=http://some-ip-1:7001",
+							"--initial-cluster-state", "new",
 						},
 					}},
 				},
@@ -229,20 +318,77 @@ var _ = Describe("Application", func() {
 			Context("when it cannot read the config file", func() {
 				BeforeEach(func() {
 					app = application.New(application.NewArgs{
-						Command:        fakeCommand,
-						CommandPidPath: etcdPidPath,
-						ConfigFilePath: "/path/to/missing/file",
-						Logger:         fakeLogger,
+						ConfigFilePath:     "/path/to/missing/file",
+						LinkConfigFilePath: linkConfigFileName,
+						Logger:             fakeLogger,
 					})
 				})
 
 				It("returns the error to the caller and logs a helpful message", func() {
 					err := app.Start()
-					Expect(err).To(MatchError("open /path/to/missing/file: no such file or directory"))
+					Expect(err).To(MatchError("error reading config file: open /path/to/missing/file: no such file or directory"))
 
 					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
 						{
 							Action: "application.read-config-file.failed",
+							Error:  err,
+						},
+					}))
+				})
+			})
+
+			Context("when it cannot read the link config file", func() {
+				BeforeEach(func() {
+					app = application.New(application.NewArgs{
+						ConfigFilePath:     configFileName,
+						LinkConfigFilePath: "/path/to/missing/file",
+						Logger:             fakeLogger,
+					})
+				})
+
+				It("returns the error to the caller and logs a helpful message", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("error reading link config file: open /path/to/missing/file: no such file or directory"))
+
+					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
+						{
+							Action: "application.read-config-file.failed",
+							Error:  err,
+						},
+					}))
+				})
+			})
+
+			Context("when etcdClient.Configure returns an error", func() {
+				BeforeEach(func() {
+					fakeEtcdClient.ConfigureCall.Returns.Error = errors.New("failed to configure etcd client")
+				})
+
+				It("returns the error to the caller and logs a helpful message", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("failed to configure etcd client"))
+
+					Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+						{
+							Action: "application.etcd-client.configure.failed",
+							Error:  err,
+						},
+					}))
+				})
+			})
+
+			Context("when clusterController.GetInitialClusterState returns an error", func() {
+				BeforeEach(func() {
+					fakeClusterController.GetInitialClusterStateCall.Returns.Error = errors.New("failed to get initial cluster state")
+				})
+
+				It("returns the error to the caller and logs a helpful message", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("failed to get initial cluster state"))
+
+					Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+						{
+							Action: "application.cluster-controller.get-initial-cluster-state.failed",
 							Error:  err,
 						},
 					}))
@@ -270,10 +416,13 @@ var _ = Describe("Application", func() {
 			Context("when it cannot write to the specified PID file", func() {
 				BeforeEach(func() {
 					app = application.New(application.NewArgs{
-						Command:        fakeCommand,
-						CommandPidPath: "/path/to/missing/file",
-						ConfigFilePath: configFileName,
-						Logger:         fakeLogger,
+						Command:            fakeCommand,
+						CommandPidPath:     "/path/to/missing/file",
+						ConfigFilePath:     configFileName,
+						LinkConfigFilePath: linkConfigFileName,
+						EtcdClient:         fakeEtcdClient,
+						ClusterController:  fakeClusterController,
+						Logger:             fakeLogger,
 					})
 				})
 
