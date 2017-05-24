@@ -112,14 +112,14 @@ var _ = Describe("EtcdFab", func() {
 			)
 
 			BeforeEach(func() {
-				etcdServer = etcdserver.NewEtcdServer(":4001")
+				etcdServer = etcdserver.NewEtcdServer()
 				etcdServer.SetMembersReturn(`{
 					"members": [
 						{
 							"id": "some-id",
 							"name": "some-name-1",
 							"peerURLs": [
-								"http://some-external-ip-1:7001"
+								"http://some-other-external-ip:7001"
 							]
 						}
 					]
@@ -139,13 +139,8 @@ var _ = Describe("EtcdFab", func() {
 					"peer_ip":                            "some-peer-ip",
 					"require_ssl":                        false,
 					"client_ip":                          "some-client-ip",
-					"advertise_urls_dns_suffix":          "some-dns-suffix",
 					"machines":                           []string{"127.0.0.1"},
 				})
-			})
-
-			AfterEach(func() {
-				etcdServer.Exit()
 			})
 
 			It("starts etcd with proper flags and initial-cluster-state existing", func() {
@@ -168,7 +163,7 @@ var _ = Describe("EtcdFab", func() {
 					"--listen-client-urls", "http://some-client-ip:4001",
 					"--initial-advertise-peer-urls", "http://some-external-ip:7001",
 					"--advertise-client-urls", "http://some-external-ip:4001",
-					"--initial-cluster", "some-name-1=http://some-external-ip-1:7001,some-name-3=http://some-external-ip:7001",
+					"--initial-cluster", "some-name-1=http://some-other-external-ip:7001,some-name-3=http://some-external-ip:7001",
 					"--initial-cluster-state", "existing",
 				}))
 			})

@@ -1,15 +1,14 @@
 package etcdserver
 
 import (
-	"log"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"sync"
 )
 
 type EtcdServer struct {
-	server       *http.Server
-	httpListener net.Listener
+	server *httptest.Server
 
 	backend *etcdBackend
 
@@ -17,51 +16,44 @@ type EtcdServer struct {
 }
 
 type etcdBackend struct {
-	membersJSON          string
-	membersStatusCode    int
-	addMembersJSON       string
-	addMembersStatusCode int
+	membersJSON         string
+	membersStatusCode   int
+	addMemberJSON       string
+	addMemberStatusCode int
 }
 
-func NewEtcdServer(httpAddr string) *EtcdServer {
+func NewEtcdServer() *EtcdServer {
 	etcdServer := &EtcdServer{
 		backend: &etcdBackend{},
 	}
 	etcdServer.Reset()
 
-	handler := http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		etcdServer.ServeHTTP(responseWriter, request)
-	})
-
-	etcdServer.server = &http.Server{
-		Addr:    httpAddr,
-		Handler: handler,
-	}
-
-	var err error
-	etcdServer.httpListener, err = net.Listen("tcp", httpAddr)
+	listener, err := net.Listen("tcp", "127.0.0.1:4001")
 	if err != nil {
 		panic(err)
 	}
 
-	go etcdServer.server.Serve(etcdServer.httpListener)
+	etcdServer.server = &httptest.Server{
+		Listener: listener,
+		Config: &http.Server{
+			Handler: http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
+				etcdServer.ServeHTTP(responseWriter, request)
+			}),
+		},
+	}
+	etcdServer.server.Start()
 
 	return etcdServer
 }
 
-func (e *EtcdServer) Exit() error {
-	err := e.httpListener.Close()
-	if err != nil {
-		log.Fatalf("Failed to close server: %s\n", err)
-	}
-
-	return nil
+func (e *EtcdServer) Exit() {
+	e.server.Close()
 }
 
 func (e *EtcdServer) Reset() {
 	e.backend = &etcdBackend{
-		membersStatusCode:    http.StatusOK,
-		addMembersStatusCode: http.StatusCreated,
+		membersStatusCode:   http.StatusOK,
+		addMemberStatusCode: http.StatusCreated,
 	}
 }
 
@@ -81,13 +73,13 @@ func (e *EtcdServer) handleMembers(responseWriter http.ResponseWriter, request *
 		responseWriter.WriteHeader(e.backend.membersStatusCode)
 		responseWriter.Write([]byte(e.backend.membersJSON))
 	case "POST":
-		responseWriter.WriteHeader(e.backend.addMembersStatusCode)
-		responseWriter.Write([]byte(e.backend.addMembersJSON))
+		responseWriter.WriteHeader(e.backend.addMemberStatusCode)
+		responseWriter.Write([]byte(e.backend.addMemberJSON))
 	}
 }
 
 func (e *EtcdServer) URL() string {
-	return e.server.Addr
+	return e.server.URL
 }
 
 func (e *EtcdServer) SetMembersReturn(membersJSON string, statusCode int) {
@@ -102,6 +94,6 @@ func (e *EtcdServer) SetAddMemberReturn(memberJSON string, statusCode int) {
 	e.backendMutex.Lock()
 	defer e.backendMutex.Unlock()
 
-	e.backend.addMembersJSON = memberJSON
-	e.backend.addMembersStatusCode = statusCode
+	e.backend.addMemberJSON = memberJSON
+	e.backend.addMemberStatusCode = statusCode
 }

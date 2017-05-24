@@ -98,3 +98,15 @@ func (c Config) ListenClientURL() string {
 	}
 	return fmt.Sprintf("%s://%s:4001", protocol, c.Etcd.ClientIP)
 }
+
+func (c Config) EtcdClientEndpoints() []string {
+	if c.Etcd.RequireSSL {
+		return []string{fmt.Sprintf("https://%s:4001", c.Etcd.AdvertiseURLsDNSSuffix)}
+	} else {
+		var endpoints []string
+		for _, machine := range c.Etcd.Machines {
+			endpoints = append(endpoints, fmt.Sprintf("http://%s:4001", machine))
+		}
+		return endpoints
+	}
+}

@@ -2,14 +2,13 @@ package fakes
 
 import (
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
-	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/config"
 )
 
 type EtcdClient struct {
 	ConfigureCall struct {
 		CallCount int
 		Receives  struct {
-			Config config.Config
+			Config client.Config
 		}
 		Returns struct {
 			Error error
@@ -34,7 +33,7 @@ type EtcdClient struct {
 	}
 }
 
-func (e *EtcdClient) Configure(config config.Config) error {
+func (e *EtcdClient) Configure(config client.Config) error {
 	e.ConfigureCall.CallCount++
 	e.ConfigureCall.Receives.Config = config
 

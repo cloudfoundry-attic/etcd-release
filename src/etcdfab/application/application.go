@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/config"
 
@@ -32,7 +33,7 @@ type clusterController interface {
 }
 
 type etcdClient interface {
-	Configure(config.Config) error
+	Configure(client.Config) error
 }
 
 type logger interface {

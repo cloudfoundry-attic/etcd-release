@@ -1,12 +1,12 @@
 package client_test
 
 import (
+	"fmt"
 	"net/http"
 
 	"code.cloudfoundry.org/lager"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
-	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/config"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes/etcdserver"
 
@@ -19,89 +19,50 @@ var _ = Describe("EtcdClient", func() {
 		etcdServer *etcdserver.EtcdServer
 
 		etcdClient *client.EtcdClient
-		logger     *fakes.Logger
 
-		cfg config.Config
+		logger *fakes.Logger
+		cfg    *fakes.Config
 	)
 
 	BeforeEach(func() {
-		etcdServer = etcdserver.NewEtcdServer("127.0.0.1:4001")
 		logger = &fakes.Logger{}
-		cfg = config.Config{
-			Etcd: config.Etcd{
-				Machines: []string{
-					"127.0.0.1",
-				},
-			},
-		}
+		cfg = &fakes.Config{}
+
+		etcdServer = etcdserver.NewEtcdServer()
+		cfg.EtcdClientEndpointsCall.Returns.Endpoints = []string{fmt.Sprintf("%s", etcdServer.URL())}
 	})
 
 	AfterEach(func() {
-		err := etcdServer.Exit()
-		Expect(err).NotTo(HaveOccurred())
+		etcdServer.Exit()
 	})
 
 	Describe("Configure", func() {
-		Context("when etcd is non tls", func() {
-			It("configures the etcd client with etcdfab config", func() {
-				etcdClient = client.NewEtcdClient(logger)
+		It("configures the etcd client with etcdfab config", func() {
+			etcdClient = client.NewEtcdClient(logger)
 
-				err := etcdClient.Configure(cfg)
-				Expect(err).NotTo(HaveOccurred())
+			err := etcdClient.Configure(cfg)
+			Expect(err).NotTo(HaveOccurred())
 
-				Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
-					{
-						Action: "etcd-client.configure.config",
-						Data: []lager.Data{
-							{
-								"endpoints": []string{"http://127.0.0.1:4001"},
-							},
+			Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
+				{
+					Action: "etcd-client.configure.config",
+					Data: []lager.Data{
+						{
+							"endpoints": []string{fmt.Sprintf("%s", etcdServer.URL())},
 						},
 					},
-				}))
-			})
-		})
-
-		Context("when etcd is tls", func() {
-			BeforeEach(func() {
-				cfg = config.Config{
-					Etcd: config.Etcd{
-						RequireSSL:             true,
-						PeerRequireSSL:         true,
-						AdvertiseURLsDNSSuffix: "etcd.service.cf.internal",
-					},
-				}
-			})
-
-			It("configures the etcd client with etcdfab config", func() {
-				etcdClient = client.NewEtcdClient(logger)
-
-				err := etcdClient.Configure(cfg)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
-					{
-						Action: "etcd-client.configure.config",
-						Data: []lager.Data{
-							{
-								"endpoints": []string{"https://etcd.service.cf.internal:4001"},
-							},
-						},
-					},
-				}))
-			})
+				},
+			}))
 		})
 
 		Context("failure cases", func() {
 			BeforeEach(func() {
+				cfg.EtcdClientEndpointsCall.Returns.Endpoints = []string{}
 				etcdClient = client.NewEtcdClient(logger)
-
-				err := etcdClient.Configure(cfg)
-				Expect(err).NotTo(HaveOccurred())
 			})
 
 			It("returns an error when config does not contain valid information", func() {
-				err := etcdClient.Configure(config.Config{})
+				err := etcdClient.Configure(cfg)
 				Expect(err).To(MatchError("client: no endpoints available"))
 			})
 		})
@@ -129,7 +90,7 @@ var _ = Describe("EtcdClient", func() {
 		})
 
 		Context("when require ssl is enabled", func() {
-			FIt("returns a list of members in the cluster", func() {
+			It("returns a list of members in the cluster", func() {
 				members, err := etcdClient.MemberList()
 				Expect(err).NotTo(HaveOccurred())
 				Expect(members).To(Equal([]client.Member{
@@ -152,7 +113,7 @@ var _ = Describe("EtcdClient", func() {
 				etcdServer.SetMembersReturn("", http.StatusInternalServerError)
 			})
 
-			FIt("returns an error", func() {
+			It("returns an error", func() {
 				_, err := etcdClient.MemberList()
 				Expect(err).To(MatchError("client: etcd cluster is unavailable or misconfigured"))
 			})
@@ -176,9 +137,9 @@ var _ = Describe("EtcdClient", func() {
 				]
 			}`, http.StatusOK)
 			etcdServer.SetAddMemberReturn(`{
-				"id": "some-id",
+				"id": "some-id-1",
 				"peerURLs": [
-					"http://some-node-url:7001"
+					"http://some-node-url-1:7001"
 				]
 			}`, http.StatusCreated)
 
@@ -189,13 +150,13 @@ var _ = Describe("EtcdClient", func() {
 		})
 
 		It("returns a list of members in the cluster", func() {
-			members, err := etcdClient.MemberAdd("http://some-other-node-url:7001")
+			member, err := etcdClient.MemberAdd("http://some-node-url-1:7001")
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(members).To(Equal(client.Member{
-				ID: "some-id",
+			Expect(member).To(Equal(client.Member{
+				ID: "some-id-1",
 				PeerURLs: []string{
-					"http://some-node-url:7001",
+					"http://some-node-url-1:7001",
 				},
 			}))
 		})
