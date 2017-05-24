@@ -100,7 +100,7 @@ func (c Config) ListenClientURL() string {
 }
 
 func (c Config) EtcdClientEndpoints() []string {
-	if c.Etcd.RequireSSL {
+	if c.Etcd.RequireSSL || c.Etcd.PeerRequireSSL {
 		return []string{fmt.Sprintf("https://%s:4001", c.Etcd.AdvertiseURLsDNSSuffix)}
 	} else {
 		var endpoints []string
