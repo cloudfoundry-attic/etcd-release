@@ -112,7 +112,7 @@ var _ = Describe("EtcdFab", func() {
 			)
 
 			BeforeEach(func() {
-				etcdServer = etcdserver.NewEtcdServer()
+				etcdServer = etcdserver.NewEtcdServer(":4001")
 				etcdServer.SetMembersReturn(`{
 					"members": [
 						{
@@ -140,8 +140,12 @@ var _ = Describe("EtcdFab", func() {
 					"require_ssl":                        false,
 					"client_ip":                          "some-client-ip",
 					"advertise_urls_dns_suffix":          "some-dns-suffix",
-					"machines":                           []string{etcdServer.URL()},
+					"machines":                           []string{"127.0.0.1"},
 				})
+			})
+
+			AfterEach(func() {
+				etcdServer.Exit()
 			})
 
 			It("starts etcd with proper flags and initial-cluster-state existing", func() {

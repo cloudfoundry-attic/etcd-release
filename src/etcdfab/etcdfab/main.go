@@ -27,7 +27,7 @@ func main() {
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
 
 	commandWrapper := command.NewWrapper()
-	etcdClient := client.NewEtcdClient()
+	etcdClient := client.NewEtcdClient(logger)
 	clusterController := cluster.NewController(etcdClient, logger, time.Sleep)
 
 	app := application.New(application.NewArgs{

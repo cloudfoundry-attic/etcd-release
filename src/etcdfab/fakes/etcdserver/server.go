@@ -1,13 +1,16 @@
 package etcdserver
 
 import (
+	"log"
+	"net"
 	"net/http"
-	"net/http/httptest"
 	"sync"
 )
 
 type EtcdServer struct {
-	server  *httptest.Server
+	server       *http.Server
+	httpListener net.Listener
+
 	backend *etcdBackend
 
 	backendMutex sync.Mutex
@@ -20,16 +23,39 @@ type etcdBackend struct {
 	addMembersStatusCode int
 }
 
-func NewEtcdServer() *EtcdServer {
+func NewEtcdServer(httpAddr string) *EtcdServer {
 	etcdServer := &EtcdServer{
 		backend: &etcdBackend{},
 	}
-	etcdServer.server = httptest.NewServer(http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
-		etcdServer.ServeHTTP(responseWriter, request)
-	}))
 	etcdServer.Reset()
 
+	handler := http.HandlerFunc(func(responseWriter http.ResponseWriter, request *http.Request) {
+		etcdServer.ServeHTTP(responseWriter, request)
+	})
+
+	etcdServer.server = &http.Server{
+		Addr:    httpAddr,
+		Handler: handler,
+	}
+
+	var err error
+	etcdServer.httpListener, err = net.Listen("tcp", httpAddr)
+	if err != nil {
+		panic(err)
+	}
+
+	go etcdServer.server.Serve(etcdServer.httpListener)
+
 	return etcdServer
+}
+
+func (e *EtcdServer) Exit() error {
+	err := e.httpListener.Close()
+	if err != nil {
+		log.Fatalf("Failed to close server: %s\n", err)
+	}
+
+	return nil
 }
 
 func (e *EtcdServer) Reset() {
@@ -50,17 +76,18 @@ func (e *EtcdServer) handleMembers(responseWriter http.ResponseWriter, request *
 	e.backendMutex.Lock()
 	defer e.backendMutex.Unlock()
 
-	if request.Method == "GET" {
+	switch request.Method {
+	case "GET":
 		responseWriter.WriteHeader(e.backend.membersStatusCode)
 		responseWriter.Write([]byte(e.backend.membersJSON))
-	} else if request.Method == "POST" {
+	case "POST":
 		responseWriter.WriteHeader(e.backend.addMembersStatusCode)
 		responseWriter.Write([]byte(e.backend.addMembersJSON))
 	}
 }
 
 func (e *EtcdServer) URL() string {
-	return e.server.URL
+	return e.server.Addr
 }
 
 func (e *EtcdServer) SetMembersReturn(membersJSON string, statusCode int) {
