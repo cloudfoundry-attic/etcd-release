@@ -28,6 +28,7 @@ type Member struct {
 type Config interface {
 	EtcdClientEndpoints() []string
 	RequireSSL() bool
+	CertDir() string
 }
 
 type logger interface {
@@ -35,13 +36,15 @@ type logger interface {
 	Error(string, error, ...lager.Data)
 }
 
+var newTransport = transport.NewTransport
+
 func NewEtcdClient(logger logger) *EtcdClient {
 	return &EtcdClient{
 		logger: logger,
 	}
 }
 
-func (e *EtcdClient) Configure(etcdfabConfig Config, certDir string) error {
+func (e *EtcdClient) Configure(etcdfabConfig Config) error {
 	endpoints := etcdfabConfig.EtcdClientEndpoints()
 	e.logger.Info("etcd-client.configure.config", lager.Data{
 		"endpoints": endpoints,
@@ -50,9 +53,9 @@ func (e *EtcdClient) Configure(etcdfabConfig Config, certDir string) error {
 	tns := coreosetcdclient.DefaultTransport
 
 	if etcdfabConfig.RequireSSL() {
-		caCertFile := filepath.Join(certDir, "server-ca.crt")
-		clientCertFile := filepath.Join(certDir, "client.crt")
-		clientKeyFile := filepath.Join(certDir, "client.key")
+		caCertFile := filepath.Join(etcdfabConfig.CertDir(), "server-ca.crt")
+		clientCertFile := filepath.Join(etcdfabConfig.CertDir(), "client.crt")
+		clientKeyFile := filepath.Join(etcdfabConfig.CertDir(), "client.key")
 
 		tlsInfo := transport.TLSInfo{
 			CAFile:         caCertFile,
@@ -62,10 +65,9 @@ func (e *EtcdClient) Configure(etcdfabConfig Config, certDir string) error {
 		}
 
 		var err error
-		tns, err = transport.NewTransport(tlsInfo)
+		tns, err = newTransport(tlsInfo)
 		if err != nil {
-			panic(err)
-			// return err
+			return err
 		}
 	}
 

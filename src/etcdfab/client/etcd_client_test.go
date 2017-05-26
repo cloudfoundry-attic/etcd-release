@@ -1,15 +1,16 @@
 package client_test
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"code.cloudfoundry.org/lager"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes/etcdserver"
+	"github.com/coreos/etcd/pkg/transport"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -47,7 +48,7 @@ var _ = Describe("EtcdClient", func() {
 			It("configures the etcd client with etcdfab config", func() {
 				etcdClient = client.NewEtcdClient(logger)
 
-				err := etcdClient.Configure(cfg, "")
+				err := etcdClient.Configure(cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
@@ -65,43 +66,27 @@ var _ = Describe("EtcdClient", func() {
 
 		Context("when etcdfabConfig.RequireSSL() is true", func() {
 			var (
-				certDir string
-				//caCert     string
-				//clientCert string
-				//clientKey  string
+				actualTLSInfo transport.TLSInfo
 			)
 
 			BeforeEach(func() {
 				cfg.RequireSSLCall.Returns.RequireSSL = true
+				cfg.CertDirCall.Returns.CertDir = "some/cert/dir"
 
-				//caCert = "some-ca-cert"
-				//clientCert = "some-client-cert"
-				//clientKey = "some-client-key"
+				client.SetNewTransport(func(tlsInfo transport.TLSInfo) (*http.Transport, error) {
+					actualTLSInfo = tlsInfo
+					return nil, nil
+				})
+			})
 
-				//var err error
-				//certDir, err = ioutil.TempDir("", "")
-				//Expect(err).NotTo(HaveOccurred())
-				certDir = "../fixtures"
-				if _, err := os.Stat(certDir); os.IsNotExist(err) {
-					panic("certDir does not exist")
-				}
-
-				//caCertFile := filepath.Join(certDir, "server-ca.crt")
-				//clientCertFile := filepath.Join(certDir, "client.crt")
-				//clientKeyFile := filepath.Join(certDir, "client.key")
-
-				//err = ioutil.WriteFile(caCertFile, []byte(caCert), os.ModePerm)
-				//Expect(err).NotTo(HaveOccurred())
-				//err = ioutil.WriteFile(clientCertFile, []byte(clientCert), os.ModePerm)
-				//Expect(err).NotTo(HaveOccurred())
-				//err = ioutil.WriteFile(clientKeyFile, []byte(clientKey), os.ModePerm)
-				//Expect(err).NotTo(HaveOccurred())
+			AfterEach(func() {
+				client.ResetNewTransport()
 			})
 
 			It("configures the etcd client with etcdfab config", func() {
 				etcdClient = client.NewEtcdClient(logger)
 
-				err := etcdClient.Configure(cfg, certDir)
+				err := etcdClient.Configure(cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
@@ -114,18 +99,49 @@ var _ = Describe("EtcdClient", func() {
 						},
 					},
 				}))
+
+				Expect(actualTLSInfo).To(Equal(transport.TLSInfo{
+					CAFile:         "some/cert/dir/server-ca.crt",
+					CertFile:       "some/cert/dir/client.crt",
+					KeyFile:        "some/cert/dir/client.key",
+					ClientCertAuth: true,
+				}))
 			})
 		})
 
 		Context("failure cases", func() {
 			BeforeEach(func() {
-				cfg.EtcdClientEndpointsCall.Returns.Endpoints = []string{}
 				etcdClient = client.NewEtcdClient(logger)
 			})
 
-			It("returns an error when config does not contain valid information", func() {
-				err := etcdClient.Configure(cfg, "")
-				Expect(err).To(MatchError("client: no endpoints available"))
+			Context("when no endpoints exist", func() {
+				BeforeEach(func() {
+					cfg.EtcdClientEndpointsCall.Returns.Endpoints = []string{}
+				})
+
+				It("returns an error when config does not contain valid information", func() {
+					err := etcdClient.Configure(cfg)
+					Expect(err).To(MatchError("client: no endpoints available"))
+				})
+			})
+
+			Context("when newTransport fails", func() {
+				BeforeEach(func() {
+					cfg.RequireSSLCall.Returns.RequireSSL = true
+
+					client.SetNewTransport(func(tlsInfo transport.TLSInfo) (*http.Transport, error) {
+						return nil, errors.New("failed to create new transport")
+					})
+				})
+
+				AfterEach(func() {
+					client.ResetNewTransport()
+				})
+
+				It("returns an error when config does not contain valid information", func() {
+					err := etcdClient.Configure(cfg)
+					Expect(err).To(MatchError("failed to create new transport"))
+				})
 			})
 		})
 	})
@@ -147,7 +163,7 @@ var _ = Describe("EtcdClient", func() {
 
 			etcdClient = client.NewEtcdClient(logger)
 
-			err := etcdClient.Configure(cfg, "")
+			err := etcdClient.Configure(cfg)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -211,7 +227,7 @@ var _ = Describe("EtcdClient", func() {
 
 			etcdClient = client.NewEtcdClient(logger)
 
-			err := etcdClient.Configure(cfg, "")
+			err := etcdClient.Configure(cfg)
 			Expect(err).NotTo(HaveOccurred())
 		})
 

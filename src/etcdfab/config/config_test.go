@@ -48,6 +48,7 @@ var _ = Describe("Config", func() {
 				},
 				"etcd": map[string]interface{}{
 					"etcd_path":                          "path-to-etcd",
+					"cert_dir":                           "some-cert-dir",
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -65,7 +66,6 @@ var _ = Describe("Config", func() {
 					"some-ip-2",
 					"some-ip-3",
 				},
-				"etcd_path":                          "path-to-etcd",
 				"heartbeat_interval_in_milliseconds": 10,
 				"election_timeout_in_milliseconds":   33,
 				"peer_require_ssl":                   false,
@@ -89,6 +89,7 @@ var _ = Describe("Config", func() {
 				},
 				Etcd: config.Etcd{
 					EtcdPath:               "path-to-etcd",
+					CertDir:                "some-cert-dir",
 					HeartbeatInterval:      10,
 					ElectionTimeout:        33,
 					PeerRequireSSL:         false,
@@ -119,6 +120,7 @@ var _ = Describe("Config", func() {
 					},
 					Etcd: config.Etcd{
 						EtcdPath:               "path-to-etcd",
+						CertDir:                "some-cert-dir",
 						HeartbeatInterval:      10,
 						ElectionTimeout:        20,
 						PeerRequireSSL:         false,
@@ -142,6 +144,7 @@ var _ = Describe("Config", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(cfg.Etcd.EtcdPath).To(Equal("/var/vcap/packages/etcd/etcd"))
+			Expect(cfg.Etcd.CertDir).To(Equal("/var/vcap/jobs/etcd/config/certs"))
 		})
 
 		Context("failure cases", func() {
@@ -266,6 +269,17 @@ var _ = Describe("Config", func() {
 			It("returns true", func() {
 				Expect(cfg.RequireSSL()).To(Equal(true))
 			})
+		})
+	})
+
+	Describe("CertDir", func() {
+		It("returns the CertDir", func() {
+			cfg := config.Config{
+				Etcd: config.Etcd{
+					CertDir: "/var/vcap/jobs/etcd/config/certs",
+				},
+			}
+			Expect(cfg.CertDir()).To(Equal("/var/vcap/jobs/etcd/config/certs"))
 		})
 	})
 

@@ -13,6 +13,12 @@ type Config struct {
 			RequireSSL bool
 		}
 	}
+	CertDirCall struct {
+		CallCount int
+		Returns   struct {
+			CertDir string
+		}
+	}
 }
 
 func (c *Config) EtcdClientEndpoints() []string {
@@ -25,4 +31,10 @@ func (c *Config) RequireSSL() bool {
 	c.RequireSSLCall.CallCount++
 
 	return c.RequireSSLCall.Returns.RequireSSL
+}
+
+func (c *Config) CertDir() string {
+	c.CertDirCall.CallCount++
+
+	return c.CertDirCall.Returns.CertDir
 }

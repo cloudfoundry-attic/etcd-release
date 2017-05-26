@@ -85,6 +85,7 @@ var _ = Describe("Application", func() {
 				},
 				"etcd": map[string]interface{}{
 					"etcd_path":                          "path-to-etcd",
+					"cert_dir":                           "some/cert/dir",
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -109,6 +110,7 @@ var _ = Describe("Application", func() {
 				},
 				Etcd: config.Etcd{
 					EtcdPath:               "path-to-etcd",
+					CertDir:                "some/cert/dir",
 					HeartbeatInterval:      10,
 					ElectionTimeout:        20,
 					PeerRequireSSL:         false,
@@ -120,7 +122,6 @@ var _ = Describe("Application", func() {
 				},
 			}
 
-			certDir = "some-cert-dir"
 			app = application.New(application.NewArgs{
 				Command:            fakeCommand,
 				CommandPidPath:     etcdPidPath,
@@ -141,7 +142,6 @@ var _ = Describe("Application", func() {
 
 			Expect(fakeEtcdClient.ConfigureCall.CallCount).To(Equal(1))
 			Expect(fakeEtcdClient.ConfigureCall.Receives.Config).To(Equal(etcdfabConfig))
-			Expect(fakeEtcdClient.ConfigureCall.Receives.CertDir).To(Equal(certDir))
 		})
 
 		It("calls Start on the command", func() {
@@ -197,6 +197,7 @@ var _ = Describe("Application", func() {
 					},
 					"etcd": map[string]interface{}{
 						"etcd_path":                          "path-to-etcd",
+						"cert_dir":                           "some/cert/dir",
 						"heartbeat_interval_in_milliseconds": 10,
 						"election_timeout_in_milliseconds":   20,
 						"peer_require_ssl":                   true,
@@ -247,13 +248,13 @@ var _ = Describe("Application", func() {
 					"--initial-advertise-peer-urls", "https://some-name-3.some-dns-suffix:7001",
 					"--advertise-client-urls", "https://some-name-3.some-dns-suffix:4001",
 					"--client-cert-auth",
-					"--trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/server-ca.crt",
-					"--cert-file", "/var/vcap/jobs/etcd/config/certs/server.crt",
-					"--key-file", "/var/vcap/jobs/etcd/config/certs/server.key",
+					"--trusted-ca-file", "some/cert/dir/server-ca.crt",
+					"--cert-file", "some/cert/dir/server.crt",
+					"--key-file", "some/cert/dir/server.key",
 					"--peer-client-cert-auth",
-					"--peer-trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/peer-ca.crt",
-					"--peer-cert-file", "/var/vcap/jobs/etcd/config/certs/peer.crt",
-					"--peer-key-file", "/var/vcap/jobs/etcd/config/certs/peer.key",
+					"--peer-trusted-ca-file", "some/cert/dir/peer-ca.crt",
+					"--peer-cert-file", "some/cert/dir/peer.crt",
+					"--peer-key-file", "some/cert/dir/peer.key",
 					"--initial-cluster", "etcd-0=http://some-ip-1:7001",
 					"--initial-cluster-state", "new",
 				}))

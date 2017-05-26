@@ -60,7 +60,6 @@ var _ = Describe("EtcdFab", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
-			"etcd_path":                          pathToFakeEtcd,
 			"heartbeat_interval_in_milliseconds": 10,
 			"election_timeout_in_milliseconds":   20,
 			"peer_require_ssl":                   false,
@@ -172,6 +171,7 @@ var _ = Describe("EtcdFab", func() {
 
 	Context("when configured to be a tls etcd cluster", func() {
 		BeforeEach(func() {
+			certDir := "../fixtures"
 			writeConfigurationFile(configFile.Name(), map[string]interface{}{
 				"node": map[string]interface{}{
 					"name":  "some_name",
@@ -179,6 +179,7 @@ var _ = Describe("EtcdFab", func() {
 				},
 				"etcd": map[string]interface{}{
 					"etcd_path":                          pathToFakeEtcd,
+					"cert_dir":                           certDir,
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   true,
@@ -212,7 +213,6 @@ var _ = Describe("EtcdFab", func() {
 				pathToEtcdPid,
 				"--config-file", configFile.Name(),
 				"--config-link-file", linkConfigFile.Name(),
-				"../fixtures",
 			)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
@@ -229,13 +229,13 @@ var _ = Describe("EtcdFab", func() {
 				"--initial-advertise-peer-urls", "https://some-name-3.some-dns-suffix:7001",
 				"--advertise-client-urls", "https://some-name-3.some-dns-suffix:4001",
 				"--client-cert-auth",
-				"--trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/server-ca.crt",
-				"--cert-file", "/var/vcap/jobs/etcd/config/certs/server.crt",
-				"--key-file", "/var/vcap/jobs/etcd/config/certs/server.key",
+				"--trusted-ca-file", "../fixtures/server-ca.crt",
+				"--cert-file", "../fixtures/server.crt",
+				"--key-file", "../fixtures/server.key",
 				"--peer-client-cert-auth",
-				"--peer-trusted-ca-file", "/var/vcap/jobs/etcd/config/certs/peer-ca.crt",
-				"--peer-cert-file", "/var/vcap/jobs/etcd/config/certs/peer.crt",
-				"--peer-key-file", "/var/vcap/jobs/etcd/config/certs/peer.key",
+				"--peer-trusted-ca-file", "../fixtures/peer-ca.crt",
+				"--peer-cert-file", "../fixtures/peer.crt",
+				"--peer-key-file", "../fixtures/peer.key",
 				"--initial-cluster", "some-name-3=https://some-name-3.some-dns-suffix:7001",
 				"--initial-cluster-state", "new",
 			}))

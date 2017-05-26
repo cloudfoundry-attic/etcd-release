@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
@@ -34,7 +35,7 @@ type clusterController interface {
 }
 
 type etcdClient interface {
-	Configure(client.Config, string) error
+	Configure(client.Config) error
 }
 
 type logger interface {
@@ -77,7 +78,7 @@ func (a Application) Start() error {
 		return err
 	}
 
-	err = a.etcdClient.Configure(cfg, a.certDir)
+	err = a.etcdClient.Configure(cfg)
 	if err != nil {
 		a.logger.Error("application.etcd-client.configure.failed", err)
 		return err
@@ -146,21 +147,21 @@ func (a Application) buildEtcdArgs(cfg config.Config) []string {
 	if cfg.Etcd.RequireSSL {
 		etcdArgs = append(etcdArgs, "--client-cert-auth")
 		etcdArgs = append(etcdArgs, "--trusted-ca-file")
-		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/server-ca.crt")
+		etcdArgs = append(etcdArgs, filepath.Join(cfg.CertDir(), "server-ca.crt"))
 		etcdArgs = append(etcdArgs, "--cert-file")
-		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/server.crt")
+		etcdArgs = append(etcdArgs, filepath.Join(cfg.CertDir(), "server.crt"))
 		etcdArgs = append(etcdArgs, "--key-file")
-		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/server.key")
+		etcdArgs = append(etcdArgs, filepath.Join(cfg.CertDir(), "server.key"))
 	}
 
 	if cfg.Etcd.PeerRequireSSL {
 		etcdArgs = append(etcdArgs, "--peer-client-cert-auth")
 		etcdArgs = append(etcdArgs, "--peer-trusted-ca-file")
-		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/peer-ca.crt")
+		etcdArgs = append(etcdArgs, filepath.Join(cfg.CertDir(), "peer-ca.crt"))
 		etcdArgs = append(etcdArgs, "--peer-cert-file")
-		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/peer.crt")
+		etcdArgs = append(etcdArgs, filepath.Join(cfg.CertDir(), "peer.crt"))
 		etcdArgs = append(etcdArgs, "--peer-key-file")
-		etcdArgs = append(etcdArgs, "/var/vcap/jobs/etcd/config/certs/peer.key")
+		etcdArgs = append(etcdArgs, filepath.Join(cfg.CertDir(), "peer.key"))
 	}
 
 	return etcdArgs

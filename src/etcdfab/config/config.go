@@ -16,6 +16,7 @@ type Node struct {
 
 type Etcd struct {
 	EtcdPath               string `json:"etcd_path"`
+	CertDir                string `json:"cert_dir"`
 	HeartbeatInterval      int    `json:"heartbeat_interval_in_milliseconds"`
 	ElectionTimeout        int    `json:"election_timeout_in_milliseconds"`
 	PeerRequireSSL         bool   `json:"peer_require_ssl"`
@@ -35,6 +36,7 @@ func defaultConfig() Config {
 	return Config{
 		Etcd: Etcd{
 			EtcdPath: "/var/vcap/packages/etcd/etcd",
+			CertDir:  "/var/vcap/jobs/etcd/config/certs",
 		},
 	}
 }
@@ -71,6 +73,10 @@ func (c Config) NodeName() string {
 
 func (c Config) RequireSSL() bool {
 	return c.Etcd.RequireSSL
+}
+
+func (c Config) CertDir() string {
+	return c.Etcd.CertDir
 }
 
 func (c Config) AdvertisePeerURL() string {
