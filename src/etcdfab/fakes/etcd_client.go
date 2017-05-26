@@ -8,7 +8,8 @@ type EtcdClient struct {
 	ConfigureCall struct {
 		CallCount int
 		Receives  struct {
-			Config client.Config
+			Config  client.Config
+			CertDir string
 		}
 		Returns struct {
 			Error error
@@ -33,9 +34,10 @@ type EtcdClient struct {
 	}
 }
 
-func (e *EtcdClient) Configure(config client.Config) error {
+func (e *EtcdClient) Configure(config client.Config, certDir string) error {
 	e.ConfigureCall.CallCount++
 	e.ConfigureCall.Receives.Config = config
+	e.ConfigureCall.Receives.CertDir = certDir
 
 	return e.ConfigureCall.Returns.Error
 }

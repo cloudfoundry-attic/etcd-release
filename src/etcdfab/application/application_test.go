@@ -50,6 +50,7 @@ var _ = Describe("Application", func() {
 			fakeCommand           *fakes.CommandWrapper
 			fakeClusterController *fakes.ClusterController
 			fakeEtcdClient        *fakes.EtcdClient
+			certDir               string
 			fakeLogger            *fakes.Logger
 
 			outWriter bytes.Buffer
@@ -119,12 +120,14 @@ var _ = Describe("Application", func() {
 				},
 			}
 
+			certDir = "some-cert-dir"
 			app = application.New(application.NewArgs{
 				Command:            fakeCommand,
 				CommandPidPath:     etcdPidPath,
 				ConfigFilePath:     configFileName,
 				LinkConfigFilePath: linkConfigFileName,
 				EtcdClient:         fakeEtcdClient,
+				CertDir:            certDir,
 				ClusterController:  fakeClusterController,
 				OutWriter:          &outWriter,
 				ErrWriter:          &errWriter,
@@ -138,6 +141,7 @@ var _ = Describe("Application", func() {
 
 			Expect(fakeEtcdClient.ConfigureCall.CallCount).To(Equal(1))
 			Expect(fakeEtcdClient.ConfigureCall.Receives.Config).To(Equal(etcdfabConfig))
+			Expect(fakeEtcdClient.ConfigureCall.Receives.CertDir).To(Equal(certDir))
 		})
 
 		It("calls Start on the command", func() {

@@ -119,6 +119,19 @@ etcdctl_sec_flags=" \
 etcdctl_sec_flags=""
 <% end %>
 
+member_list() {
+  for cluster_member in <%= cluster_members %>
+  do
+    set +e
+    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member list
+    local exitstatus=$?
+    set -e
+    if [ $exitstatus -eq 0 ]; then
+      return
+    fi
+  done
+}
+
 member_remove() {
   for cluster_member in <%= cluster_members %>
   do
@@ -130,6 +143,10 @@ member_remove() {
       return
     fi
   done
+}
+
+extract_my_id() {
+  echo "$1" | grep ${advertise_peer_url} | sed 's/:.*//' | sed 's/\[.*\]//'
 }
 
 safe_teardown() {

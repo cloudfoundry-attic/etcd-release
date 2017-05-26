@@ -212,6 +212,7 @@ var _ = Describe("EtcdFab", func() {
 				pathToEtcdPid,
 				"--config-file", configFile.Name(),
 				"--config-link-file", linkConfigFile.Name(),
+				"../fixtures",
 			)
 			session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())

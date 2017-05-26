@@ -18,6 +18,7 @@ type Application struct {
 	configFilePath     string
 	linkConfigFilePath string
 	etcdClient         etcdClient
+	certDir            string
 	clusterController  clusterController
 	outWriter          io.Writer
 	errWriter          io.Writer
@@ -33,7 +34,7 @@ type clusterController interface {
 }
 
 type etcdClient interface {
-	Configure(client.Config) error
+	Configure(client.Config, string) error
 }
 
 type logger interface {
@@ -47,6 +48,7 @@ type NewArgs struct {
 	ConfigFilePath     string
 	LinkConfigFilePath string
 	EtcdClient         etcdClient
+	CertDir            string
 	ClusterController  clusterController
 	OutWriter          io.Writer
 	ErrWriter          io.Writer
@@ -60,6 +62,7 @@ func New(args NewArgs) Application {
 		configFilePath:     args.ConfigFilePath,
 		linkConfigFilePath: args.LinkConfigFilePath,
 		etcdClient:         args.EtcdClient,
+		certDir:            args.CertDir,
 		clusterController:  args.ClusterController,
 		outWriter:          args.OutWriter,
 		errWriter:          args.ErrWriter,
@@ -74,7 +77,7 @@ func (a Application) Start() error {
 		return err
 	}
 
-	err = a.etcdClient.Configure(cfg)
+	err = a.etcdClient.Configure(cfg, a.certDir)
 	if err != nil {
 		a.logger.Error("application.etcd-client.configure.failed", err)
 		return err

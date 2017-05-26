@@ -213,6 +213,62 @@ var _ = Describe("Config", func() {
 		})
 	})
 
+	Describe("RequireSSL", func() {
+		Context("when require_ssl is false", func() {
+			var (
+				cfg config.Config
+			)
+
+			BeforeEach(func() {
+				tmpDir, err := ioutil.TempDir("", "")
+				Expect(err).NotTo(HaveOccurred())
+
+				configuration := map[string]interface{}{
+					"etcd": map[string]interface{}{
+						"require_ssl": false,
+					},
+				}
+				configFilePath := writeConfigurationFile(tmpDir, "config-file", configuration)
+
+				linkConfigFilePath := writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
+
+				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns false", func() {
+				Expect(cfg.RequireSSL()).To(Equal(false))
+			})
+		})
+
+		Context("when require_ssl is true", func() {
+			var (
+				cfg config.Config
+			)
+
+			BeforeEach(func() {
+				tmpDir, err := ioutil.TempDir("", "")
+				Expect(err).NotTo(HaveOccurred())
+
+				configuration := map[string]interface{}{
+					"etcd": map[string]interface{}{
+						"require_ssl": true,
+					},
+				}
+				configFilePath := writeConfigurationFile(tmpDir, "config-file", configuration)
+
+				linkConfigFilePath := writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
+
+				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns true", func() {
+				Expect(cfg.RequireSSL()).To(Equal(true))
+			})
+		})
+	})
+
 	Describe("AdvertisePeerURL", func() {
 		var (
 			cfg                config.Config
@@ -243,7 +299,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.AdvertisePeerURL()).To(Equal("http://some-external-ip:7001"))
 		})
 
-		Context("when it PeerRequireSSL is true", func() {
+		Context("when PeerRequireSSL is true", func() {
 			BeforeEach(func() {
 				configuration := map[string]interface{}{
 					"node": map[string]interface{}{

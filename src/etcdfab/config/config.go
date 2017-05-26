@@ -69,6 +69,10 @@ func (c Config) NodeName() string {
 	return fmt.Sprintf("%s-%d", strings.Replace(c.Node.Name, "_", "-", -1), c.Node.Index)
 }
 
+func (c Config) RequireSSL() bool {
+	return c.Etcd.RequireSSL
+}
+
 func (c Config) AdvertisePeerURL() string {
 	if c.Etcd.PeerRequireSSL {
 		return fmt.Sprintf("https://%s.%s:7001", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix)

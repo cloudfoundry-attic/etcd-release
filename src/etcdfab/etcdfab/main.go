@@ -22,6 +22,10 @@ type etcdfabFlags struct {
 func main() {
 	etcdPidPath := os.Args[1]
 	flags := parseFlags()
+	certDir := ""
+	if len(os.Args) >= 7 {
+		certDir = os.Args[6]
+	}
 
 	logger := lager.NewLogger("etcdfab")
 	logger.RegisterSink(lager.NewWriterSink(os.Stdout, lager.INFO))
@@ -36,6 +40,7 @@ func main() {
 		ConfigFilePath:     flags.ConfigFilePath,
 		LinkConfigFilePath: flags.LinkConfigFilePath,
 		EtcdClient:         etcdClient,
+		CertDir:            certDir,
 		ClusterController:  clusterController,
 		OutWriter:          os.Stdout,
 		ErrWriter:          os.Stderr,

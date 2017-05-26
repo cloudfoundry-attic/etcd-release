@@ -3,6 +3,7 @@ package client_test
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"code.cloudfoundry.org/lager"
 
@@ -30,6 +31,7 @@ var _ = Describe("EtcdClient", func() {
 
 		etcdServer = etcdserver.NewEtcdServer()
 		cfg.EtcdClientEndpointsCall.Returns.Endpoints = []string{fmt.Sprintf("%s", etcdServer.URL())}
+		cfg.RequireSSLCall.Returns.RequireSSL = false
 	})
 
 	AfterEach(func() {
@@ -37,22 +39,82 @@ var _ = Describe("EtcdClient", func() {
 	})
 
 	Describe("Configure", func() {
-		It("configures the etcd client with etcdfab config", func() {
-			etcdClient = client.NewEtcdClient(logger)
+		Context("when etcdfabConfig.RequireSSL() is false", func() {
+			BeforeEach(func() {
+				cfg.RequireSSLCall.Returns.RequireSSL = false
+			})
 
-			err := etcdClient.Configure(cfg)
-			Expect(err).NotTo(HaveOccurred())
+			It("configures the etcd client with etcdfab config", func() {
+				etcdClient = client.NewEtcdClient(logger)
 
-			Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
-				{
-					Action: "etcd-client.configure.config",
-					Data: []lager.Data{
-						{
-							"endpoints": []string{fmt.Sprintf("%s", etcdServer.URL())},
+				err := etcdClient.Configure(cfg, "")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
+					{
+						Action: "etcd-client.configure.config",
+						Data: []lager.Data{
+							{
+								"endpoints": []string{fmt.Sprintf("%s", etcdServer.URL())},
+							},
 						},
 					},
-				},
-			}))
+				}))
+			})
+		})
+
+		Context("when etcdfabConfig.RequireSSL() is true", func() {
+			var (
+				certDir string
+				//caCert     string
+				//clientCert string
+				//clientKey  string
+			)
+
+			BeforeEach(func() {
+				cfg.RequireSSLCall.Returns.RequireSSL = true
+
+				//caCert = "some-ca-cert"
+				//clientCert = "some-client-cert"
+				//clientKey = "some-client-key"
+
+				//var err error
+				//certDir, err = ioutil.TempDir("", "")
+				//Expect(err).NotTo(HaveOccurred())
+				certDir = "../fixtures"
+				if _, err := os.Stat(certDir); os.IsNotExist(err) {
+					panic("certDir does not exist")
+				}
+
+				//caCertFile := filepath.Join(certDir, "server-ca.crt")
+				//clientCertFile := filepath.Join(certDir, "client.crt")
+				//clientKeyFile := filepath.Join(certDir, "client.key")
+
+				//err = ioutil.WriteFile(caCertFile, []byte(caCert), os.ModePerm)
+				//Expect(err).NotTo(HaveOccurred())
+				//err = ioutil.WriteFile(clientCertFile, []byte(clientCert), os.ModePerm)
+				//Expect(err).NotTo(HaveOccurred())
+				//err = ioutil.WriteFile(clientKeyFile, []byte(clientKey), os.ModePerm)
+				//Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("configures the etcd client with etcdfab config", func() {
+				etcdClient = client.NewEtcdClient(logger)
+
+				err := etcdClient.Configure(cfg, certDir)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(logger.Messages()).To(Equal([]fakes.LoggerMessage{
+					{
+						Action: "etcd-client.configure.config",
+						Data: []lager.Data{
+							{
+								"endpoints": []string{fmt.Sprintf("%s", etcdServer.URL())},
+							},
+						},
+					},
+				}))
+			})
 		})
 
 		Context("failure cases", func() {
@@ -62,7 +124,7 @@ var _ = Describe("EtcdClient", func() {
 			})
 
 			It("returns an error when config does not contain valid information", func() {
-				err := etcdClient.Configure(cfg)
+				err := etcdClient.Configure(cfg, "")
 				Expect(err).To(MatchError("client: no endpoints available"))
 			})
 		})
@@ -85,11 +147,15 @@ var _ = Describe("EtcdClient", func() {
 
 			etcdClient = client.NewEtcdClient(logger)
 
-			err := etcdClient.Configure(cfg)
+			err := etcdClient.Configure(cfg, "")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		Context("when require ssl is enabled", func() {
+			BeforeEach(func() {
+				cfg.RequireSSLCall.Returns.RequireSSL = true
+			})
+
 			It("returns a list of members in the cluster", func() {
 				members, err := etcdClient.MemberList()
 				Expect(err).NotTo(HaveOccurred())
@@ -145,7 +211,7 @@ var _ = Describe("EtcdClient", func() {
 
 			etcdClient = client.NewEtcdClient(logger)
 
-			err := etcdClient.Configure(cfg)
+			err := etcdClient.Configure(cfg, "")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
