@@ -19,7 +19,6 @@ type Application struct {
 	configFilePath     string
 	linkConfigFilePath string
 	etcdClient         etcdClient
-	certDir            string
 	clusterController  clusterController
 	outWriter          io.Writer
 	errWriter          io.Writer
@@ -63,7 +62,6 @@ func New(args NewArgs) Application {
 		configFilePath:     args.ConfigFilePath,
 		linkConfigFilePath: args.LinkConfigFilePath,
 		etcdClient:         args.EtcdClient,
-		certDir:            args.CertDir,
 		clusterController:  args.ClusterController,
 		outWriter:          args.OutWriter,
 		errWriter:          args.ErrWriter,
