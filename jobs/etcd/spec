@@ -36,7 +36,6 @@ provides:
   - etcd.network_diagnostics_duration_in_seconds
   - etcd.heartbeat_interval_in_milliseconds
   - etcd.election_timeout_in_milliseconds
-  - etcd.machines
   - etcd.cluster
   - etcd.require_ssl
   - etcd.ca_cert
