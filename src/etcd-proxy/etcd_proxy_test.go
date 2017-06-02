@@ -340,7 +340,7 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 			command := exec.Command(pathToEtcdProxy,
 				"--etcd-dns-suffix", etcdServerHost,
 				"--etcd-port", etcdServerPort,
-				"--ip", "%%%",
+				"--ip", "+++",
 				"--port", port,
 				"--cacert", caCertFilePath,
 				"--cert", clientCertFilePath,
@@ -351,7 +351,7 @@ var _ = Describe("provides an http proxy to an etcd cluster", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(session.ExitCode()).To(Equal(1))
-			Expect(session.Err.Contents()).To(ContainSubstring("missing brackets in address"))
+			Expect(session.Err.Contents()).To(ContainSubstring("listen tcp: lookup +++: no such host"))
 		})
 	})
 })
