@@ -3,7 +3,7 @@
 This is a [BOSH](http://bosh.io) release for [etcd](https://github.com/coreos/etcd).
 
 * [CI](https://wings.concourse.ci/teams/cf-infrastructure/pipelines/etcd)
-* [Roadmap](https://www.pivotaltracker.com/n/projects/1382120)
+* [Roadmap](https://www.pivotaltracker.com/n/projects/1488988)
 
 ### Contents
 
