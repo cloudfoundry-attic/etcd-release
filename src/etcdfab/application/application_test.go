@@ -48,12 +48,12 @@ var _ = Describe("Application", func() {
 
 			etcdfabConfig config.Config
 
-			fakeCommand                *fakes.CommandWrapper
-			fakeClusterController      *fakes.ClusterController
-			fakeSynchronizedController *fakes.SynchronizedController
-			fakeEtcdClient             *fakes.EtcdClient
-			certDir                    string
-			fakeLogger                 *fakes.Logger
+			fakeCommand           *fakes.CommandWrapper
+			fakeClusterController *fakes.ClusterController
+			fakeSyncController    *fakes.SyncController
+			fakeEtcdClient        *fakes.EtcdClient
+			certDir               string
+			fakeLogger            *fakes.Logger
 
 			outWriter bytes.Buffer
 			errWriter bytes.Buffer
@@ -72,7 +72,7 @@ var _ = Describe("Application", func() {
 				State:   "new",
 			}
 
-			fakeSynchronizedController = &fakes.SynchronizedController{}
+			fakeSyncController = &fakes.SyncController{}
 
 			fakeLogger = &fakes.Logger{}
 
@@ -131,16 +131,16 @@ var _ = Describe("Application", func() {
 			}
 
 			app = application.New(application.NewArgs{
-				Command:                fakeCommand,
-				ConfigFilePath:         configFileName,
-				LinkConfigFilePath:     linkConfigFileName,
-				EtcdClient:             fakeEtcdClient,
-				CertDir:                certDir,
-				ClusterController:      fakeClusterController,
-				SynchronizedController: fakeSynchronizedController,
-				OutWriter:              &outWriter,
-				ErrWriter:              &errWriter,
-				Logger:                 fakeLogger,
+				Command:            fakeCommand,
+				ConfigFilePath:     configFileName,
+				LinkConfigFilePath: linkConfigFileName,
+				EtcdClient:         fakeEtcdClient,
+				CertDir:            certDir,
+				ClusterController:  fakeClusterController,
+				SyncController:     fakeSyncController,
+				OutWriter:          &outWriter,
+				ErrWriter:          &errWriter,
+				Logger:             fakeLogger,
 			})
 		})
 
@@ -199,7 +199,7 @@ var _ = Describe("Application", func() {
 			err := app.Start()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeSynchronizedController.VerifySyncedCall.CallCount).To(Equal(1))
+			Expect(fakeSyncController.VerifySyncedCall.CallCount).To(Equal(1))
 		})
 
 		It("writes the pid of etcd to the run dir", func() {
@@ -249,15 +249,15 @@ var _ = Describe("Application", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				app = application.New(application.NewArgs{
-					Command:                fakeCommand,
-					ConfigFilePath:         configFileName,
-					LinkConfigFilePath:     linkConfigFileName,
-					EtcdClient:             fakeEtcdClient,
-					ClusterController:      fakeClusterController,
-					SynchronizedController: fakeSynchronizedController,
-					OutWriter:              &outWriter,
-					ErrWriter:              &errWriter,
-					Logger:                 fakeLogger,
+					Command:            fakeCommand,
+					ConfigFilePath:     configFileName,
+					LinkConfigFilePath: linkConfigFileName,
+					EtcdClient:         fakeEtcdClient,
+					ClusterController:  fakeClusterController,
+					SyncController:     fakeSyncController,
+					OutWriter:          &outWriter,
+					ErrWriter:          &errWriter,
+					Logger:             fakeLogger,
 				})
 			})
 
@@ -423,9 +423,9 @@ var _ = Describe("Application", func() {
 				})
 			})
 
-			Context("when synchronizeController.VerifySynced returns an error", func() {
+			Context("when syncController.VerifySynced returns an error", func() {
 				BeforeEach(func() {
-					fakeSynchronizedController.VerifySyncedCall.Returns.Error = errors.New("failed to verify synced")
+					fakeSyncController.VerifySyncedCall.Returns.Error = errors.New("failed to verify synced")
 				})
 
 				It("returns an error to the caller and logs a helpful message", func() {
@@ -450,13 +450,13 @@ var _ = Describe("Application", func() {
 					}
 					configFileName = createConfig(tmpDir, "config-file", configuration)
 					app = application.New(application.NewArgs{
-						Command:                fakeCommand,
-						ConfigFilePath:         configFileName,
-						LinkConfigFilePath:     linkConfigFileName,
-						EtcdClient:             fakeEtcdClient,
-						ClusterController:      fakeClusterController,
-						SynchronizedController: fakeSynchronizedController,
-						Logger:                 fakeLogger,
+						Command:            fakeCommand,
+						ConfigFilePath:     configFileName,
+						LinkConfigFilePath: linkConfigFileName,
+						EtcdClient:         fakeEtcdClient,
+						ClusterController:  fakeClusterController,
+						SyncController:     fakeSyncController,
+						Logger:             fakeLogger,
 					})
 				})
 

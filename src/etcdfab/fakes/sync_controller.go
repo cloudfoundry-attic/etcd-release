@@ -1,6 +1,6 @@
 package fakes
 
-type SynchronizedController struct {
+type SyncController struct {
 	VerifySyncedCall struct {
 		CallCount int
 		Returns   struct {
@@ -9,7 +9,7 @@ type SynchronizedController struct {
 	}
 }
 
-func (s *SynchronizedController) VerifySynced() error {
+func (s *SyncController) VerifySynced() error {
 	s.VerifySyncedCall.CallCount++
 	return s.VerifySyncedCall.Returns.Error
 }

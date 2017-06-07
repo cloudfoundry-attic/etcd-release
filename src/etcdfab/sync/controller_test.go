@@ -14,7 +14,7 @@ var _ = Describe("Controller", func() {
 	var (
 		etcdClient *fakes.EtcdClient
 
-		synchronizedController sync.Controller
+		syncController sync.Controller
 
 		sleepFunc      func(time.Duration)
 		sleepDuration  time.Duration
@@ -28,7 +28,7 @@ var _ = Describe("Controller", func() {
 			sleepDuration = duration
 		}
 
-		synchronizedController = sync.NewController(etcdClient, sleepFunc)
+		syncController = sync.NewController(etcdClient, sleepFunc)
 	})
 
 	AfterEach(func() {
@@ -49,7 +49,7 @@ var _ = Describe("Controller", func() {
 			})
 
 			It("returns no error", func() {
-				err := synchronizedController.VerifySynced()
+				err := syncController.VerifySynced()
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(etcdClient.KeysCall.CallCount).To(Equal(5))
@@ -64,7 +64,7 @@ var _ = Describe("Controller", func() {
 			})
 
 			It("returns the error", func() {
-				err := synchronizedController.VerifySynced()
+				err := syncController.VerifySynced()
 				Expect(err).To(MatchError("never syncs"))
 
 				Expect(etcdClient.KeysCall.CallCount).To(Equal(20))

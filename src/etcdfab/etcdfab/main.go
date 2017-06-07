@@ -10,6 +10,7 @@ import (
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/command"
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/sync"
 
 	"code.cloudfoundry.org/lager"
 )
@@ -28,6 +29,7 @@ func main() {
 	commandWrapper := command.NewWrapper()
 	etcdClient := client.NewEtcdClient(logger)
 	clusterController := cluster.NewController(etcdClient, logger, time.Sleep)
+	syncController := sync.NewController(etcdClient, time.Sleep)
 
 	app := application.New(application.NewArgs{
 		Command:            commandWrapper,
@@ -35,6 +37,7 @@ func main() {
 		LinkConfigFilePath: flags.LinkConfigFilePath,
 		EtcdClient:         etcdClient,
 		ClusterController:  clusterController,
+		SyncController:     syncController,
 		OutWriter:          os.Stdout,
 		ErrWriter:          os.Stderr,
 		Logger:             logger,

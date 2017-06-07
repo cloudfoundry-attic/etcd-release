@@ -14,6 +14,7 @@ import (
 type EtcdClient struct {
 	coreosEtcdClient coreosetcdclient.Client
 	membersAPI       coreosetcdclient.MembersAPI
+	keysAPI          coreosetcdclient.KeysAPI
 
 	logger logger
 }
@@ -82,9 +83,11 @@ func (e *EtcdClient) Configure(etcdfabConfig Config) error {
 	}
 
 	membersAPI := coreosetcdclient.NewMembersAPI(coreosEtcdClient)
+	keysAPI := coreosetcdclient.NewKeysAPI(coreosEtcdClient)
 
 	e.coreosEtcdClient = coreosEtcdClient
 	e.membersAPI = membersAPI
+	e.keysAPI = keysAPI
 
 	return nil
 }
@@ -119,4 +122,9 @@ func (e *EtcdClient) MemberAdd(peerURL string) (Member, error) {
 		PeerURLs:   m.PeerURLs,
 		ClientURLs: m.ClientURLs,
 	}, nil
+}
+
+func (e *EtcdClient) Keys() error {
+	_, err := e.keysAPI.Get(context.Background(), "", &coreosetcdclient.GetOptions{})
+	return err
 }

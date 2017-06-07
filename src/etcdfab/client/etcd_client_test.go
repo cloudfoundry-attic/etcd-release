@@ -30,9 +30,8 @@ var _ = Describe("EtcdClient", func() {
 		logger = &fakes.Logger{}
 		cfg = &fakes.Config{}
 
-		etcdServer = etcdserver.NewEtcdServer()
+		etcdServer = etcdserver.NewEtcdServer(false, "")
 		cfg.EtcdClientEndpointsCall.Returns.Endpoints = []string{fmt.Sprintf("%s", etcdServer.URL())}
-		cfg.RequireSSLCall.Returns.RequireSSL = false
 	})
 
 	AfterEach(func() {
@@ -41,10 +40,6 @@ var _ = Describe("EtcdClient", func() {
 
 	Describe("Configure", func() {
 		Context("when etcdfabConfig.RequireSSL() is false", func() {
-			BeforeEach(func() {
-				cfg.RequireSSLCall.Returns.RequireSSL = false
-			})
-
 			It("configures the etcd client with etcdfab config", func() {
 				etcdClient = client.NewEtcdClient(logger)
 
@@ -167,27 +162,21 @@ var _ = Describe("EtcdClient", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		Context("when require ssl is enabled", func() {
-			BeforeEach(func() {
-				cfg.RequireSSLCall.Returns.RequireSSL = true
-			})
-
-			It("returns a list of members in the cluster", func() {
-				members, err := etcdClient.MemberList()
-				Expect(err).NotTo(HaveOccurred())
-				Expect(members).To(Equal([]client.Member{
-					{
-						ID:   "some-id",
-						Name: "some-node-1",
-						PeerURLs: []string{
-							"http://some-node-url:7001",
-						},
-						ClientURLs: []string{
-							"http://some-node-url:4001",
-						},
+		It("returns a list of members in the cluster", func() {
+			members, err := etcdClient.MemberList()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(members).To(Equal([]client.Member{
+				{
+					ID:   "some-id",
+					Name: "some-node-1",
+					PeerURLs: []string{
+						"http://some-node-url:7001",
 					},
-				}))
-			})
+					ClientURLs: []string{
+						"http://some-node-url:4001",
+					},
+				},
+			}))
 		})
 
 		Context("when members api list fails", func() {
@@ -250,6 +239,37 @@ var _ = Describe("EtcdClient", func() {
 
 			It("returns an error", func() {
 				_, err := etcdClient.MemberAdd("http://fake-peer-url:111")
+				Expect(err).To(MatchError("client: etcd cluster is unavailable or misconfigured"))
+			})
+		})
+	})
+
+	Describe("Keys", func() {
+		BeforeEach(func() {
+			etcdClient = client.NewEtcdClient(logger)
+
+			err := etcdClient.Configure(cfg)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when keys api returns 200", func() {
+			BeforeEach(func() {
+				etcdServer.SetKeysReturn(http.StatusOK)
+			})
+
+			It("does not return an error", func() {
+				err := etcdClient.Keys()
+				Expect(err).NotTo(HaveOccurred())
+			})
+		})
+
+		Context("when keys api fails", func() {
+			BeforeEach(func() {
+				etcdServer.SetKeysReturn(http.StatusInternalServerError)
+			})
+
+			It("returns an error", func() {
+				err := etcdClient.Keys()
 				Expect(err).To(MatchError("client: etcd cluster is unavailable or misconfigured"))
 			})
 		})

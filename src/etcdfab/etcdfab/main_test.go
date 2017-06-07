@@ -23,9 +23,11 @@ var _ = Describe("EtcdFab", func() {
 		configFile     *os.File
 		linkConfigFile *os.File
 		etcdFabCommand *exec.Cmd
+		startTLS       bool
 	)
 
 	BeforeEach(func() {
+		startTLS = true
 		tmpDir, err := ioutil.TempDir("", "")
 		Expect(err).NotTo(HaveOccurred())
 
@@ -63,17 +65,6 @@ var _ = Describe("EtcdFab", func() {
 		err = linkConfigFile.Close()
 		Expect(err).NotTo(HaveOccurred())
 
-		writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
-			"heartbeat_interval_in_milliseconds": 10,
-			"election_timeout_in_milliseconds":   20,
-			"peer_require_ssl":                   false,
-			"peer_ip":                            "some-peer-ip",
-			"require_ssl":                        false,
-			"client_ip":                          "some-client-ip",
-			"advertise_urls_dns_suffix":          "some-dns-suffix",
-			"machines":                           []string{"some-ip-1", "some-ip-2"},
-		})
-
 		etcdFabCommand = exec.Command(pathToEtcdFab,
 			"--config-file", configFile.Name(),
 			"--config-link-file", linkConfigFile.Name(),
@@ -87,10 +78,34 @@ var _ = Describe("EtcdFab", func() {
 	})
 
 	Context("when etcd's /v2/keys returns a 200", func() {
+		var (
+			etcdServer *etcdserver.EtcdServer
+		)
+
+		BeforeEach(func() {
+			etcdServer = etcdserver.NewEtcdServer(!startTLS, "")
+			etcdServer.SetKeysReturn(http.StatusOK)
+
+			writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
+				"etcd_path":                          pathToFakeEtcd,
+				"heartbeat_interval_in_milliseconds": 10,
+				"election_timeout_in_milliseconds":   20,
+				"peer_require_ssl":                   false,
+				"peer_ip":                            "some-peer-ip",
+				"require_ssl":                        false,
+				"client_ip":                          "some-client-ip",
+				"machines":                           []string{"127.0.0.1"},
+			})
+		})
+
+		AfterEach(func() {
+			etcdServer.Exit()
+		})
+
 		It("writes a pid and exits 0", func() {
 			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			pid, err := ioutil.ReadFile(filepath.Join(runDir, "etcd.pid"))
 			Expect(err).NotTo(HaveOccurred())
@@ -102,58 +117,36 @@ var _ = Describe("EtcdFab", func() {
 		})
 	})
 
-	Context("when etcd's /v2/keys returns a 500", func() {
-		var (
-			etcdServer *etcdserver.EtcdServer
-		)
+	Context("when configured to be a non tls etcd cluster", func() {
+		Context("when no prior cluster members exist", func() {
+			var (
+				etcdServer *etcdserver.EtcdServer
+			)
 
-		BeforeEach(func() {
-			writeConfigurationFile(configFile.Name(), map[string]interface{}{
-				"node": map[string]interface{}{
-					"name":        "some_name",
-					"index":       3,
-					"external_ip": "some-external-ip",
-				},
-				"etcd": map[string]interface{}{
-					"etcd_path": pathToFakeEtcd,
-					"run_dir":   runDir,
+			BeforeEach(func() {
+				etcdServer = etcdserver.NewEtcdServer(!startTLS, "")
+				etcdServer.SetKeysReturn(http.StatusOK)
+
+				writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
+					"etcd_path":                          pathToFakeEtcd,
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
 					"peer_ip":                            "some-peer-ip",
 					"require_ssl":                        false,
 					"client_ip":                          "some-client-ip",
-					"advertise_urls_dns_suffix":          "some-dns-suffix",
-					"machines": []string{
-						"127.0.0.1",
-					},
-				},
+					"machines":                           []string{"127.0.0.1"},
+				})
 			})
-			etcdServer = etcdserver.NewEtcdServer()
-			etcdServer.SetKeysReturn(http.StatusInternalServerError)
-		})
 
-		AfterEach(func() {
-			etcdServer.Exit()
-		})
+			AfterEach(func() {
+				etcdServer.Exit()
+			})
 
-		FIt("does not write a pid and exits 1", func() {
-			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
-
-			pidFilePath := filepath.Join(runDir, "etcd.pid")
-			_, err = os.Stat(pidFilePath)
-			Expect(err.Error()).To(ContainSubstring("no such file or directory"))
-		})
-	})
-
-	Context("when configured to be a non tls etcd cluster", func() {
-		Context("when no prior cluster members exist", func() {
 			It("starts etcd with proper flags and initial-cluster-state new", func() {
 				session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+				Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 				Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 				Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
@@ -172,12 +165,10 @@ var _ = Describe("EtcdFab", func() {
 		})
 
 		Context("when a prior cluster exists", func() {
-			var (
-				etcdServer *etcdserver.EtcdServer
-			)
+			var etcdServer *etcdserver.EtcdServer
 
 			BeforeEach(func() {
-				etcdServer = etcdserver.NewEtcdServer()
+				etcdServer = etcdserver.NewEtcdServer(!startTLS, "")
 				etcdServer.SetMembersReturn(`{
 					"members": [
 						{
@@ -195,6 +186,7 @@ var _ = Describe("EtcdFab", func() {
 						"http://some-external-ip:7001"
 					]
 				}`, http.StatusCreated)
+				etcdServer.SetKeysReturn(http.StatusOK)
 
 				writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
 					"etcd_path":                          pathToFakeEtcd,
@@ -208,10 +200,14 @@ var _ = Describe("EtcdFab", func() {
 				})
 			})
 
+			AfterEach(func() {
+				etcdServer.Exit()
+			})
+
 			It("starts etcd with proper flags and initial-cluster-state existing", func() {
 				session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
 				Expect(err).NotTo(HaveOccurred())
-				Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+				Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 				Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 				Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
@@ -231,8 +227,12 @@ var _ = Describe("EtcdFab", func() {
 	})
 
 	Context("when configured to be a tls etcd cluster", func() {
+		var etcdServer *etcdserver.EtcdServer
+
 		BeforeEach(func() {
-			certDir := "../fixtures"
+			etcdServer = etcdserver.NewEtcdServer(startTLS, "../fixtures")
+			etcdServer.SetKeysReturn(http.StatusOK)
+
 			writeConfigurationFile(configFile.Name(), map[string]interface{}{
 				"node": map[string]interface{}{
 					"name":  "some_name",
@@ -240,7 +240,7 @@ var _ = Describe("EtcdFab", func() {
 				},
 				"etcd": map[string]interface{}{
 					"etcd_path":                          pathToFakeEtcd,
-					"cert_dir":                           certDir,
+					"cert_dir":                           "../fixtures",
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   true,
@@ -264,15 +264,18 @@ var _ = Describe("EtcdFab", func() {
 				"peer_ip":                            "some-peer-ip",
 				"require_ssl":                        true,
 				"client_ip":                          "some-client-ip",
-				"advertise_urls_dns_suffix":          "some-dns-suffix",
-				"machines":                           []string{"some-ip-1", "some-ip-2"},
+				"advertise_urls_dns_suffix":          "127.0.0.1",
 			})
+		})
+
+		AfterEach(func() {
+			etcdServer.Exit()
 		})
 
 		It("shells out to etcd with provided flags", func() {
 			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
 			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 			Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 			Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
@@ -282,8 +285,8 @@ var _ = Describe("EtcdFab", func() {
 				"--election-timeout", "20",
 				"--listen-peer-urls", "https://some-peer-ip:7001",
 				"--listen-client-urls", "https://some-client-ip:4001",
-				"--initial-advertise-peer-urls", "https://some-name-3.some-dns-suffix:7001",
-				"--advertise-client-urls", "https://some-name-3.some-dns-suffix:4001",
+				"--initial-advertise-peer-urls", "https://some-name-3.127.0.0.1:7001",
+				"--advertise-client-urls", "https://some-name-3.127.0.0.1:4001",
 				"--client-cert-auth",
 				"--trusted-ca-file", "../fixtures/server-ca.crt",
 				"--cert-file", "../fixtures/server.crt",
@@ -292,21 +295,37 @@ var _ = Describe("EtcdFab", func() {
 				"--peer-trusted-ca-file", "../fixtures/peer-ca.crt",
 				"--peer-cert-file", "../fixtures/peer.crt",
 				"--peer-key-file", "../fixtures/peer.key",
-				"--initial-cluster", "some-name-3=https://some-name-3.some-dns-suffix:7001",
+				"--initial-cluster", "some-name-3=https://some-name-3.127.0.0.1:7001",
 				"--initial-cluster-state", "new",
 			}))
 		})
 	})
 
 	It("writes etcd stdout/stderr", func() {
+		etcdServer := etcdserver.NewEtcdServer(!startTLS, "")
+		etcdServer.SetKeysReturn(http.StatusOK)
+
+		writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
+			"etcd_path":                          pathToFakeEtcd,
+			"heartbeat_interval_in_milliseconds": 10,
+			"election_timeout_in_milliseconds":   20,
+			"peer_require_ssl":                   false,
+			"peer_ip":                            "some-peer-ip",
+			"require_ssl":                        false,
+			"client_ip":                          "some-client-ip",
+			"machines":                           []string{"127.0.0.1"},
+		})
+
 		session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(session, 10*time.Second).Should(gexec.Exit(0))
+		Eventually(session, 30*time.Second).Should(gexec.Exit(0))
 
 		Expect(string(session.Out.Contents())).To(ContainSubstring("application.build-etcd-flags"))
 		Expect(string(session.Out.Contents())).To(ContainSubstring("starting fake etcd"))
 		Expect(string(session.Out.Contents())).To(ContainSubstring("stopping fake etcd"))
 		Expect(string(session.Err.Contents())).To(ContainSubstring("fake error in stderr"))
+
+		etcdServer.Exit()
 	})
 
 	Context("failure cases", func() {

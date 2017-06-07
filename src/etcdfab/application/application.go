@@ -16,23 +16,23 @@ import (
 const etcdPidFilename = "etcd.pid"
 
 type Application struct {
-	command               command
-	commandPidPath        string
-	configFilePath        string
-	linkConfigFilePath    string
-	etcdClient            etcdClient
-	clusterController     clusterController
-	synchronizeController synchronizeController
-	outWriter             io.Writer
-	errWriter             io.Writer
-	logger                logger
+	command            command
+	commandPidPath     string
+	configFilePath     string
+	linkConfigFilePath string
+	etcdClient         etcdClient
+	clusterController  clusterController
+	syncController     syncController
+	outWriter          io.Writer
+	errWriter          io.Writer
+	logger             logger
 }
 
 type command interface {
 	Start(string, []string, io.Writer, io.Writer) (int, error)
 }
 
-type synchronizeController interface {
+type syncController interface {
 	VerifySynced() error
 }
 
@@ -50,29 +50,29 @@ type logger interface {
 }
 
 type NewArgs struct {
-	Command                command
-	ConfigFilePath         string
-	LinkConfigFilePath     string
-	EtcdClient             etcdClient
-	CertDir                string
-	ClusterController      clusterController
-	SynchronizedController synchronizeController
-	OutWriter              io.Writer
-	ErrWriter              io.Writer
-	Logger                 logger
+	Command            command
+	ConfigFilePath     string
+	LinkConfigFilePath string
+	EtcdClient         etcdClient
+	CertDir            string
+	ClusterController  clusterController
+	SyncController     syncController
+	OutWriter          io.Writer
+	ErrWriter          io.Writer
+	Logger             logger
 }
 
 func New(args NewArgs) Application {
 	return Application{
-		command:               args.Command,
-		configFilePath:        args.ConfigFilePath,
-		linkConfigFilePath:    args.LinkConfigFilePath,
-		etcdClient:            args.EtcdClient,
-		clusterController:     args.ClusterController,
-		synchronizeController: args.SynchronizedController,
-		outWriter:             args.OutWriter,
-		errWriter:             args.ErrWriter,
-		logger:                args.Logger,
+		command:            args.Command,
+		configFilePath:     args.ConfigFilePath,
+		linkConfigFilePath: args.LinkConfigFilePath,
+		etcdClient:         args.EtcdClient,
+		clusterController:  args.ClusterController,
+		syncController:     args.SyncController,
+		outWriter:          args.OutWriter,
+		errWriter:          args.ErrWriter,
+		logger:             args.Logger,
 	}
 }
 
@@ -112,7 +112,7 @@ func (a Application) Start() error {
 		return err
 	}
 
-	err = a.synchronizeController.VerifySynced()
+	err = a.syncController.VerifySynced()
 	if err != nil {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
 		return err
