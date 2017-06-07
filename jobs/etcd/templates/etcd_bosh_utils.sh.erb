@@ -1,8 +1,3 @@
-LOG_DIR=/var/vcap/sys/log/etcd
-
-# /var/vcap/store will be persistent disk if one exists, but defaults to system disk if no persistent disk is configured.
-STORE_DIR=/var/vcap/store
-DATA_DIR=${STORE_DIR}/etcd
 
 <%
   def discover_external_ip
@@ -97,68 +92,3 @@ DATA_DIR=${STORE_DIR}/etcd
   end
 %>
 
-node_name="<%= node_name %>"
-advertise_peer_url="<%= advertise_peer_url %>"
-advertise_client_url="<%= advertise_client_url %>"
-consistency_checker_cluster_members="<%= consistency_checker_cluster_members %>"
-
-<% if p("etcd.require_ssl") || p("etcd.peer_require_ssl") %>
-CERT_DIR=/var/vcap/jobs/etcd/config/certs
-<% end %>
-
-<% if p("etcd.require_ssl") %>
-ca_cert_file=${CERT_DIR}/server-ca.crt
-client_cert_file=${CERT_DIR}/client.crt
-client_key_file=${CERT_DIR}/client.key
-
-etcdctl_sec_flags=" \
-  -ca-file=${ca_cert_file} \
-  -cert-file=${client_cert_file} \
-  -key-file=${client_key_file}"
-<% else %>
-etcdctl_sec_flags=""
-<% end %>
-
-member_list() {
-  for cluster_member in <%= cluster_members %>
-  do
-    set +e
-    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member list
-    local exitstatus=$?
-    set -e
-    if [ $exitstatus -eq 0 ]; then
-      return
-    fi
-  done
-}
-
-member_remove() {
-  for cluster_member in <%= cluster_members %>
-  do
-    set +e
-    /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C "${cluster_member}" member remove $1
-    local exitstatus=$?
-    set -e
-    if [ $exitstatus -eq 0 ]; then
-      return
-    fi
-  done
-}
-
-extract_my_id() {
-  echo "$1" | grep ${advertise_peer_url} | sed 's/:.*//' | sed 's/\[.*\]//'
-}
-
-safe_teardown() {
-  if prior_cluster_had_other_nodes "$1"; then
-    my_id=$(extract_my_id "$1")
-    if [ ! -z "$my_id" ]; then
-      member_remove ${my_id}
-    fi
-    rm -rf ${DATA_DIR}/*
-  fi
-}
-
-prior_cluster_had_other_nodes() {
-  [ "$( wc -l <<< "$1" )" -ne 1 ] || ! grep ${advertise_peer_url} <<< "$1"
-}

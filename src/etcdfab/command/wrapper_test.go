@@ -1,6 +1,8 @@
 package command_test
 
 import (
+	"os/exec"
+
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/command"
 
 	. "github.com/onsi/ginkgo"
@@ -31,6 +33,33 @@ var _ = Describe("Wrapper", func() {
 				commandWrapper := command.NewWrapper()
 				_, err := commandWrapper.Start("bogus", []string{}, nil, nil)
 				Expect(err).To(MatchError(ContainSubstring("executable file not found in $PATH")))
+			})
+		})
+	})
+
+	Describe("Kill", func() {
+		var pid int
+
+		BeforeEach(func() {
+			cmd := exec.Command("echo", "./fake-process.sh")
+
+			err := cmd.Start()
+			Expect(err).NotTo(HaveOccurred())
+
+			pid = cmd.Process.Pid
+		})
+
+		It("kills the process", func() {
+			commandWrapper := command.NewWrapper()
+			err := commandWrapper.Kill(pid)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when killing the process returns an error", func() {
+			It("returns the error to the caller", func() {
+				commandWrapper := command.NewWrapper()
+				err := commandWrapper.Kill(-1)
+				Expect(err).To(MatchError(ContainSubstring("process already released")))
 			})
 		})
 	})

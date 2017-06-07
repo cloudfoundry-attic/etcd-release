@@ -30,6 +30,7 @@ type Application struct {
 
 type command interface {
 	Start(string, []string, io.Writer, io.Writer) (int, error)
+	Kill(int) error
 }
 
 type syncController interface {
@@ -42,6 +43,7 @@ type clusterController interface {
 
 type etcdClient interface {
 	Configure(client.Config) error
+	MemberRemove(string) error
 }
 
 type logger interface {
@@ -54,7 +56,6 @@ type NewArgs struct {
 	ConfigFilePath     string
 	LinkConfigFilePath string
 	EtcdClient         etcdClient
-	CertDir            string
 	ClusterController  clusterController
 	SyncController     syncController
 	OutWriter          io.Writer
@@ -115,6 +116,18 @@ func (a Application) Start() error {
 	err = a.syncController.VerifySynced()
 	if err != nil {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
+
+		memberRemoveErr := a.etcdClient.MemberRemove(cfg.NodeName())
+		if memberRemoveErr != nil {
+			panic(err)
+		}
+
+		killErr := a.command.Kill(pid)
+		if killErr != nil {
+			a.logger.Error("application.kill-pid.failed", killErr)
+			return killErr
+		}
+
 		return err
 	}
 

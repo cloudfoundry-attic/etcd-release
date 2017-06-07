@@ -16,6 +16,16 @@ type CommandWrapper struct {
 			Error error
 		}
 	}
+
+	KillCall struct {
+		CallCount int
+		Receives  struct {
+			Pid int
+		}
+		Returns struct {
+			Error error
+		}
+	}
 }
 
 func (c *CommandWrapper) Start(commandPath string, commandArgs []string, outWriter, errWriter io.Writer) (int, error) {
@@ -26,4 +36,11 @@ func (c *CommandWrapper) Start(commandPath string, commandArgs []string, outWrit
 	c.StartCall.Receives.ErrWriter = errWriter
 
 	return c.StartCall.Returns.Pid, c.StartCall.Returns.Error
+}
+
+func (c *CommandWrapper) Kill(pid int) error {
+	c.KillCall.CallCount++
+	c.KillCall.Receives.Pid = pid
+
+	return c.KillCall.Returns.Error
 }

@@ -52,7 +52,6 @@ var _ = Describe("Application", func() {
 			fakeClusterController *fakes.ClusterController
 			fakeSyncController    *fakes.SyncController
 			fakeEtcdClient        *fakes.EtcdClient
-			certDir               string
 			fakeLogger            *fakes.Logger
 
 			outWriter bytes.Buffer
@@ -135,7 +134,6 @@ var _ = Describe("Application", func() {
 				ConfigFilePath:     configFileName,
 				LinkConfigFilePath: linkConfigFileName,
 				EtcdClient:         fakeEtcdClient,
-				CertDir:            certDir,
 				ClusterController:  fakeClusterController,
 				SyncController:     fakeSyncController,
 				OutWriter:          &outWriter,
@@ -428,16 +426,91 @@ var _ = Describe("Application", func() {
 					fakeSyncController.VerifySyncedCall.Returns.Error = errors.New("failed to verify synced")
 				})
 
-				It("returns an error to the caller and logs a helpful message", func() {
+				It("cleans up", func() {
 					err := app.Start()
 					Expect(err).To(MatchError("failed to verify synced"))
 
-					Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
-						{
-							Action: "application.synchronized-controller.verify-synced.failed",
-							Error:  err,
-						},
-					}))
+					By("removing the node rom the cluster", func() {
+						Expect(fakeEtcdClient.MemberRemoveCall.CallCount).To(Equal(1))
+						Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
+					})
+
+					// By("removing the DATA_DIR", func() {
+					// 	Expect(filePath.Join(dataDir, "")).NotTo(BeARegularFile())
+					// })
+
+					By("killing the etcd process", func() {
+						Expect(fakeCommand.KillCall.CallCount).To(Equal(1))
+						Expect(fakeCommand.KillCall.Receives.Pid).To(Equal(12345))
+					})
+
+					By("not writing a pidfile", func() {
+						Expect(filepath.Join(runDir, "etcd.pid")).NotTo(BeARegularFile())
+					})
+
+					By("logging the error", func() {
+						Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+							{
+								Action: "application.synchronized-controller.verify-synced.failed",
+								Error:  err,
+							},
+						}))
+					})
+				})
+
+				Context("when it cannot kill the etcd process", func() {
+					BeforeEach(func() {
+						fakeCommand.KillCall.Returns.Error = errors.New("failed to kill process")
+					})
+
+					It("returns and logs the error", func() {
+						err := app.Start()
+						Expect(err).To(MatchError("failed to kill process"))
+
+						Expect(fakeCommand.KillCall.CallCount).To(Equal(1))
+						Expect(fakeCommand.KillCall.Receives.Pid).To(Equal(12345))
+						Expect(filepath.Join(runDir, "etcd.pid")).NotTo(BeARegularFile())
+						Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+							{
+								Action: "application.synchronized-controller.verify-synced.failed",
+								Error:  errors.New("failed to verify synced"),
+							},
+							{
+								Action: "application.kill-pid.failed",
+								Error:  err,
+							},
+						}))
+					})
+				})
+
+				Context("when it cannot remove the node from the cluster", func() {
+					BeforeEach(func() {
+						fakeEtcdClient.MemberRemoveCall.Returns.Error = errors.New("failed to remove member from cluster")
+					})
+
+					PIt("continues cleanup but logs the error", func() {
+						err := app.Start()
+						Expect(err).To(MatchError("failed to kill process"))
+
+						Expect(fakeCommand.KillCall.CallCount).To(Equal(1))
+						Expect(fakeCommand.KillCall.Receives.Pid).To(Equal(12345))
+						Expect(filepath.Join(runDir, "etcd.pid")).NotTo(BeARegularFile())
+						Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+							{
+								Action: "application.synchronized-controller.verify-synced.failed",
+								Error:  errors.New("failed to verify synced"),
+							},
+							{
+								Action: "application.etcd-client.member-remove.failed",
+								Error:  errors.New("failed to remove member"),
+							},
+							{
+								Action: "application.kill-pid.failed",
+								Error:  err,
+							},
+						}))
+					})
+
 				})
 			})
 

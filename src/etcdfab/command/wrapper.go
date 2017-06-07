@@ -2,6 +2,7 @@ package command
 
 import (
 	"io"
+	"os"
 	"os/exec"
 )
 
@@ -24,4 +25,19 @@ func (w Wrapper) Start(commandPath string, commandArgs []string, outWriter, errW
 	}
 
 	return cmd.Process.Pid, nil
+}
+
+func (w Wrapper) Kill(pid int) error {
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		//not tested
+		return err
+	}
+
+	err = process.Kill()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

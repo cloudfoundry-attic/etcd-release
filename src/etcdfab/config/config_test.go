@@ -47,8 +47,6 @@ var _ = Describe("Config", func() {
 					"external_ip": "some-external-ip",
 				},
 				"etcd": map[string]interface{}{
-					"etcd_path":                          "path-to-etcd",
-					"cert_dir":                           "some-cert-dir",
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -88,8 +86,9 @@ var _ = Describe("Config", func() {
 					ExternalIP: "some-external-ip",
 				},
 				Etcd: config.Etcd{
-					EtcdPath:               "path-to-etcd",
-					CertDir:                "some-cert-dir",
+					EtcdPath:               "/var/vcap/packages/etcd/etcd",
+					RunDir:                 "/var/vcap/sys/run/etcd",
+					CertDir:                "/var/vcap/jobs/etcd/config/certs",
 					HeartbeatInterval:      10,
 					ElectionTimeout:        33,
 					PeerRequireSSL:         false,
@@ -119,8 +118,9 @@ var _ = Describe("Config", func() {
 						ExternalIP: "some-external-ip",
 					},
 					Etcd: config.Etcd{
-						EtcdPath:               "path-to-etcd",
-						CertDir:                "some-cert-dir",
+						EtcdPath:               "/var/vcap/packages/etcd/etcd",
+						RunDir:                 "/var/vcap/sys/run/etcd",
+						CertDir:                "/var/vcap/jobs/etcd/config/certs",
 						HeartbeatInterval:      10,
 						ElectionTimeout:        20,
 						PeerRequireSSL:         false,

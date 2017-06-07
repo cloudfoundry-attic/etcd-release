@@ -1,9 +1,13 @@
 #!/bin/bash -exu
 
 SCRIPT_NAME=$(basename $0)
-RUN_DIR=/var/vcap/sys/run/etcd
 JOB_DIR=/var/vcap/jobs/etcd
-PIDFILE=${RUN_DIR}/etcd.pid
+
+LOG_DIR=/var/vcap/sys/log/etcd
+
+# /var/vcap/store will be persistent disk if one exists, but defaults to system disk if no persistent disk is configured.
+STORE_DIR=/var/vcap/store
+DATA_DIR=${STORE_DIR}/etcd
 
 source /var/vcap/packages/etcd-common/utils.sh
 
@@ -12,24 +16,8 @@ source /var/vcap/jobs/etcd/bin/etcd_bosh_utils.sh
 exec > >(tee -a >(logger -p user.info -t vcap.${SCRIPT_NAME}.stdout) | awk -W interactive '{ system("echo -n [$(date +\"%Y-%m-%d %H:%M:%S%z\")]"); print " " $0 }' >> ${LOG_DIR}/${SCRIPT_NAME}.log)
 exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W interactive '{ system("echo -n [$(date +\"%Y-%m-%d %H:%M:%S%z\")]"); print " " $0 }' >> ${LOG_DIR}/${SCRIPT_NAME}.err.log)
 
-function wait_for_this_node_to_synchronize() {
-  for i in $(seq 40); do
-    if /var/vcap/packages/etcd/etcdctl ${etcdctl_sec_flags} -debug -C ${advertise_client_url} ls; then
-      synced=true
-      break
-    fi
-    sleep 1
-  done
-}
-
-function handle_orphaned_etcd() {
-  echo "killing etcd with pid ${etcd_pid}"
-  kill "${etcd_pid}"
-}
 
 function main() {
-  mkdir -p ${RUN_DIR}
-
   case $1 in
 
     start)
@@ -45,7 +33,6 @@ function main() {
         set -e
       <% end %>
 
-      pid_guard ${PIDFILE} "etcd"
 
       <% if p("etcd.enable_network_diagnostics") %>
         set +e
@@ -59,42 +46,11 @@ function main() {
 
       export GOMAXPROCS=$(nproc)
 
-      local tmp_pid_file
-      tmp_pid_file="/tmp/etcd_pid"
-
-      local cert_dir
-      cert_dir=''
-      <% if p("etcd.require_ssl") %>
-      cert_dir=${CERT_DIR}
-      <% end %>
-
       /var/vcap/packages/etcdfab/bin/etcdfab                                                \
-          ${tmp_pid_file}                                                                   \
           --config-file ${JOB_DIR}/config/etcdfab.json                                      \
           --config-link-file "${JOB_DIR}/config/etcd_link.json"                             \
-          ${cert_dir}                                                                       \
           2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \
           1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
-
-      if [ -r ${tmp_pid_file} ]; then
-        etcd_pid=$(cat ${tmp_pid_file})
-      else
-        echo "etcdfab didn't write the etcd pid to file"
-        exit 1
-      fi
-
-      # The sync will move into etcdfab so we can teardown the member list
-      #
-      synced=false
-      wait_for_this_node_to_synchronize # mutates $synced
-
-      if ${synced}; then
-        echo ${etcd_pid} > ${PIDFILE}
-      else
-        safe_teardown "$(member_list)"
-        kill -9 ${etcd_pid}
-        exit 1
-      fi
 
       ;;
 
@@ -103,8 +59,8 @@ function main() {
       /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
       set -e
 
-      safe_teardown "$(member_list)"
-      kill_and_wait ${PIDFILE}
+      <%# safe_teardown "$(member_list)" %>
+      <%# kill_and_wait "/var/vcap/packages/etcd/etcd_pid %>
 
       ;;
 

@@ -38,6 +38,7 @@ func defaultConfig() Config {
 		Etcd: Etcd{
 			EtcdPath: "/var/vcap/packages/etcd/etcd",
 			CertDir:  "/var/vcap/jobs/etcd/config/certs",
+			RunDir:   "/var/vcap/sys/run/etcd",
 		},
 	}
 }

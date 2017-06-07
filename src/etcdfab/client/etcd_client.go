@@ -124,6 +124,14 @@ func (e *EtcdClient) MemberAdd(peerURL string) (Member, error) {
 	}, nil
 }
 
+func (e *EtcdClient) MemberRemove(memberID string) error {
+	err := e.membersAPI.Remove(context.Background(), memberID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (e *EtcdClient) Keys() error {
 	_, err := e.keysAPI.Get(context.Background(), "", &coreosetcdclient.GetOptions{})
 	return err

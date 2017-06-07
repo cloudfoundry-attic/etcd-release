@@ -77,7 +77,7 @@ var _ = Describe("EtcdFab", func() {
 		Expect(os.Remove(linkConfigFile.Name())).NotTo(HaveOccurred())
 	})
 
-	Context("when etcd's /v2/keys returns a 200", func() {
+	Context("when etcd cluster is synced", func() {
 		var (
 			etcdServer *etcdserver.EtcdServer
 		)
@@ -87,7 +87,8 @@ var _ = Describe("EtcdFab", func() {
 			etcdServer.SetKeysReturn(http.StatusOK)
 
 			writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
-				"etcd_path":                          pathToFakeEtcd,
+				"etcd_path": pathToFakeEtcd,
+				"run_dir":   runDir,
 				"heartbeat_interval_in_milliseconds": 10,
 				"election_timeout_in_milliseconds":   20,
 				"peer_require_ssl":                   false,
@@ -117,6 +118,41 @@ var _ = Describe("EtcdFab", func() {
 		})
 	})
 
+	Context("when etcd cluster does not sync", func() {
+		var (
+			etcdServer *etcdserver.EtcdServer
+		)
+
+		BeforeEach(func() {
+			etcdServer = etcdserver.NewEtcdServer(!startTLS, "")
+			etcdServer.SetKeysReturn(http.StatusInternalServerError)
+
+			writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
+				"etcd_path": pathToFakeEtcd,
+				"run_dir":   runDir,
+				"heartbeat_interval_in_milliseconds": 10,
+				"election_timeout_in_milliseconds":   20,
+				"peer_require_ssl":                   false,
+				"peer_ip":                            "some-peer-ip",
+				"require_ssl":                        false,
+				"client_ip":                          "some-client-ip",
+				"machines":                           []string{"127.0.0.1"},
+			})
+		})
+
+		AfterEach(func() {
+			etcdServer.Exit()
+		})
+
+		It("does not write a pid and exits 1", func() {
+			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(session, 30*time.Second).Should(gexec.Exit(1))
+
+			Expect(filepath.Join(runDir, "etcd.pid")).NotTo(BeARegularFile())
+		})
+	})
+
 	Context("when configured to be a non tls etcd cluster", func() {
 		Context("when no prior cluster members exist", func() {
 			var (
@@ -128,7 +164,8 @@ var _ = Describe("EtcdFab", func() {
 				etcdServer.SetKeysReturn(http.StatusOK)
 
 				writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{
-					"etcd_path":                          pathToFakeEtcd,
+					"etcd_path": pathToFakeEtcd,
+					"run_dir":   runDir,
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -240,6 +277,7 @@ var _ = Describe("EtcdFab", func() {
 				},
 				"etcd": map[string]interface{}{
 					"etcd_path":                          pathToFakeEtcd,
+					"run_dir":                            runDir,
 					"cert_dir":                           "../fixtures",
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,

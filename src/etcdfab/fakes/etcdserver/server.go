@@ -20,12 +20,14 @@ type EtcdServer struct {
 }
 
 type etcdBackend struct {
-	membersJSON         string
-	membersStatusCode   int
-	addMemberJSON       string
-	addMemberStatusCode int
-	keysStatusCode      int
-	keysJSON            string
+	membersJSON            string
+	membersStatusCode      int
+	addMemberJSON          string
+	addMemberStatusCode    int
+	removeMemberJSON       string
+	removeMemberStatusCode int
+	keysStatusCode         int
+	keysJSON               string
 }
 
 func NewEtcdServer(startTLS bool, certDir string) *EtcdServer {
@@ -78,8 +80,9 @@ func (e *EtcdServer) Exit() {
 
 func (e *EtcdServer) Reset() {
 	e.backend = &etcdBackend{
-		membersStatusCode:   http.StatusOK,
-		addMemberStatusCode: http.StatusCreated,
+		membersStatusCode:      http.StatusOK,
+		addMemberStatusCode:    http.StatusCreated,
+		removeMemberStatusCode: http.StatusNoContent,
 	}
 }
 
@@ -87,6 +90,8 @@ func (e *EtcdServer) ServeHTTP(responseWriter http.ResponseWriter, request *http
 	switch request.URL.Path {
 	case "/v2/members":
 		e.handleMembers(responseWriter, request)
+	case "/v2/members/member-id":
+		e.handleRemoveMember(responseWriter, request)
 	case "/v2/keys":
 		e.handleKeys(responseWriter, request)
 	}
@@ -103,7 +108,18 @@ func (e *EtcdServer) handleMembers(responseWriter http.ResponseWriter, request *
 	case "POST":
 		responseWriter.WriteHeader(e.backend.addMemberStatusCode)
 		responseWriter.Write([]byte(e.backend.addMemberJSON))
+	case "DELETE":
+		responseWriter.WriteHeader(e.backend.removeMemberStatusCode)
+		responseWriter.Write([]byte(e.backend.removeMemberJSON))
 	}
+}
+
+func (e *EtcdServer) handleRemoveMember(responseWriter http.ResponseWriter, request *http.Request) {
+	e.backendMutex.Lock()
+	defer e.backendMutex.Unlock()
+
+	responseWriter.WriteHeader(e.backend.removeMemberStatusCode)
+	responseWriter.Write([]byte(e.backend.removeMemberJSON))
 }
 
 func (e *EtcdServer) handleKeys(responseWriter http.ResponseWriter, request *http.Request) {
@@ -141,10 +157,18 @@ func (e *EtcdServer) SetAddMemberReturn(memberJSON string, statusCode int) {
 	e.backend.addMemberStatusCode = statusCode
 }
 
-func (e *EtcdServer) SetKeysReturn(status int) {
+func (e *EtcdServer) SetKeysReturn(statusCode int) {
 	e.backendMutex.Lock()
 	defer e.backendMutex.Unlock()
 
 	e.backend.keysJSON = "{}"
-	e.backend.keysStatusCode = status
+	e.backend.keysStatusCode = statusCode
+}
+
+func (e *EtcdServer) SetRemoveMemberReturn(statusCode int) {
+	e.backendMutex.Lock()
+	defer e.backendMutex.Unlock()
+
+	e.backend.removeMemberJSON = "{}"
+	e.backend.removeMemberStatusCode = statusCode
 }

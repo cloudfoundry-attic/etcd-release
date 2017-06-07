@@ -31,6 +31,15 @@ type EtcdClient struct {
 			Error  error
 		}
 	}
+	MemberRemoveCall struct {
+		CallCount int
+		Receives  struct {
+			MemberID string
+		}
+		Returns struct {
+			Error error
+		}
+	}
 	KeysCall struct {
 		CallCount int
 		Stub      func() error
@@ -58,6 +67,13 @@ func (e *EtcdClient) MemberAdd(peerURL string) (client.Member, error) {
 	e.MemberAddCall.Receives.PeerURL = peerURL
 
 	return e.MemberAddCall.Returns.Member, e.MemberAddCall.Returns.Error
+}
+
+func (e *EtcdClient) MemberRemove(memberID string) error {
+	e.MemberRemoveCall.CallCount++
+	e.MemberRemoveCall.Receives.MemberID = memberID
+
+	return e.MemberRemoveCall.Returns.Error
 }
 
 func (e *EtcdClient) Keys() error {

@@ -244,6 +244,47 @@ var _ = Describe("EtcdClient", func() {
 		})
 	})
 
+	Describe("MemberRemove", func() {
+		BeforeEach(func() {
+			etcdServer.SetMembersReturn(`{
+				"members": [
+					{
+						"id": "member-id",
+						"name": "some-node-2",
+						"peerURLs": [
+							"http://some-node-url-2:7001"
+						],
+						"clientURLs": [
+							"http://some-node-url-2:4001"
+						]
+					}
+				]
+			}`, http.StatusOK)
+			etcdServer.SetRemoveMemberReturn(http.StatusNoContent)
+
+			etcdClient = client.NewEtcdClient(logger)
+
+			err := etcdClient.Configure(cfg)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("removes the member from the cluster", func() {
+			err := etcdClient.MemberRemove("member-id")
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		Context("when members api remove fails", func() {
+			BeforeEach(func() {
+				etcdServer.SetRemoveMemberReturn(http.StatusInternalServerError)
+			})
+
+			It("returns an error", func() {
+				err := etcdClient.MemberRemove("member-id")
+				Expect(err).To(MatchError("client: etcd cluster is unavailable or misconfigured"))
+			})
+		})
+	})
+
 	Describe("Keys", func() {
 		BeforeEach(func() {
 			etcdClient = client.NewEtcdClient(logger)
