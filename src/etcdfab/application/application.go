@@ -114,6 +114,9 @@ func (a Application) Start() error {
 		return err
 	}
 
+	a.logger.Info("application.synchronized-controller.verify-synced", lager.Data{
+		"pid": pid,
+	})
 	err = a.syncController.VerifySynced()
 	if err != nil {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
@@ -123,12 +126,18 @@ func (a Application) Start() error {
 			a.logger.Error("application.etcd-client.member-remove.failed", memberRemoveErr)
 		}
 
+		a.logger.Info("application.kill-pid", lager.Data{
+			"pid": pid,
+		})
 		killErr := a.command.Kill(pid)
 		if killErr != nil {
 			a.logger.Error("application.kill-pid.failed", killErr)
 			return killErr
 		}
 
+		a.logger.Info("application.os.remove-all", lager.Data{
+			"data_dir": cfg.Etcd.DataDir,
+		})
 		removeErr := os.RemoveAll(cfg.Etcd.DataDir)
 		if removeErr != nil {
 			//not tested
@@ -138,8 +147,12 @@ func (a Application) Start() error {
 		return err
 	}
 
-	filePidPath := filepath.Join(cfg.Etcd.RunDir, etcdPidFilename)
-	err = ioutil.WriteFile(filePidPath, []byte(fmt.Sprintf("%d", pid)), 0644)
+	pidFilePath := filepath.Join(cfg.Etcd.RunDir, etcdPidFilename)
+	a.logger.Info("application.write-pid-file", lager.Data{
+		"pid":  pid,
+		"path": pidFilePath,
+	})
+	err = ioutil.WriteFile(pidFilePath, []byte(fmt.Sprintf("%d", pid)), 0644)
 	if err != nil {
 		a.logger.Error("application.write-pid-file.failed", err)
 		return err

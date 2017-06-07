@@ -293,6 +293,19 @@ var _ = Describe("Application", func() {
 								"etcd-args": tlsArgs,
 							}},
 						},
+						{
+							Action: "application.synchronized-controller.verify-synced",
+							Data: []lager.Data{{
+								"pid": 12345,
+							}},
+						},
+						{
+							Action: "application.write-pid-file",
+							Data: []lager.Data{{
+								"pid":  12345,
+								"path": filepath.Join(runDir, "etcd.pid"),
+							}},
+						},
 					}))
 				})
 			})
@@ -452,6 +465,12 @@ var _ = Describe("Application", func() {
 								Error:  errors.New("failed to verify synced"),
 							},
 							{
+								Action: "application.kill-pid",
+								Data: []lager.Data{{
+									"pid": 12345,
+								}},
+							},
+							{
 								Action: "application.kill-pid.failed",
 								Error:  err,
 							},
@@ -479,6 +498,12 @@ var _ = Describe("Application", func() {
 							{
 								Action: "application.etcd-client.member-remove.failed",
 								Error:  errors.New("failed to remove member"),
+							},
+							{
+								Action: "application.kill-pid",
+								Data: []lager.Data{{
+									"pid": 12345,
+								}},
 							},
 						}))
 					})
