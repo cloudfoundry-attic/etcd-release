@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"code.cloudfoundry.org/lager"
 
@@ -41,17 +41,19 @@ func createConfig(tmpDir, name string, configuration map[string]interface{}) str
 var _ = Describe("Application", func() {
 	Describe("Start", func() {
 		var (
-			etcdPidPath        string
+			tmpDir             string
+			runDir             string
 			configFileName     string
 			linkConfigFileName string
 
 			etcdfabConfig config.Config
 
-			fakeCommand           *fakes.CommandWrapper
-			fakeClusterController *fakes.ClusterController
-			fakeEtcdClient        *fakes.EtcdClient
-			certDir               string
-			fakeLogger            *fakes.Logger
+			fakeCommand                *fakes.CommandWrapper
+			fakeClusterController      *fakes.ClusterController
+			fakeSynchronizedController *fakes.SynchronizedController
+			fakeEtcdClient             *fakes.EtcdClient
+			certDir                    string
+			fakeLogger                 *fakes.Logger
 
 			outWriter bytes.Buffer
 			errWriter bytes.Buffer
@@ -70,12 +72,16 @@ var _ = Describe("Application", func() {
 				State:   "new",
 			}
 
+			fakeSynchronizedController = &fakes.SynchronizedController{}
+
 			fakeLogger = &fakes.Logger{}
 
-			tmpDir, err := ioutil.TempDir("", "")
+			var err error
+			tmpDir, err = ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
 
-			etcdPidPath = fmt.Sprintf("%s/etcd-pid", tmpDir)
+			runDir, err = ioutil.TempDir("", "")
+			Expect(err).NotTo(HaveOccurred())
 
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
@@ -84,8 +90,9 @@ var _ = Describe("Application", func() {
 					"external_ip": "some-external-ip",
 				},
 				"etcd": map[string]interface{}{
-					"etcd_path":                          "path-to-etcd",
-					"cert_dir":                           "some/cert/dir",
+					"etcd_path": "path-to-etcd",
+					"cert_dir":  "some/cert/dir",
+					"run_dir":   runDir,
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -111,6 +118,7 @@ var _ = Describe("Application", func() {
 				Etcd: config.Etcd{
 					EtcdPath:               "path-to-etcd",
 					CertDir:                "some/cert/dir",
+					RunDir:                 runDir,
 					HeartbeatInterval:      10,
 					ElectionTimeout:        20,
 					PeerRequireSSL:         false,
@@ -123,16 +131,16 @@ var _ = Describe("Application", func() {
 			}
 
 			app = application.New(application.NewArgs{
-				Command:            fakeCommand,
-				CommandPidPath:     etcdPidPath,
-				ConfigFilePath:     configFileName,
-				LinkConfigFilePath: linkConfigFileName,
-				EtcdClient:         fakeEtcdClient,
-				CertDir:            certDir,
-				ClusterController:  fakeClusterController,
-				OutWriter:          &outWriter,
-				ErrWriter:          &errWriter,
-				Logger:             fakeLogger,
+				Command:                fakeCommand,
+				ConfigFilePath:         configFileName,
+				LinkConfigFilePath:     linkConfigFileName,
+				EtcdClient:             fakeEtcdClient,
+				CertDir:                certDir,
+				ClusterController:      fakeClusterController,
+				SynchronizedController: fakeSynchronizedController,
+				OutWriter:              &outWriter,
+				ErrWriter:              &errWriter,
+				Logger:                 fakeLogger,
 			})
 		})
 
@@ -187,6 +195,26 @@ var _ = Describe("Application", func() {
 			}))
 		})
 
+		It("verifies the cluster is synced", func() {
+			err := app.Start()
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(fakeSynchronizedController.VerifySyncedCall.CallCount).To(Equal(1))
+		})
+
+		It("writes the pid of etcd to the run dir", func() {
+			err := app.Start()
+			Expect(err).NotTo(HaveOccurred())
+
+			etcdPidPath := filepath.Join(runDir, "etcd.pid")
+			Expect(etcdPidPath).To(BeARegularFile())
+
+			etcdPid, err := ioutil.ReadFile(etcdPidPath)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(string(etcdPid)).To(Equal("12345"))
+		})
+
 		Context("when configured to be a tls etcd cluster", func() {
 			BeforeEach(func() {
 				configuration := map[string]interface{}{
@@ -196,8 +224,9 @@ var _ = Describe("Application", func() {
 						"external_ip": "some-external-ip",
 					},
 					"etcd": map[string]interface{}{
-						"etcd_path":                          "path-to-etcd",
-						"cert_dir":                           "some/cert/dir",
+						"etcd_path": "path-to-etcd",
+						"cert_dir":  "some/cert/dir",
+						"run_dir":   runDir,
 						"heartbeat_interval_in_milliseconds": 10,
 						"election_timeout_in_milliseconds":   20,
 						"peer_require_ssl":                   true,
@@ -220,15 +249,15 @@ var _ = Describe("Application", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				app = application.New(application.NewArgs{
-					Command:            fakeCommand,
-					CommandPidPath:     etcdPidPath,
-					ConfigFilePath:     configFileName,
-					LinkConfigFilePath: linkConfigFileName,
-					EtcdClient:         fakeEtcdClient,
-					ClusterController:  fakeClusterController,
-					OutWriter:          &outWriter,
-					ErrWriter:          &errWriter,
-					Logger:             fakeLogger,
+					Command:                fakeCommand,
+					ConfigFilePath:         configFileName,
+					LinkConfigFilePath:     linkConfigFileName,
+					EtcdClient:             fakeEtcdClient,
+					ClusterController:      fakeClusterController,
+					SynchronizedController: fakeSynchronizedController,
+					OutWriter:              &outWriter,
+					ErrWriter:              &errWriter,
+					Logger:                 fakeLogger,
 				})
 			})
 
@@ -261,18 +290,6 @@ var _ = Describe("Application", func() {
 				Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
 				Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
 			})
-		})
-
-		It("writes the pid of etcd to the file provided", func() {
-			err := app.Start()
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(etcdPidPath).To(BeARegularFile())
-
-			etcdPid, err := ioutil.ReadFile(etcdPidPath)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(string(etcdPid)).To(Equal("12345"))
 		})
 
 		It("writes informational log messages", func() {
@@ -406,22 +423,46 @@ var _ = Describe("Application", func() {
 				})
 			})
 
+			Context("when synchronizeController.VerifySynced returns an error", func() {
+				BeforeEach(func() {
+					fakeSynchronizedController.VerifySyncedCall.Returns.Error = errors.New("failed to verify synced")
+				})
+
+				It("returns an error to the caller and logs a helpful message", func() {
+					err := app.Start()
+					Expect(err).To(MatchError("failed to verify synced"))
+
+					Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+						{
+							Action: "application.synchronized-controller.verify-synced.failed",
+							Error:  err,
+						},
+					}))
+				})
+			})
+
 			Context("when it cannot write to the specified PID file", func() {
 				BeforeEach(func() {
+					configuration := map[string]interface{}{
+						"etcd": map[string]interface{}{
+							"run_dir": "/path/to/missing",
+						},
+					}
+					configFileName = createConfig(tmpDir, "config-file", configuration)
 					app = application.New(application.NewArgs{
-						Command:            fakeCommand,
-						CommandPidPath:     "/path/to/missing/file",
-						ConfigFilePath:     configFileName,
-						LinkConfigFilePath: linkConfigFileName,
-						EtcdClient:         fakeEtcdClient,
-						ClusterController:  fakeClusterController,
-						Logger:             fakeLogger,
+						Command:                fakeCommand,
+						ConfigFilePath:         configFileName,
+						LinkConfigFilePath:     linkConfigFileName,
+						EtcdClient:             fakeEtcdClient,
+						ClusterController:      fakeClusterController,
+						SynchronizedController: fakeSynchronizedController,
+						Logger:                 fakeLogger,
 					})
 				})
 
 				It("returns the error to the caller and logs a helpful message", func() {
 					err := app.Start()
-					Expect(err).To(MatchError("open /path/to/missing/file: no such file or directory"))
+					Expect(err).To(MatchError("open /path/to/missing/etcd.pid: no such file or directory"))
 
 					Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
 						{

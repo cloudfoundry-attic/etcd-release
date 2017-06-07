@@ -17,6 +17,7 @@ type Node struct {
 type Etcd struct {
 	EtcdPath               string `json:"etcd_path"`
 	CertDir                string `json:"cert_dir"`
+	RunDir                 string `json:"run_dir"`
 	HeartbeatInterval      int    `json:"heartbeat_interval_in_milliseconds"`
 	ElectionTimeout        int    `json:"election_timeout_in_milliseconds"`
 	PeerRequireSSL         bool   `json:"peer_require_ssl"`

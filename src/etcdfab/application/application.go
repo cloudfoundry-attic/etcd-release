@@ -13,20 +13,27 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+const etcdPidFilename = "etcd.pid"
+
 type Application struct {
-	command            command
-	commandPidPath     string
-	configFilePath     string
-	linkConfigFilePath string
-	etcdClient         etcdClient
-	clusterController  clusterController
-	outWriter          io.Writer
-	errWriter          io.Writer
-	logger             logger
+	command               command
+	commandPidPath        string
+	configFilePath        string
+	linkConfigFilePath    string
+	etcdClient            etcdClient
+	clusterController     clusterController
+	synchronizeController synchronizeController
+	outWriter             io.Writer
+	errWriter             io.Writer
+	logger                logger
 }
 
 type command interface {
 	Start(string, []string, io.Writer, io.Writer) (int, error)
+}
+
+type synchronizeController interface {
+	VerifySynced() error
 }
 
 type clusterController interface {
@@ -43,29 +50,29 @@ type logger interface {
 }
 
 type NewArgs struct {
-	Command            command
-	CommandPidPath     string
-	ConfigFilePath     string
-	LinkConfigFilePath string
-	EtcdClient         etcdClient
-	CertDir            string
-	ClusterController  clusterController
-	OutWriter          io.Writer
-	ErrWriter          io.Writer
-	Logger             logger
+	Command                command
+	ConfigFilePath         string
+	LinkConfigFilePath     string
+	EtcdClient             etcdClient
+	CertDir                string
+	ClusterController      clusterController
+	SynchronizedController synchronizeController
+	OutWriter              io.Writer
+	ErrWriter              io.Writer
+	Logger                 logger
 }
 
 func New(args NewArgs) Application {
 	return Application{
-		command:            args.Command,
-		commandPidPath:     args.CommandPidPath,
-		configFilePath:     args.ConfigFilePath,
-		linkConfigFilePath: args.LinkConfigFilePath,
-		etcdClient:         args.EtcdClient,
-		clusterController:  args.ClusterController,
-		outWriter:          args.OutWriter,
-		errWriter:          args.ErrWriter,
-		logger:             args.Logger,
+		command:               args.Command,
+		configFilePath:        args.ConfigFilePath,
+		linkConfigFilePath:    args.LinkConfigFilePath,
+		etcdClient:            args.EtcdClient,
+		clusterController:     args.ClusterController,
+		synchronizeController: args.SynchronizedController,
+		outWriter:             args.OutWriter,
+		errWriter:             args.ErrWriter,
+		logger:                args.Logger,
 	}
 }
 
@@ -105,7 +112,14 @@ func (a Application) Start() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(a.commandPidPath, []byte(fmt.Sprintf("%d", pid)), 0644)
+	err = a.synchronizeController.VerifySynced()
+	if err != nil {
+		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
+		return err
+	}
+
+	filePidPath := filepath.Join(cfg.Etcd.RunDir, etcdPidFilename)
+	err = ioutil.WriteFile(filePidPath, []byte(fmt.Sprintf("%d", pid)), 0644)
 	if err != nil {
 		a.logger.Error("application.write-pid-file.failed", err)
 		return err
