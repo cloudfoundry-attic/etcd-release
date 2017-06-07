@@ -435,6 +435,7 @@ var _ = Describe("Application", func() {
 						Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
 					})
 
+					//TODO: Remove the data dir
 					// By("removing the DATA_DIR", func() {
 					// 	Expect(filePath.Join(dataDir, "")).NotTo(BeARegularFile())
 					// })
@@ -485,12 +486,12 @@ var _ = Describe("Application", func() {
 
 				Context("when it cannot remove the node from the cluster", func() {
 					BeforeEach(func() {
-						fakeEtcdClient.MemberRemoveCall.Returns.Error = errors.New("failed to remove member from cluster")
+						fakeEtcdClient.MemberRemoveCall.Returns.Error = errors.New("failed to remove member")
 					})
 
-					PIt("continues cleanup but logs the error", func() {
+					It("continues cleanup but logs the error", func() {
 						err := app.Start()
-						Expect(err).To(MatchError("failed to kill process"))
+						Expect(err).To(MatchError("failed to verify synced"))
 
 						Expect(fakeCommand.KillCall.CallCount).To(Equal(1))
 						Expect(fakeCommand.KillCall.Receives.Pid).To(Equal(12345))
@@ -498,19 +499,14 @@ var _ = Describe("Application", func() {
 						Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
 							{
 								Action: "application.synchronized-controller.verify-synced.failed",
-								Error:  errors.New("failed to verify synced"),
+								Error:  err,
 							},
 							{
 								Action: "application.etcd-client.member-remove.failed",
 								Error:  errors.New("failed to remove member"),
 							},
-							{
-								Action: "application.kill-pid.failed",
-								Error:  err,
-							},
 						}))
 					})
-
 				})
 			})
 

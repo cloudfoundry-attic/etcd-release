@@ -119,7 +119,7 @@ func (a Application) Start() error {
 
 		memberRemoveErr := a.etcdClient.MemberRemove(cfg.NodeName())
 		if memberRemoveErr != nil {
-			panic(err)
+			a.logger.Error("application.etcd-client.member-remove.failed", memberRemoveErr)
 		}
 
 		killErr := a.command.Kill(pid)
