@@ -108,6 +108,10 @@ var _ = Describe("split brain one leader", func() {
 		By("restarting etcd/1 to cause a split brain", func() {
 			err := boshClient.Restart(etcdManifestName, "etcd", 1)
 			Expect(err).NotTo(HaveOccurred())
+
+			leaderName, err := etcdClient.LeaderByNodeURL("https://etcd-1.etcd.service.cf.internal:4001")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(leaderName).To(Equal("etcd-1"))
 		})
 
 		By("unblock traffic to and from etcd/1", func() {
