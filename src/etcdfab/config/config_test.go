@@ -89,6 +89,7 @@ var _ = Describe("Config", func() {
 					EtcdPath:               "/var/vcap/packages/etcd/etcd",
 					RunDir:                 "/var/vcap/sys/run/etcd",
 					CertDir:                "/var/vcap/jobs/etcd/config/certs",
+					DataDir:                "/var/vcap/store/etcd",
 					HeartbeatInterval:      10,
 					ElectionTimeout:        33,
 					PeerRequireSSL:         false,
@@ -121,6 +122,7 @@ var _ = Describe("Config", func() {
 						EtcdPath:               "/var/vcap/packages/etcd/etcd",
 						RunDir:                 "/var/vcap/sys/run/etcd",
 						CertDir:                "/var/vcap/jobs/etcd/config/certs",
+						DataDir:                "/var/vcap/store/etcd",
 						HeartbeatInterval:      10,
 						ElectionTimeout:        20,
 						PeerRequireSSL:         false,
@@ -145,6 +147,8 @@ var _ = Describe("Config", func() {
 
 			Expect(cfg.Etcd.EtcdPath).To(Equal("/var/vcap/packages/etcd/etcd"))
 			Expect(cfg.Etcd.CertDir).To(Equal("/var/vcap/jobs/etcd/config/certs"))
+			Expect(cfg.Etcd.RunDir).To(Equal("/var/vcap/sys/run/etcd"))
+			Expect(cfg.Etcd.DataDir).To(Equal("/var/vcap/store/etcd"))
 		})
 
 		Context("failure cases", func() {

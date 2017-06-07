@@ -43,6 +43,7 @@ var _ = Describe("Application", func() {
 		var (
 			tmpDir             string
 			runDir             string
+			dataDir            string
 			configFileName     string
 			linkConfigFileName string
 
@@ -82,6 +83,9 @@ var _ = Describe("Application", func() {
 			runDir, err = ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
 
+			dataDir, err = ioutil.TempDir("", "data")
+			Expect(err).NotTo(HaveOccurred())
+
 			configuration := map[string]interface{}{
 				"node": map[string]interface{}{
 					"name":        "some_name",
@@ -89,9 +93,10 @@ var _ = Describe("Application", func() {
 					"external_ip": "some-external-ip",
 				},
 				"etcd": map[string]interface{}{
-					"etcd_path": "path-to-etcd",
-					"cert_dir":  "some/cert/dir",
-					"run_dir":   runDir,
+					"etcd_path":                          "path-to-etcd",
+					"cert_dir":                           "some/cert/dir",
+					"run_dir":                            runDir,
+					"data_dir":                           dataDir,
 					"heartbeat_interval_in_milliseconds": 10,
 					"election_timeout_in_milliseconds":   20,
 					"peer_require_ssl":                   false,
@@ -118,6 +123,7 @@ var _ = Describe("Application", func() {
 					EtcdPath:               "path-to-etcd",
 					CertDir:                "some/cert/dir",
 					RunDir:                 runDir,
+					DataDir:                dataDir,
 					HeartbeatInterval:      10,
 					ElectionTimeout:        20,
 					PeerRequireSSL:         false,
@@ -142,23 +148,10 @@ var _ = Describe("Application", func() {
 			})
 		})
 
-		It("configures the etcd client", func() {
-			err := app.Start()
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(fakeEtcdClient.ConfigureCall.CallCount).To(Equal(1))
-			Expect(fakeEtcdClient.ConfigureCall.Receives.Config).To(Equal(etcdfabConfig))
-		})
-
-		It("calls Start on the command", func() {
-			err := app.Start()
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
-			Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
-			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
+		It("starts etcd", func() {
+			nonTlsArgs := []string{
 				"--name", "some-name-3",
-				"--data-dir", "/var/vcap/store/etcd",
+				"--data-dir", dataDir,
 				"--heartbeat-interval", "10",
 				"--election-timeout", "20",
 				"--listen-peer-urls", "http://some-peer-ip:7001",
@@ -167,50 +160,43 @@ var _ = Describe("Application", func() {
 				"--advertise-client-urls", "http://some-external-ip:4001",
 				"--initial-cluster", "etcd-0=http://some-ip-1:7001",
 				"--initial-cluster-state", "new",
-			}))
-			Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
-			Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
-		})
-
-		It("calls GetInitialCluster and GetInitialClusterState on the cluster controller", func() {
+			}
 			err := app.Start()
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeClusterController.GetInitialClusterStateCall.CallCount).To(Equal(1))
-			Expect(fakeClusterController.GetInitialClusterStateCall.Receives.Config).To(Equal(etcdfabConfig))
+			By("configuring the etcd client", func() {
+				Expect(fakeEtcdClient.ConfigureCall.CallCount).To(Equal(1))
+				Expect(fakeEtcdClient.ConfigureCall.Receives.Config).To(Equal(etcdfabConfig))
+			})
 
-			Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
-				"--name", "some-name-3",
-				"--data-dir", "/var/vcap/store/etcd",
-				"--heartbeat-interval", "10",
-				"--election-timeout", "20",
-				"--listen-peer-urls", "http://some-peer-ip:7001",
-				"--listen-client-urls", "http://some-client-ip:4001",
-				"--initial-advertise-peer-urls", "http://some-external-ip:7001",
-				"--advertise-client-urls", "http://some-external-ip:4001",
-				"--initial-cluster", "etcd-0=http://some-ip-1:7001",
-				"--initial-cluster-state", "new",
-			}))
-		})
+			By("calling Start on the command", func() {
+				Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
+				Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
+				Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal(nonTlsArgs))
+				Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
+				Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
+			})
 
-		It("verifies the cluster is synced", func() {
-			err := app.Start()
-			Expect(err).NotTo(HaveOccurred())
+			By("calling GetInitialCluster and GetInitialClusterState on the cluster controller", func() {
+				Expect(fakeClusterController.GetInitialClusterStateCall.CallCount).To(Equal(1))
+				Expect(fakeClusterController.GetInitialClusterStateCall.Receives.Config).To(Equal(etcdfabConfig))
 
-			Expect(fakeSyncController.VerifySyncedCall.CallCount).To(Equal(1))
-		})
+				Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal(nonTlsArgs))
+			})
 
-		It("writes the pid of etcd to the run dir", func() {
-			err := app.Start()
-			Expect(err).NotTo(HaveOccurred())
+			By("verifying the cluster is synced", func() {
+				Expect(fakeSyncController.VerifySyncedCall.CallCount).To(Equal(1))
+			})
 
-			etcdPidPath := filepath.Join(runDir, "etcd.pid")
-			Expect(etcdPidPath).To(BeARegularFile())
+			By("writing the pid of etcd to the run dir", func() {
+				etcdPidPath := filepath.Join(runDir, "etcd.pid")
+				Expect(etcdPidPath).To(BeARegularFile())
 
-			etcdPid, err := ioutil.ReadFile(etcdPidPath)
-			Expect(err).NotTo(HaveOccurred())
+				etcdPid, err := ioutil.ReadFile(etcdPidPath)
+				Expect(err).NotTo(HaveOccurred())
 
-			Expect(string(etcdPid)).To(Equal("12345"))
+				Expect(string(etcdPid)).To(Equal("12345"))
+			})
 		})
 
 		Context("when configured to be a tls etcd cluster", func() {
@@ -259,13 +245,8 @@ var _ = Describe("Application", func() {
 				})
 			})
 
-			It("calls Start on the command with etcd security flags", func() {
-				err := app.Start()
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
-				Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
-				Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal([]string{
+			It("starts etcd in tls mode", func() {
+				tlsArgs := []string{
 					"--name", "some-name-3",
 					"--data-dir", "/var/vcap/store/etcd",
 					"--heartbeat-interval", "10",
@@ -284,42 +265,37 @@ var _ = Describe("Application", func() {
 					"--peer-key-file", "some/cert/dir/peer.key",
 					"--initial-cluster", "etcd-0=http://some-ip-1:7001",
 					"--initial-cluster-state", "new",
-				}))
-				Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
-				Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
-			})
-		})
+				}
 
-		It("writes informational log messages", func() {
-			err := app.Start()
-			Expect(err).NotTo(HaveOccurred())
+				By("calling Start on the command with etcd security flags", func() {
+					err := app.Start()
+					Expect(err).NotTo(HaveOccurred())
 
-			Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
-				{
-					Action: "application.build-etcd-flags",
-					Data: []lager.Data{{
-						"node-name": "some-name-3",
-					}},
-				},
-				{
-					Action: "application.start",
-					Data: []lager.Data{{
-						"etcd-path": "path-to-etcd",
-						"etcd-args": []string{
-							"--name", "some-name-3",
-							"--data-dir", "/var/vcap/store/etcd",
-							"--heartbeat-interval", "10",
-							"--election-timeout", "20",
-							"--listen-peer-urls", "http://some-peer-ip:7001",
-							"--listen-client-urls", "http://some-client-ip:4001",
-							"--initial-advertise-peer-urls", "http://some-external-ip:7001",
-							"--advertise-client-urls", "http://some-external-ip:4001",
-							"--initial-cluster", "etcd-0=http://some-ip-1:7001",
-							"--initial-cluster-state", "new",
+					Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
+					Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
+					Expect(fakeCommand.StartCall.Receives.CommandArgs).To(Equal(tlsArgs))
+					Expect(fakeCommand.StartCall.Receives.OutWriter).To(Equal(&outWriter))
+					Expect(fakeCommand.StartCall.Receives.ErrWriter).To(Equal(&errWriter))
+				})
+
+				By("writing informational log messages", func() {
+					Expect(fakeLogger.Messages()).To(ConsistOf([]fakes.LoggerMessage{
+						{
+							Action: "application.build-etcd-flags",
+							Data: []lager.Data{{
+								"node-name": "some-name-3",
+							}},
 						},
-					}},
-				},
-			}))
+						{
+							Action: "application.start",
+							Data: []lager.Data{{
+								"etcd-path": "path-to-etcd",
+								"etcd-args": tlsArgs,
+							}},
+						},
+					}))
+				})
+			})
 		})
 
 		Context("failure cases", func() {
@@ -435,10 +411,9 @@ var _ = Describe("Application", func() {
 						Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
 					})
 
-					//TODO: Remove the data dir
-					// By("removing the DATA_DIR", func() {
-					// 	Expect(filePath.Join(dataDir, "")).NotTo(BeARegularFile())
-					// })
+					By("removing the DATA_DIR", func() {
+						Expect(dataDir).NotTo(BeADirectory())
+					})
 
 					By("killing the etcd process", func() {
 						Expect(fakeCommand.KillCall.CallCount).To(Equal(1))

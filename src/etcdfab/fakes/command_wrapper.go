@@ -40,6 +40,7 @@ func (c *CommandWrapper) Start(commandPath string, commandArgs []string, outWrit
 
 func (c *CommandWrapper) Kill(pid int) error {
 	c.KillCall.CallCount++
+
 	c.KillCall.Receives.Pid = pid
 
 	return c.KillCall.Returns.Error

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
@@ -128,6 +129,12 @@ func (a Application) Start() error {
 			return killErr
 		}
 
+		removeErr := os.RemoveAll(cfg.Etcd.DataDir)
+		if removeErr != nil {
+			//not tested
+			a.logger.Error("application.os.remove-all.failed", removeErr)
+		}
+
 		return err
 	}
 
@@ -149,7 +156,7 @@ func (a Application) buildEtcdArgs(cfg config.Config) []string {
 	etcdArgs = append(etcdArgs, cfg.NodeName())
 
 	etcdArgs = append(etcdArgs, "--data-dir")
-	etcdArgs = append(etcdArgs, "/var/vcap/store/etcd")
+	etcdArgs = append(etcdArgs, cfg.Etcd.DataDir)
 
 	etcdArgs = append(etcdArgs, "--heartbeat-interval")
 	etcdArgs = append(etcdArgs, fmt.Sprintf("%d", cfg.Etcd.HeartbeatInterval))

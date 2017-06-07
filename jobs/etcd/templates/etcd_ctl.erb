@@ -59,8 +59,8 @@ function main() {
       /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
       set -e
 
-      <%# safe_teardown "$(member_list)" %>
-      <%# kill_and_wait "/var/vcap/packages/etcd/etcd_pid %>
+      safe_teardown "$(member_list)"
+      kill_and_wait "/var/vcap/packages/etcd/etcd_pid
 
       ;;
 

@@ -1,6 +1,7 @@
 package command_test
 
 import (
+	"os"
 	"os/exec"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/command"
@@ -38,28 +39,37 @@ var _ = Describe("Wrapper", func() {
 	})
 
 	Describe("Kill", func() {
-		var pid int
-
-		BeforeEach(func() {
-			cmd := exec.Command("echo", "./fake-process.sh")
+		It("kills the process", func() {
+			cmd := exec.Command("yes")
 
 			err := cmd.Start()
 			Expect(err).NotTo(HaveOccurred())
 
-			pid = cmd.Process.Pid
-		})
+			pid := cmd.Process.Pid
 
-		It("kills the process", func() {
-			commandWrapper := command.NewWrapper()
-			err := commandWrapper.Kill(pid)
+			process, err := os.FindProcess(pid)
 			Expect(err).NotTo(HaveOccurred())
+
+			statusChan := make(chan string, 1)
+			go func() {
+				state, _ := process.Wait()
+				statusChan <- state.String()
+			}()
+
+			commandWrapper := command.NewWrapper()
+			err = commandWrapper.Kill(pid)
+			Expect(err).NotTo(HaveOccurred())
+
+			var message string
+			Eventually(statusChan).Should(Receive(&message))
+			Expect(message).To(Equal("signal: killed"))
 		})
 
 		Context("when killing the process returns an error", func() {
 			It("returns the error to the caller", func() {
 				commandWrapper := command.NewWrapper()
-				err := commandWrapper.Kill(-1)
-				Expect(err).To(MatchError(ContainSubstring("process already released")))
+				err := commandWrapper.Kill(12345)
+				Expect(err).To(MatchError(ContainSubstring("process already finished")))
 			})
 		})
 	})

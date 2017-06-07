@@ -30,7 +30,7 @@ func (w Wrapper) Start(commandPath string, commandArgs []string, outWriter, errW
 func (w Wrapper) Kill(pid int) error {
 	process, err := os.FindProcess(pid)
 	if err != nil {
-		//not tested
+		//find process does not return an err
 		return err
 	}
 
