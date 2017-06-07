@@ -1,6 +1,8 @@
 #!/bin/bash -exu
 
 SCRIPT_NAME=$(basename $0)
+RUN_DIR=/var/vcap/sys/run/etcd
+PIDFILE=${RUN_DIR}/etcd.pid
 JOB_DIR=/var/vcap/jobs/etcd
 
 LOG_DIR=/var/vcap/sys/log/etcd
@@ -60,7 +62,7 @@ function main() {
       set -e
 
       safe_teardown "$(member_list)"
-      kill_and_wait "/var/vcap/packages/etcd/etcd_pid
+      kill_and_wait "${PIDFILE}"
 
       ;;
 
