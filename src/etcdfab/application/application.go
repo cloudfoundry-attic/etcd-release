@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
@@ -114,36 +115,13 @@ func (a Application) Start() error {
 		return err
 	}
 
-	a.logger.Info("application.synchronized-controller.verify-synced", lager.Data{
-		"pid": pid,
-	})
+	a.logger.Info("application.synchronized-controller.verify-synced", lager.Data{"pid": pid})
 	err = a.syncController.VerifySynced()
 	if err != nil {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
 
-		memberRemoveErr := a.etcdClient.MemberRemove(cfg.NodeName())
-		if memberRemoveErr != nil {
-			a.logger.Error("application.etcd-client.member-remove.failed", memberRemoveErr)
-		}
-
-		a.logger.Info("application.kill-pid", lager.Data{
-			"pid": pid,
-		})
-		killErr := a.command.Kill(pid)
-		if killErr != nil {
-			a.logger.Error("application.kill-pid.failed", killErr)
-			return killErr
-		}
-
-		a.logger.Info("application.os.remove-all", lager.Data{
-			"data_dir": cfg.Etcd.DataDir,
-		})
-		removeErr := os.RemoveAll(cfg.Etcd.DataDir)
-		if removeErr != nil {
-			//not tested
-			a.logger.Error("application.os.remove-all.failed", removeErr)
-		}
-
+		a.logger.Info("application.safe-teardown")
+		err = a.safeTeardown(cfg, pid)
 		return err
 	}
 
@@ -156,6 +134,72 @@ func (a Application) Start() error {
 	if err != nil {
 		a.logger.Error("application.write-pid-file.failed", err)
 		return err
+	}
+
+	a.logger.Info("application.start.success")
+	return nil
+}
+
+func (a Application) Stop() error {
+	cfg, err := config.ConfigFromJSONs(a.configFilePath, a.linkConfigFilePath)
+	if err != nil {
+		// a.logger.Error("application.read-config-file.failed", err)
+		// return err
+		panic(err)
+	}
+
+	err = a.etcdClient.Configure(cfg)
+	if err != nil {
+		// a.logger.Error("application.etcd-client.configure.failed", err)
+		// return err
+		panic(err)
+	}
+
+	pidFilePath := filepath.Join(cfg.Etcd.RunDir, etcdPidFilename)
+	a.logger.Info("application.read-pid-file", lager.Data{"path": pidFilePath})
+	pidFileContents, err := ioutil.ReadFile(pidFilePath)
+	if err != nil {
+		// a.logger.Error("application.read-pid-file.failed", err)
+		// return err
+		panic(err)
+	}
+
+	pid, err := strconv.Atoi(string(pidFileContents))
+	if err != nil {
+		// a.logger.Error("application.pid-file-to-pid.failed", err)
+		// return err
+		panic(err)
+	}
+
+	a.logger.Info("application.safe-teardown")
+	err = a.safeTeardown(cfg, pid)
+	if err != nil {
+		return err
+	}
+
+	a.logger.Info("application.stop.success")
+	return nil
+}
+
+func (a Application) safeTeardown(cfg config.Config, pid int) error {
+	a.logger.Info("application.etcd-client.member-remove", lager.Data{"node-name": cfg.NodeName()})
+	err := a.etcdClient.MemberRemove(cfg.NodeName())
+	if err != nil {
+		a.logger.Error("application.etcd-client.member-remove.failed", err)
+	}
+
+	a.logger.Info("application.kill-pid", lager.Data{"pid": pid})
+	err = a.command.Kill(pid)
+	if err != nil {
+		a.logger.Error("application.kill-pid.failed", err)
+		return err
+	}
+
+	a.logger.Info("application.os.remove-all", lager.Data{"data_dir": cfg.Etcd.DataDir})
+	err = os.RemoveAll(cfg.Etcd.DataDir)
+	if err != nil {
+		//not tested
+		a.logger.Error("application.os.remove-all.failed", err)
 	}
 
 	return nil

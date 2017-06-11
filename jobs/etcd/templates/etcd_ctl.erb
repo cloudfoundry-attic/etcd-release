@@ -4,24 +4,46 @@ SCRIPT_NAME=$(basename $0)
 RUN_DIR=/var/vcap/sys/run/etcd
 PIDFILE=${RUN_DIR}/etcd.pid
 JOB_DIR=/var/vcap/jobs/etcd
-
 LOG_DIR=/var/vcap/sys/log/etcd
+ETCDFAB_PACKAGE=/var/vcap/packages/etcdfab
 
 # /var/vcap/store will be persistent disk if one exists, but defaults to system disk if no persistent disk is configured.
 STORE_DIR=/var/vcap/store
 DATA_DIR=${STORE_DIR}/etcd
 
 source /var/vcap/packages/etcd-common/utils.sh
-
 source /var/vcap/jobs/etcd/bin/etcd_bosh_utils.sh
 
 exec > >(tee -a >(logger -p user.info -t vcap.${SCRIPT_NAME}.stdout) | awk -W interactive '{ system("echo -n [$(date +\"%Y-%m-%d %H:%M:%S%z\")]"); print " " $0 }' >> ${LOG_DIR}/${SCRIPT_NAME}.log)
 exec 2> >(tee -a >(logger -p user.error -t vcap.${SCRIPT_NAME}.stderr) | awk -W interactive '{ system("echo -n [$(date +\"%Y-%m-%d %H:%M:%S%z\")]"); print " " $0 }' >> ${LOG_DIR}/${SCRIPT_NAME}.err.log)
 
+function start_etcdfab() {
+    ${ETCDFAB_PACKAGE}/bin/etcdfab \
+      start \
+      --config-file ${JOB_DIR}/config/etcdfab.json \
+      --config-link-file "${JOB_DIR}/config/etcd_link.json" \
+      2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd) \
+      1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
+}
+
+function stop_etcdfab()
+    set +e
+    /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
+    set -e
+
+    ${ETCDFAB_PACKAGE}/bin/etcdfab \
+      stop \
+      --config-file ${JOB_DIR}/config/etcdfab.json \
+      --config-link-file "${JOB_DIR}/config/etcd_link.json" \
+      2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd) \
+      1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
+
+    safe_teardown "$(member_list)"
+    kill_and_wait "${PIDFILE}"
+}
 
 function main() {
   case $1 in
-
     start)
       trap handle_orphaned_etcd TERM
 
@@ -48,30 +70,16 @@ function main() {
 
       export GOMAXPROCS=$(nproc)
 
-      /var/vcap/packages/etcdfab/bin/etcdfab                                                \
-          --config-file ${JOB_DIR}/config/etcdfab.json                                      \
-          --config-link-file "${JOB_DIR}/config/etcd_link.json"                             \
-          2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd)       \
-          1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
-
+      start_etcdfab
       ;;
 
     stop)
-      set +e
-      /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
-      set -e
-
-      safe_teardown "$(member_list)"
-      kill_and_wait "${PIDFILE}"
-
+      stop_etcdfab
       ;;
 
     *)
-
       echo "Usage: etcd_ctl {start|stop}"
-
       ;;
-
   esac
 }
 

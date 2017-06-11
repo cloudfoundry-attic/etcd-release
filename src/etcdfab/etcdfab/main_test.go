@@ -76,15 +76,14 @@ var _ = Describe("EtcdFab", func() {
 	Context("when starting etcdfab", func() {
 		BeforeEach(func() {
 			etcdFabCommand = exec.Command(pathToEtcdFab,
+				"start",
 				"--config-file", configFile.Name(),
 				"--config-link-file", linkConfigFile.Name(),
 			)
 		})
 
 		Context("when in non tls mode", func() {
-			var (
-				etcdServer *etcdserver.EtcdServer
-			)
+			var etcdServer *etcdserver.EtcdServer
 
 			BeforeEach(func() {
 				etcdServer = etcdserver.NewEtcdServer(!startTLS, "")
@@ -321,6 +320,7 @@ var _ = Describe("EtcdFab", func() {
 			Context("when invalid flag is provided", func() {
 				It("exits 1 and prints an error", func() {
 					etcdFabCommand := exec.Command(pathToEtcdFab,
+						"start",
 						"-invalid-flag",
 					)
 					session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
@@ -365,10 +365,6 @@ var _ = Describe("EtcdFab", func() {
 				})
 
 				It("exits 1 and prints an error", func() {
-					etcdFabCommand := exec.Command(pathToEtcdFab,
-						"--config-file", configFile.Name(),
-						"--config-link-file", linkConfigFile.Name(),
-					)
 					session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
 					Expect(err).NotTo(HaveOccurred())
 					Eventually(session, 10*time.Second).Should(gexec.Exit(1))
@@ -411,5 +407,139 @@ var _ = Describe("EtcdFab", func() {
 				})
 			})
 		})
+	})
+
+	Context("when stopping etcdfab", func() {
+		BeforeEach(func() {
+			etcdFabCommand = exec.Command(pathToEtcdFab,
+				"stop",
+				"--config-file", configFile.Name(),
+				"--config-link-file", linkConfigFile.Name(),
+			)
+		})
+
+		// It("removes the member from the cluster", func() {
+
+		// })
+
+		// Context("when it fails to remove the member from the cluster", func() {
+
+		// })
+
+		// It("kills the pid", func() {
+
+		// })
+
+		// Context("when it fails to kill the pid", func() {
+
+		// })
+
+		// Context("failure cases", func() {
+		// 	Context("when no flags are provided", func() {
+		// 		It("exits 1 and prints an error", func() {
+		// 			etcdFabCommand := exec.Command(pathToEtcdFab)
+		// 			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
+		// 			Expect(err).NotTo(HaveOccurred())
+		// 			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+		// 			Expect(string(session.Err.Contents())).To(ContainSubstring("Usage of flags:"))
+		// 		})
+		// 	})
+
+		// 	Context("when invalid flag is provided", func() {
+		// 		It("exits 1 and prints an error", func() {
+		// 			etcdFabCommand := exec.Command(pathToEtcdFab,
+		// 				"stop",
+		// 				"-invalid-flag",
+		// 			)
+		// 			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
+		// 			Expect(err).NotTo(HaveOccurred())
+		// 			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+		// 			Expect(string(session.Err.Contents())).To(ContainSubstring("flag provided but not defined: -invalid-flag"))
+		// 		})
+		// 	})
+
+		// 	Context("when the config file is invalid", func() {
+		// 		BeforeEach(func() {
+		// 			etcdBackendServer.EnableFastFail()
+
+		// 			err := ioutil.WriteFile(configFile.Name(), []byte("%%%"), os.ModePerm)
+		// 			Expect(err).NotTo(HaveOccurred())
+		// 		})
+
+		// 		AfterEach(func() {
+		// 			etcdBackendServer.DisableFastFail()
+		// 		})
+
+		// 		It("exits 1 and prints an error", func() {
+		// 			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
+		// 			Expect(err).NotTo(HaveOccurred())
+		// 			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+		// 			Expect(string(session.Err.Contents())).To(ContainSubstring("error during start: invalid character '%' looking for beginning of value"))
+		// 		})
+		// 	})
+
+		// 	Context("when the link config file is invalid", func() {
+		// 		BeforeEach(func() {
+		// 			etcdBackendServer.EnableFastFail()
+
+		// 			err := ioutil.WriteFile(linkConfigFile.Name(), []byte("%%%"), os.ModePerm)
+		// 			Expect(err).NotTo(HaveOccurred())
+		// 		})
+
+		// 		AfterEach(func() {
+		// 			etcdBackendServer.DisableFastFail()
+		// 		})
+
+		// 		It("exits 1 and prints an error", func() {
+		// 			etcdFabCommand := exec.Command(pathToEtcdFab,
+		// 				"stop",
+		// 				"--config-file", configFile.Name(),
+		// 				"--config-link-file", linkConfigFile.Name(),
+		// 			)
+		// 			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
+		// 			Expect(err).NotTo(HaveOccurred())
+		// 			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+		// 			Expect(string(session.Err.Contents())).To(ContainSubstring("error during start: invalid character '%' looking for beginning of value"))
+		// 		})
+		// 	})
+
+		// 	Context("when the etcd process fails", func() {
+		// 		BeforeEach(func() {
+		// 			etcdBackendServer.EnableFastFail()
+
+		// 			writeConfigurationFile(configFile.Name(), map[string]interface{}{
+		// 				"etcd": map[string]interface{}{
+		// 					"etcd_path":                          "bogus",
+		// 					"heartbeat_interval_in_milliseconds": 10,
+		// 					"election_timeout_in_milliseconds":   20,
+		// 					"peer_require_ssl":                   false,
+		// 					"peer_ip":                            "some-peer-ip",
+		// 					"require_ssl":                        false,
+		// 					"client_ip":                          "some-client-ip",
+		// 					"advertise_urls_dns_suffix":          "some-dns-suffix",
+		// 					"machines":                           []string{"some-ip"},
+		// 				},
+		// 			})
+
+		// 			writeConfigurationFile(linkConfigFile.Name(), map[string]interface{}{})
+		// 		})
+
+		// 		AfterEach(func() {
+		// 			etcdBackendServer.DisableFastFail()
+		// 		})
+
+		// 		It("exits 1 and prints an error", func() {
+		// 			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
+		// 			Expect(err).NotTo(HaveOccurred())
+		// 			Eventually(session, 10*time.Second).Should(gexec.Exit(1))
+
+		// 			Expect(string(session.Err.Contents())).To(ContainSubstring("error during start: exec: \"bogus\": executable file not found in $PATH"))
+		// 		})
+		// 	})
+		// })
 	})
 })
