@@ -223,6 +223,33 @@ var _ = Describe("Config", func() {
 		})
 	})
 
+	Describe("PidPath", func() {
+		var (
+			cfg config.Config
+		)
+
+		BeforeEach(func() {
+			tmpDir, err := ioutil.TempDir("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			configuration := map[string]interface{}{
+				"etcd": map[string]interface{}{
+					"run_dir": "/some/run/dir",
+				},
+			}
+			configFilePath := writeConfigurationFile(tmpDir, "config-file", configuration)
+
+			linkConfigFilePath := writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
+
+			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns the path to the pid file", func() {
+			Expect(cfg.PidPath()).To(Equal("/some/run/dir/etcd.pid"))
+		})
+	})
+
 	Describe("RequireSSL", func() {
 		Context("when require_ssl is false", func() {
 			var (

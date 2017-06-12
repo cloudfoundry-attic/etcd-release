@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 )
+
+const etcdPidFilename = "etcd.pid"
 
 type Node struct {
 	Name       string
@@ -74,6 +77,10 @@ func ConfigFromJSONs(configFilePath, linkConfigFilePath string) (Config, error) 
 
 func (c Config) NodeName() string {
 	return fmt.Sprintf("%s-%d", strings.Replace(c.Node.Name, "_", "-", -1), c.Node.Index)
+}
+
+func (c Config) PidPath() string {
+	return filepath.Join(c.Etcd.RunDir, etcdPidFilename)
 }
 
 func (c Config) RequireSSL() bool {
