@@ -79,7 +79,7 @@ func (c Config) NodeName() string {
 	return fmt.Sprintf("%s-%d", strings.Replace(c.Node.Name, "_", "-", -1), c.Node.Index)
 }
 
-func (c Config) PidPath() string {
+func (c Config) PidFile() string {
 	return filepath.Join(c.Etcd.RunDir, etcdPidFilename)
 }
 

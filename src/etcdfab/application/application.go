@@ -15,11 +15,8 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-const etcdPidFilename = "etcd.pid"
-
 type Application struct {
 	command            command
-	commandPidPath     string
 	configFilePath     string
 	linkConfigFilePath string
 	etcdClient         etcdClient
@@ -109,7 +106,6 @@ func (a Application) Start() error {
 		"etcd-path": cfg.Etcd.EtcdPath,
 		"etcd-args": etcdArgs,
 	})
-	pidFilePath := filepath.Join(cfg.Etcd.RunDir, etcdPidFilename)
 	pid, err := a.command.Start(cfg.Etcd.EtcdPath, etcdArgs, a.outWriter, a.errWriter)
 	if err != nil {
 		a.logger.Error("application.start.failed", err)
@@ -122,18 +118,21 @@ func (a Application) Start() error {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
 
 		a.logger.Info("application.safe-teardown")
-		safeTeardownErr := a.safeTeardown(cfg, pid, pidFilePath)
-		if safeTeardownErr != nil {
-			return safeTeardownErr
+		a.safeTeardown(cfg)
+
+		a.logger.Info("application.kill-and-wait")
+		killAndWaitErr := a.killAndWait(cfg.PidFile())
+		if killAndWaitErr != nil {
+			return killAndWaitErr
 		}
 		return err
 	}
 
 	a.logger.Info("application.write-pid-file", lager.Data{
 		"pid":  pid,
-		"path": pidFilePath,
+		"path": cfg.PidFile(),
 	})
-	err = ioutil.WriteFile(pidFilePath, []byte(fmt.Sprintf("%d", pid)), 0644)
+	err = ioutil.WriteFile(cfg.PidFile(), []byte(fmt.Sprintf("%d", pid)), 0644)
 	if err != nil {
 		a.logger.Error("application.write-pid-file.failed", err)
 		return err
@@ -158,22 +157,11 @@ func (a Application) Stop() error {
 		return err
 	}
 
-	pidFilePath := filepath.Join(cfg.Etcd.RunDir, etcdPidFilename)
-	a.logger.Info("application.read-pid-file", lager.Data{"pid-file": pidFilePath})
-	pidFileContents, err := ioutil.ReadFile(pidFilePath)
-	if err != nil {
-		a.logger.Error("application.read-pid-file.failed", err)
-		return err
-	}
-
-	pid, err := strconv.Atoi(string(pidFileContents))
-	if err != nil {
-		a.logger.Error("application.convert-pid-file-to-pid.failed", err)
-		return err
-	}
-
 	a.logger.Info("application.safe-teardown")
-	err = a.safeTeardown(cfg, pid, pidFilePath)
+	a.safeTeardown(cfg)
+
+	a.logger.Info("application.kill-and-wait")
+	err = a.killAndWait(cfg.PidFile())
 	if err != nil {
 		return err
 	}
@@ -182,11 +170,34 @@ func (a Application) Stop() error {
 	return nil
 }
 
-func (a Application) safeTeardown(cfg config.Config, pid int, pidFilePath string) error {
+func (a Application) safeTeardown(cfg config.Config) {
 	a.logger.Info("application.etcd-client.member-remove", lager.Data{"node-name": cfg.NodeName()})
 	err := a.etcdClient.MemberRemove(cfg.NodeName())
 	if err != nil {
 		a.logger.Error("application.etcd-client.member-remove.failed", err)
+	}
+
+	a.logger.Info("application.remove-data-dir", lager.Data{"data-dir": cfg.Etcd.DataDir})
+	err = os.RemoveAll(cfg.Etcd.DataDir)
+	if err != nil {
+		//not tested
+		a.logger.Error("application.remove-data-dir", err)
+	}
+}
+
+func (a Application) killAndWait(pidPath string) error {
+	a.logger.Info("application.read-pid-file", lager.Data{"pid-file": pidPath})
+	pidFileContents, err := ioutil.ReadFile(pidPath)
+	if err != nil {
+		a.logger.Error("application.read-pid-file.failed", err)
+		return err
+	}
+
+	a.logger.Info("application.convert-pid-file-to-pid")
+	pid, err := strconv.Atoi(string(pidFileContents))
+	if err != nil {
+		a.logger.Error("application.convert-pid-file-to-pid.failed", err)
+		return err
 	}
 
 	a.logger.Info("application.kill-pid", lager.Data{"pid": pid})
@@ -196,18 +207,14 @@ func (a Application) safeTeardown(cfg config.Config, pid int, pidFilePath string
 		return err
 	}
 
-	a.logger.Info("application.remove-pid-file", lager.Data{"pid-file": pidFilePath})
-	err = os.Remove(pidFilePath)
+	//TODO: Wait
+
+	a.logger.Info("application.remove-pid-file")
+	err = os.Remove(pidPath)
 	if err != nil {
 		//not tested
 		a.logger.Error("application.remove-pid-file.failed", err)
-	}
-
-	a.logger.Info("application.remove-data-dir", lager.Data{"data-dir": cfg.Etcd.DataDir})
-	err = os.RemoveAll(cfg.Etcd.DataDir)
-	if err != nil {
-		//not tested
-		a.logger.Error("application.remove-data-dir", err)
+		return err
 	}
 
 	return nil

@@ -223,7 +223,7 @@ var _ = Describe("Config", func() {
 		})
 	})
 
-	Describe("PidPath", func() {
+	Describe("PidFile", func() {
 		var (
 			cfg config.Config
 		)
@@ -246,7 +246,7 @@ var _ = Describe("Config", func() {
 		})
 
 		It("returns the path to the pid file", func() {
-			Expect(cfg.PidPath()).To(Equal("/some/run/dir/etcd.pid"))
+			Expect(cfg.PidFile()).To(Equal("/some/run/dir/etcd.pid"))
 		})
 	})
 

@@ -414,22 +414,13 @@ var _ = Describe("Application", func() {
 									Error:  errors.New("failed to remove member"),
 								},
 								{
-									Action: "application.kill-pid",
-									Data: []lager.Data{{
-										"pid": etcdPid,
-									}},
-								},
-								{
-									Action: "application.remove-pid-file",
-									Data: []lager.Data{{
-										"pid-file": etcdPidPath,
-									}},
-								},
-								{
 									Action: "application.remove-data-dir",
 									Data: []lager.Data{{
 										"data-dir": dataDir,
 									}},
+								},
+								{
+									Action: "application.kill-and-wait",
 								},
 							}))
 						})
@@ -707,12 +698,6 @@ var _ = Describe("Application", func() {
 						Action: "application.stop",
 					},
 					{
-						Action: "application.read-pid-file",
-						Data: []lager.Data{{
-							"pid-file": etcdPidPath,
-						}},
-					},
-					{
 						Action: "application.safe-teardown",
 					},
 					{
@@ -722,6 +707,24 @@ var _ = Describe("Application", func() {
 						}},
 					},
 					{
+						Action: "application.remove-data-dir",
+						Data: []lager.Data{{
+							"data-dir": dataDir,
+						}},
+					},
+					{
+						Action: "application.kill-and-wait",
+					},
+					{
+						Action: "application.read-pid-file",
+						Data: []lager.Data{{
+							"pid-file": etcdPidPath,
+						}},
+					},
+					{
+						Action: "application.convert-pid-file-to-pid",
+					},
+					{
 						Action: "application.kill-pid",
 						Data: []lager.Data{{
 							"pid": etcdPid,
@@ -729,15 +732,6 @@ var _ = Describe("Application", func() {
 					},
 					{
 						Action: "application.remove-pid-file",
-						Data: []lager.Data{{
-							"pid-file": etcdPidPath,
-						}},
-					},
-					{
-						Action: "application.remove-data-dir",
-						Data: []lager.Data{{
-							"data-dir": dataDir,
-						}},
 					},
 					{
 						Action: "application.stop.success",
@@ -853,6 +847,24 @@ var _ = Describe("Application", func() {
 						Error:  errors.New("failed to remove member"),
 					},
 					{
+						Action: "application.remove-data-dir",
+						Data: []lager.Data{{
+							"data-dir": dataDir,
+						}},
+					},
+					{
+						Action: "application.kill-and-wait",
+					},
+					{
+						Action: "application.read-pid-file",
+						Data: []lager.Data{{
+							"pid-file": etcdPidPath,
+						}},
+					},
+					{
+						Action: "application.convert-pid-file-to-pid",
+					},
+					{
 						Action: "application.kill-pid",
 						Data: []lager.Data{{
 							"pid": 12345,
@@ -860,15 +872,6 @@ var _ = Describe("Application", func() {
 					},
 					{
 						Action: "application.remove-pid-file",
-						Data: []lager.Data{{
-							"pid-file": etcdPidPath,
-						}},
-					},
-					{
-						Action: "application.remove-data-dir",
-						Data: []lager.Data{{
-							"data-dir": dataDir,
-						}},
 					},
 					{
 						Action: "application.stop.success",
@@ -927,6 +930,9 @@ var _ = Describe("Application", func() {
 						Data: []lager.Data{{
 							"pid-file": etcdPidPath,
 						}},
+					},
+					{
+						Action: "application.convert-pid-file-to-pid",
 					},
 					{
 						Action: "application.convert-pid-file-to-pid.failed",
