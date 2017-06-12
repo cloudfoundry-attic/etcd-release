@@ -28,13 +28,9 @@ func (w Wrapper) Start(commandPath string, commandArgs []string, outWriter, errW
 }
 
 func (w Wrapper) Kill(pid int) error {
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		//find process does not return an err
-		return err
-	}
+	process, _ := os.FindProcess(pid)
 
-	err = process.Kill()
+	err := process.Kill()
 	if err != nil {
 		return err
 	}

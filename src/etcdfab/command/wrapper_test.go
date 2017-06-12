@@ -42,13 +42,10 @@ var _ = Describe("Wrapper", func() {
 		It("kills the process", func() {
 			cmd := exec.Command("yes")
 
-			err := cmd.Start()
-			Expect(err).NotTo(HaveOccurred())
+			Expect(cmd.Start()).NotTo(HaveOccurred())
 
 			pid := cmd.Process.Pid
-
-			process, err := os.FindProcess(pid)
-			Expect(err).NotTo(HaveOccurred())
+			process, _ := os.FindProcess(pid)
 
 			statusChan := make(chan string, 1)
 			go func() {
@@ -57,8 +54,7 @@ var _ = Describe("Wrapper", func() {
 			}()
 
 			commandWrapper := command.NewWrapper()
-			err = commandWrapper.Kill(pid)
-			Expect(err).NotTo(HaveOccurred())
+			Expect(commandWrapper.Kill(pid)).NotTo(HaveOccurred())
 
 			var message string
 			Eventually(statusChan).Should(Receive(&message))
@@ -68,8 +64,7 @@ var _ = Describe("Wrapper", func() {
 		Context("when killing the process returns an error", func() {
 			It("returns the error to the caller", func() {
 				commandWrapper := command.NewWrapper()
-				err := commandWrapper.Kill(12345)
-				Expect(err).To(MatchError(ContainSubstring("process already finished")))
+				Expect(commandWrapper.Kill(12345)).To(MatchError(ContainSubstring("process already finished")))
 			})
 		})
 	})

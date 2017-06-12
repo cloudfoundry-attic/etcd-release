@@ -440,21 +440,7 @@ var _ = Describe("EtcdFab", func() {
 				"--config-file", configFile.Name(),
 				"--config-link-file", linkConfigFile.Name(),
 			)
-			session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
-			Expect(err).NotTo(HaveOccurred())
-			Eventually(session, 30*time.Second).Should(gexec.Exit(0))
-
-			pidFile = filepath.Join(runDir, "etcd.pid")
-			pidFileContents, err := ioutil.ReadFile(pidFile)
-			Expect(err).NotTo(HaveOccurred())
-
-			pid, err = strconv.Atoi(string(pidFileContents))
-			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(func() bool {
-				process, _ := os.FindProcess(pid)
-				return process.Signal(syscall.Signal(0)) == nil
-			}, COMMAND_TIMEOUT, time.Millisecond*250).Should(BeTrue())
+			Eventually(etcdFabCommand.Run, COMMAND_TIMEOUT, COMMAND_TIMEOUT).Should(Succeed())
 
 			Eventually(func() error {
 				conn, err := net.Dial("tcp", "localhost:4001")
@@ -463,6 +449,18 @@ var _ = Describe("EtcdFab", func() {
 				}
 				return err
 			}, "5s").Should(Succeed())
+
+			pidFile = filepath.Join(runDir, "etcd.pid")
+			Eventually(func() bool {
+				pidFileContents, err := ioutil.ReadFile(pidFile)
+				Expect(err).NotTo(HaveOccurred())
+
+				pid, err = strconv.Atoi(string(pidFileContents))
+				Expect(err).NotTo(HaveOccurred())
+
+				process, _ := os.FindProcess(pid)
+				return process.Signal(syscall.Signal(0)) == nil
+			}, COMMAND_TIMEOUT, time.Millisecond*250).Should(BeTrue())
 
 			etcdFabCommand = exec.Command(pathToEtcdFab,
 				"stop",
@@ -476,7 +474,7 @@ var _ = Describe("EtcdFab", func() {
 			os.Remove(pidFile)
 		})
 
-		PIt("stops the etcd process", func() {
+		It("stops the etcd process", func() {
 			Eventually(etcdFabCommand.Run, COMMAND_TIMEOUT, COMMAND_TIMEOUT).Should(Succeed())
 
 			Eventually(func() bool {
