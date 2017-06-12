@@ -27,6 +27,7 @@ type Etcd struct {
 	ClientIP               string `json:"client_ip"`
 	AdvertiseURLsDNSSuffix string `json:"advertise_urls_dns_suffix"`
 	Machines               []string
+	EnableDebugLogging     bool `json:"enable_debug_logging"`
 }
 
 type Config struct {

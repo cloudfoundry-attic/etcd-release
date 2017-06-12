@@ -126,3 +126,7 @@ properties:
 
   etcd.advertise_urls_dns_suffix:
     description: "DNS suffix for all nodes in the etcd cluster"
+
+  etcd.enable_debug_logging:
+    description: "Enables etcd's debug logging"
+    default: false

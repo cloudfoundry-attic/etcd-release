@@ -224,6 +224,7 @@ var _ = Describe("Application", func() {
 						"peer_ca_cert":                       "some-peer-ca-cert",
 						"peer_cert":                          "some-peer-cert",
 						"peer_key":                           "some-peer-key",
+						"enable_debug_logging":               true,
 					},
 				}
 				configData, err := json.Marshal(configuration)
@@ -248,6 +249,7 @@ var _ = Describe("Application", func() {
 			It("starts etcd in tls mode", func() {
 				tlsArgs := []string{
 					"--name", "some-name-3",
+					"--debug",
 					"--data-dir", "/var/vcap/store/etcd",
 					"--heartbeat-interval", "10",
 					"--election-timeout", "20",

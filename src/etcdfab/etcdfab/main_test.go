@@ -56,6 +56,7 @@ var _ = Describe("EtcdFab", func() {
 				"require_ssl":                        false,
 				"client_ip":                          "some-client-ip",
 				"advertise_urls_dns_suffix":          "some-dns-suffix",
+				"enable_debug_logging":               true,
 			},
 		})
 
@@ -158,6 +159,7 @@ var _ = Describe("EtcdFab", func() {
 					Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 					Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
 						"--name", "some-name-3",
+						"--debug",
 						"--data-dir", "/var/vcap/store/etcd",
 						"--heartbeat-interval", "10",
 						"--election-timeout", "20",
@@ -200,6 +202,7 @@ var _ = Describe("EtcdFab", func() {
 					Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 					Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
 						"--name", "some-name-3",
+						"--debug",
 						"--data-dir", "/var/vcap/store/etcd",
 						"--heartbeat-interval", "10",
 						"--election-timeout", "20",
@@ -254,6 +257,7 @@ var _ = Describe("EtcdFab", func() {
 					"require_ssl":                        true,
 					"client_ip":                          "some-client-ip",
 					"advertise_urls_dns_suffix":          "127.0.0.1",
+					"enable_debug_logging":               true,
 				})
 			})
 
@@ -269,6 +273,7 @@ var _ = Describe("EtcdFab", func() {
 				Expect(etcdBackendServer.GetCallCount()).To(Equal(1))
 				Expect(etcdBackendServer.GetArgs()).To(Equal([]string{
 					"--name", "some-name-3",
+					"--debug",
 					"--data-dir", "/var/vcap/store/etcd",
 					"--heartbeat-interval", "10",
 					"--election-timeout", "20",

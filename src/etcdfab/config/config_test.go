@@ -54,6 +54,7 @@ var _ = Describe("Config", func() {
 					"require_ssl":                        false,
 					"client_ip":                          "some-client-ip",
 					"advertise_urls_dns_suffix":          "some-dns-suffix",
+					"enable_debug_logging":               true,
 				},
 			}
 			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
@@ -98,6 +99,7 @@ var _ = Describe("Config", func() {
 					ClientIP:               "some-client-ip-from-link",
 					AdvertiseURLsDNSSuffix: "some-dns-suffix-from-link",
 					Machines:               []string{"some-ip-1", "some-ip-2", "some-ip-3"},
+					EnableDebugLogging:     true,
 				},
 			}))
 		})
@@ -130,6 +132,7 @@ var _ = Describe("Config", func() {
 						RequireSSL:             false,
 						ClientIP:               "some-client-ip",
 						AdvertiseURLsDNSSuffix: "some-dns-suffix",
+						EnableDebugLogging:     true,
 					},
 				}))
 			})
