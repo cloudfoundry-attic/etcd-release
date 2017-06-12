@@ -15,11 +15,6 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-const (
-	stop  = "stop"
-	start = "start"
-)
-
 type etcdfabFlags struct {
 	Command            string
 	ConfigFilePath     string
@@ -49,20 +44,28 @@ func main() {
 		Logger:             logger,
 	})
 
-	if flags.Command == STOP {
-		// err := app.Stop()
-		// if err != nil {
-		// 	stderr := log.New(os.Stderr, "", 0)
-		// 	stderr.Printf("error during start: %s", err)
-		// 	os.Exit(1)
-		// }
-	}
-
-	err := app.Start()
-	if err != nil {
-		stderr := log.New(os.Stderr, "", 0)
-		stderr.Printf("error during start: %s", err)
-		os.Exit(1)
+	switch os.Args[1] {
+	case "start":
+		err := app.Start()
+		if err != nil {
+			stderr := log.New(os.Stderr, "", 0)
+			stderr.Printf("error during start: %s", err)
+			os.Exit(1)
+		}
+	case "stop":
+		err := app.Stop()
+		if err != nil {
+			// stderr := log.New(os.Stderr, "", 0)
+			// stderr.Printf("error during stop: %s", err)
+			os.Exit(1)
+		}
+	default:
+		// stderr := log.New(os.Stderr, "", 0)
+		// stderr.Printf("invalid COMMAND %q\n\n", os.Args[1])
+		// stderr.Println("usage: etcdfab COMMAND OPTIONS\n")
+		// stderr.Println("COMMAND: \"start\" or \"stop\"")
+		// stderr.Println("\nOPTIONS: config-file or config-link-file")
+		os.Exit(0)
 	}
 }
 
@@ -76,12 +79,6 @@ func parseFlags() etcdfabFlags {
 		flagSet.Usage()
 		os.Exit(1)
 	}
-
-	cmd := os.Args[1]
-	if cmd != START && cmd != STOP {
-		os.Exit(1)
-	}
-	flags.Command = cmd
 
 	if err := flagSet.Parse(os.Args[2:]); err != nil {
 		os.Exit(1)
