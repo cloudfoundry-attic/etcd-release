@@ -256,6 +256,204 @@ The server certificate must have the common name `etcd.service.consul` and
 must specify `etcd.service.consul` and `*.etcd.service.consul` as Subject
 Alternative Names (SANs).
 
+### Rotating Certificates and Keys
+
+Perform the steps below to rotate your SSL certificates, keys, and certificate authorities.
+
+Append the CA certificate to the ca_cert/peer_ca_cert fields of your manifest file. Do not remove any existing CA certificates.
+Deploy Cloud Foundry using your updated manifest.
+
+```
+properties:
+  ...
+  etcd:
+    ...
+    ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your Old CA Certificate           #######
+      ###########################################################
+      -----END CERTIFICATE-----
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New CA Certificate           #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    peer_ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your Old Peer CA Certificate      #######
+      ###########################################################
+      -----END CERTIFICATE-----
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Peer CA Certificate      #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    client_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your Old Client Certificate       #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    client_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your Old Client Key               #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+    server_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your Old Server Certificate       #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    server_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your Old Server Key               #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+    peer_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your Old Peer Certificate         #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    peer_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your Old Peer Key                 #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+```
+
+Replace the old server, client, and peer certificates and keys with the new certificates and keys. Deploy Cloud Foundry using your updated manifest.
+
+```
+properties:
+  ...
+  etcd:
+    ...
+    ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your Old CA Certificate           #######
+      ###########################################################
+      -----END CERTIFICATE-----
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New CA Certificate           #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    peer_ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your Old Peer CA Certificate      #######
+      ###########################################################
+      -----END CERTIFICATE-----
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Peer CA Certificate      #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    client_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Client Certificate       #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    client_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your New Client Key               #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+    server_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Server Certificate       #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    server_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your New Server Key               #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+    peer_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Peer Certificate         #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    peer_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your New Peer Key                 #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+```
+
+Remove all of your old CA Certificates. Deploy Cloud Foundry using your updated manifest.
+
+```
+properties:
+  ...
+  etcd:
+    ...
+    ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New CA Certificate           #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    peer_ca_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Peer CA Certificate      #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    client_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Client Certificate       #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    client_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your New Client Key               #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+    server_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Server Certificate       #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    server_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your New Server Key               #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+    peer_cert: |
+      -----BEGIN CERTIFICATE-----
+      ###########################################################
+      #######           Your New Peer Certificate         #######
+      ###########################################################
+      -----END CERTIFICATE-----
+    peer_key: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ###########################################################
+      #######           Your New Peer Key                 #######
+      ###########################################################
+      -----END RSA PRIVATE KEY-----
+```
+
+Done.
+
 ## Failure Recovery
 
 ### TLS Certificate Issues
