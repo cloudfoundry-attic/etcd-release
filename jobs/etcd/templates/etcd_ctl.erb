@@ -26,7 +26,7 @@ function start_etcdfab() {
       1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
 }
 
-function stop_etcdfab()
+function stop_etcdfab() {
     set +e
     /var/vcap/jobs/etcd/bin/etcd_network_diagnostics_run_ctl.sh stop
     set -e
