@@ -17,7 +17,8 @@ type Client struct {
 			TTL   uint64
 		}
 		Returns struct {
-			Error error
+			Response *etcd.Response
+			Error    error
 		}
 	}
 
@@ -48,7 +49,7 @@ func (c *Client) Set(key string, value string, ttl uint64) (*etcd.Response, erro
 	c.SetCall.Receives.Value = value
 	c.SetCall.Receives.TTL = ttl
 
-	return nil, c.SetCall.Returns.Error
+	return c.SetCall.Returns.Response, c.SetCall.Returns.Error
 }
 
 func (c *Client) Close() {

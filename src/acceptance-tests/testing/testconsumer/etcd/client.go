@@ -1,11 +1,19 @@
 package etcd
 
-import goetcd "github.com/coreos/go-etcd/etcd"
+import (
+	goetcd "github.com/coreos/go-etcd/etcd"
+)
 
 type GoEtcd interface {
 	Get(key string, sort, recursive bool) (*goetcd.Response, error)
 	Set(key string, value string, ttl uint64) (*goetcd.Response, error)
 	Close()
+}
+
+type KeySetError struct{}
+
+func (k KeySetError) Error() string {
+	return "failed to set key"
 }
 
 type Client struct {
@@ -28,9 +36,13 @@ func (c Client) Get(key string) (string, error) {
 }
 
 func (c Client) Set(key string, value string) error {
-	_, err := c.goEtcdClient.Set(key, value, 6000)
+	response, err := c.goEtcdClient.Set(key, value, 6000)
 	if err != nil {
 		return err
+	}
+
+	if response.Node.Value != value {
+		return KeySetError{}
 	}
 
 	return nil

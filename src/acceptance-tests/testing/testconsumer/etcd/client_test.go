@@ -5,6 +5,7 @@ import (
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/testconsumer/etcd"
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/testconsumer/etcd/fakes"
+	goetcd "github.com/coreos/go-etcd/etcd"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,6 +46,13 @@ var _ = Describe("Client", func() {
 
 	Describe("Set", func() {
 		It("sets the value of a given key", func() {
+			fakeClient.SetCall.Returns.Response = &goetcd.Response{
+				Node: &goetcd.Node{
+					Key:   "/some-key",
+					Value: "some-value",
+				},
+			}
+
 			client := etcd.NewClient(fakeClient)
 			err := client.Set("some-key", "some-value")
 
@@ -60,6 +68,21 @@ var _ = Describe("Client", func() {
 			client := etcd.NewClient(fakeClient)
 			err := client.Set("some-key", "some-value")
 			Expect(err).To(MatchError("some etcd error"))
+		})
+
+		Context("when the key does not set", func() {
+			It("returns an error", func() {
+				fakeClient.SetCall.Returns.Response = &goetcd.Response{
+					Node: &goetcd.Node{
+						Key:   "/some-key",
+						Value: "",
+					},
+				}
+
+				client := etcd.NewClient(fakeClient)
+				err := client.Set("some-key", "some-value")
+				Expect(err).To(MatchError("failed to set key"))
+			})
 		})
 	})
 
