@@ -455,16 +455,19 @@ var _ = Describe("EtcdFab", func() {
 			}, "5s").Should(Succeed())
 
 			pidFile = filepath.Join(runDir, "etcd.pid")
-			Eventually(func() bool {
-				pidFileContents, err := ioutil.ReadFile(pidFile)
-				Expect(err).NotTo(HaveOccurred())
+			Eventually(func() error {
+				_, err := os.Stat(pidFile)
+				return err
+			}, COMMAND_TIMEOUT, time.Second*1).Should(Succeed())
 
-				pid, err = strconv.Atoi(string(pidFileContents))
-				Expect(err).NotTo(HaveOccurred())
+			pidFileContents, err := ioutil.ReadFile(pidFile)
+			Expect(err).NotTo(HaveOccurred())
 
-				process, _ := os.FindProcess(pid)
-				return process.Signal(syscall.Signal(0)) == nil
-			}, COMMAND_TIMEOUT, time.Millisecond*250).Should(BeTrue())
+			pid, err = strconv.Atoi(string(pidFileContents))
+			Expect(err).NotTo(HaveOccurred())
+
+			process, _ := os.FindProcess(pid)
+			Expect(process.Signal(syscall.Signal(0)) == nil).To(BeTrue())
 
 			etcdFabCommand = exec.Command(pathToEtcdFab,
 				"stop",
