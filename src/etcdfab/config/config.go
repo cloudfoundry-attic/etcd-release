@@ -9,7 +9,11 @@ import (
 	"strings"
 )
 
-const etcdPidFilename = "etcd.pid"
+const (
+	clientPort      = 4001
+	peerPort        = 7001
+	etcdPidFilename = "etcd.pid"
+)
 
 type Node struct {
 	Name       string
@@ -93,16 +97,16 @@ func (c Config) CertDir() string {
 
 func (c Config) AdvertisePeerURL() string {
 	if c.Etcd.PeerRequireSSL {
-		return fmt.Sprintf("https://%s.%s:7001", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix)
+		return fmt.Sprintf("https://%s.%s:%d", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix, peerPort)
 	}
-	return fmt.Sprintf("http://%s:7001", c.Node.ExternalIP)
+	return fmt.Sprintf("http://%s:%d", c.Node.ExternalIP, peerPort)
 }
 
 func (c Config) AdvertiseClientURL() string {
 	if c.Etcd.RequireSSL {
-		return fmt.Sprintf("https://%s.%s:4001", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix)
+		return fmt.Sprintf("https://%s.%s:%d", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix, clientPort)
 	}
-	return fmt.Sprintf("http://%s:4001", c.Node.ExternalIP)
+	return fmt.Sprintf("http://%s:%d", c.Node.ExternalIP, clientPort)
 }
 
 func (c Config) ListenPeerURL() string {
@@ -110,7 +114,7 @@ func (c Config) ListenPeerURL() string {
 	if c.Etcd.PeerRequireSSL {
 		protocol = "https"
 	}
-	return fmt.Sprintf("%s://%s:7001", protocol, c.Etcd.PeerIP)
+	return fmt.Sprintf("%s://%s:%d", protocol, c.Etcd.PeerIP, peerPort)
 }
 
 func (c Config) ListenClientURL() string {
@@ -118,16 +122,16 @@ func (c Config) ListenClientURL() string {
 	if c.Etcd.RequireSSL {
 		protocol = "https"
 	}
-	return fmt.Sprintf("%s://%s:4001", protocol, c.Etcd.ClientIP)
+	return fmt.Sprintf("%s://%s:%d", protocol, c.Etcd.ClientIP, clientPort)
 }
 
 func (c Config) EtcdClientEndpoints() []string {
 	if c.Etcd.RequireSSL || c.Etcd.PeerRequireSSL {
-		return []string{fmt.Sprintf("https://%s:4001", c.Etcd.AdvertiseURLsDNSSuffix)}
+		return []string{fmt.Sprintf("https://%s:%d", c.Etcd.AdvertiseURLsDNSSuffix, clientPort)}
 	} else {
 		var endpoints []string
 		for _, machine := range c.Etcd.Machines {
-			endpoints = append(endpoints, fmt.Sprintf("http://%s:4001", machine))
+			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d", machine, clientPort))
 		}
 		return endpoints
 	}
