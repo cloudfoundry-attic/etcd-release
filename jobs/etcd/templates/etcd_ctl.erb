@@ -37,9 +37,6 @@ function stop_etcdfab() {
       --config-link-file "${JOB_DIR}/config/etcd_link.json" \
       2> >(tee -a ${LOG_DIR}/etcd.stderr.log | logger -p user.error -t vcap.etcd) \
       1> >(tee -a ${LOG_DIR}/etcd.stdout.log | logger -p user.info  -t vcap.etcd)
-
-    safe_teardown "$(member_list)"
-    kill_and_wait "${PIDFILE}"
 }
 
 function main() {
