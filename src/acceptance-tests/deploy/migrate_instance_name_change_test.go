@@ -88,10 +88,10 @@ var _ = Describe("Migrate instance name change", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 
+			spammer.Spam()
+
 			_, err = boshClient.Deploy([]byte(manifest))
 			Expect(err).NotTo(HaveOccurred())
-
-			spammer.Spam()
 
 			Eventually(func() ([]bosh.VM, error) {
 				return helpers.DeploymentVMs(boshClient, manifestName)
@@ -100,13 +100,13 @@ var _ = Describe("Migrate instance name change", func() {
 			spammer.Stop()
 		})
 
-		By("getting a persistent value", func() {
+		By("getting a persistent value to verify no data loss during a roll", func() {
 			value, err := etcdClient.Get(testKey)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(value).To(Equal(testValue))
 		})
 
-		By("checking the spammer", func() {
+		By("checking the spammer to verify no downtime", func() {
 			spammerErrs := spammer.Check()
 
 			var errorSet helpers.ErrorSet
