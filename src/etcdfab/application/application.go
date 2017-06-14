@@ -43,6 +43,7 @@ type clusterController interface {
 type etcdClient interface {
 	Configure(client.Config) error
 	MemberRemove(string) error
+	MemberList() ([]client.Member, error)
 }
 
 type logger interface {
@@ -117,8 +118,10 @@ func (a Application) Start() error {
 	if err != nil {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
 
-		a.logger.Info("application.safe-teardown")
-		a.safeTeardown(cfg)
+		if initialClusterState.State == "existing" {
+			a.logger.Info("application.safe-teardown")
+			a.safeTeardown(cfg)
+		}
 
 		a.logger.Info("application.kill-and-wait")
 		killAndWaitErr := a.killAndWait(cfg.PidFile())
@@ -157,8 +160,11 @@ func (a Application) Stop() error {
 		return err
 	}
 
-	a.logger.Info("application.safe-teardown")
-	a.safeTeardown(cfg)
+	teardown := a.priorClusterHadOtherNodes(cfg.NodeName())
+	if teardown {
+		a.logger.Info("application.safe-teardown")
+		a.safeTeardown(cfg)
+	}
 
 	a.logger.Info("application.kill-and-wait")
 	err = a.killAndWait(cfg.PidFile())
@@ -170,8 +176,30 @@ func (a Application) Stop() error {
 	return nil
 }
 
+func (a Application) priorClusterHadOtherNodes(nodeName string) bool {
+	a.logger.Info("application.etcd-client.member-list")
+	memberList, err := a.etcdClient.MemberList()
+	if err != nil {
+		a.logger.Error("application.etcd-client.member-list.failed", err)
+		return false
+	}
+
+	if len(memberList) == 1 && memberList[0].Name == nodeName {
+		return false
+	}
+
+	if len(memberList) == 1 && memberList[0].Name != nodeName {
+		return true
+	}
+
+	if len(memberList) > 1 {
+		return true
+	}
+
+	return false
+}
+
 func (a Application) safeTeardown(cfg config.Config) {
-	//TODO: Check if prior cluster had other nodes otherwise do not do this
 	a.logger.Info("application.etcd-client.member-remove", lager.Data{"node-name": cfg.NodeName()})
 	err := a.etcdClient.MemberRemove(cfg.NodeName())
 	if err != nil {

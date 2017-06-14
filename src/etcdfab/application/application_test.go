@@ -13,6 +13,7 @@ import (
 	"code.cloudfoundry.org/lager"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/application"
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/cluster"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/config"
 	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/fakes"
@@ -326,13 +327,16 @@ var _ = Describe("Application", func() {
 				Context("when syncController.VerifySynced returns an error", func() {
 					BeforeEach(func() {
 						fakeSyncController.VerifySyncedCall.Returns.Error = errors.New("failed to verify synced")
+						fakeClusterController.GetInitialClusterStateCall.Returns.InitialClusterState = cluster.InitialClusterState{
+							State: "existing",
+						}
 					})
 
 					It("cleans up", func() {
 						err := app.Start()
 						Expect(err).To(MatchError("failed to verify synced"))
 
-						By("removing the node rom the cluster", func() {
+						By("removing the node from the cluster", func() {
 							Expect(fakeEtcdClient.MemberRemoveCall.CallCount).To(Equal(1))
 							Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
 						})
@@ -360,6 +364,40 @@ var _ = Describe("Application", func() {
 								{
 									Action: "application.synchronized-controller.verify-synced.failed",
 									Error:  err,
+								},
+								{
+									Action: "application.safe-teardown",
+								},
+								{
+									Action: "application.etcd-client.member-remove",
+									Data: []lager.Data{{
+										"node-name": "some-name-3",
+									}},
+								},
+							}))
+						})
+					})
+
+					Context("when the cluster state has no prior members", func() {
+						BeforeEach(func() {
+							fakeClusterController.GetInitialClusterStateCall.Returns.InitialClusterState = cluster.InitialClusterState{
+								State: "new",
+							}
+						})
+
+						It("skips safe teardown", func() {
+							err := app.Start()
+							Expect(err).To(MatchError("failed to verify synced"))
+
+							Expect(fakeEtcdClient.MemberRemoveCall.CallCount).To(Equal(0))
+
+							Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+								{
+									Action: "application.synchronized-controller.verify-synced.failed",
+									Error:  err,
+								},
+								{
+									Action: "application.kill-and-wait",
 								},
 							}))
 						})
@@ -593,6 +631,15 @@ var _ = Describe("Application", func() {
 			fakeSyncController = &fakes.SyncController{}
 			fakeLogger = &fakes.Logger{}
 
+			fakeEtcdClient.MemberListCall.Returns.MemberList = []client.Member{
+				{
+					Name: "some-name-3",
+				},
+				{
+					Name: "some-name-2",
+				},
+			}
+
 			var err error
 			tmpDir, err = ioutil.TempDir("", "")
 			Expect(err).NotTo(HaveOccurred())
@@ -680,6 +727,7 @@ var _ = Describe("Application", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("removing the node from the cluster", func() {
+				Expect(fakeEtcdClient.MemberListCall.CallCount).To(Equal(1))
 				Expect(fakeEtcdClient.MemberRemoveCall.CallCount).To(Equal(1))
 				Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
 			})
@@ -706,6 +754,9 @@ var _ = Describe("Application", func() {
 				Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
 					{
 						Action: "application.stop",
+					},
+					{
+						Action: "application.etcd-client.member-list",
 					},
 					{
 						Action: "application.safe-teardown",
@@ -836,6 +887,97 @@ var _ = Describe("Application", func() {
 						Error:  err,
 					},
 				}))
+			})
+		})
+
+		Context("when prior cluster had no other members", func() {
+			BeforeEach(func() {
+				fakeEtcdClient.MemberListCall.Returns.MemberList = []client.Member{
+					{
+						Name:     "some-name-3",
+						PeerURLs: []string{"http://some-peer-url:7001"},
+					},
+				}
+			})
+
+			It("cleans up", func() {
+				err := app.Stop()
+				Expect(err).NotTo(HaveOccurred())
+
+				By("checking there are no other members", func() {
+					Expect(fakeEtcdClient.MemberListCall.CallCount).To(Equal(1))
+				})
+
+				By("not removing the member from the cluster", func() {
+					Expect(fakeEtcdClient.MemberRemoveCall.CallCount).To(Equal(0))
+				})
+
+				By("killing the etcd process", func() {
+					Expect(fakeCommand.KillCall.CallCount).To(Equal(1))
+					Expect(fakeCommand.KillCall.Receives.Pid).To(Equal(etcdPid))
+				})
+
+				By("not writing a pidfile", func() {
+					Expect(etcdPidPath).NotTo(BeARegularFile())
+				})
+
+				By("logging the error and skipping safe teardown", func() {
+					Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+						{
+							Action: "application.stop",
+						},
+						{
+							Action: "application.etcd-client.member-list",
+						},
+						{
+							Action: "application.kill-and-wait",
+						},
+					}))
+				})
+			})
+
+			Context("when member list returns an error", func() {
+				var err error
+				BeforeEach(func() {
+					err = errors.New("failed to list members")
+					fakeEtcdClient.MemberListCall.Returns.Error = err
+				})
+
+				It("cleans up", func() {
+					Expect(app.Stop()).NotTo(HaveOccurred())
+
+					By("checking there are no other members", func() {
+						Expect(fakeEtcdClient.MemberListCall.CallCount).To(Equal(1))
+					})
+
+					By("killing the etcd process", func() {
+						Expect(fakeCommand.KillCall.CallCount).To(Equal(1))
+						Expect(fakeCommand.KillCall.Receives.Pid).To(Equal(etcdPid))
+					})
+
+					By("not writing a pidfile", func() {
+						Expect(etcdPidPath).NotTo(BeARegularFile())
+					})
+
+					By("logging the error and skipping safe teardown", func() {
+						Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
+							{
+								Action: "application.stop",
+							},
+							{
+								Action: "application.etcd-client.member-list",
+							},
+							{
+								Action: "application.etcd-client.member-list.failed",
+								Error:  err,
+							},
+							{
+								Action: "application.kill-and-wait",
+							},
+						}))
+					})
+				})
+
 			})
 		})
 
