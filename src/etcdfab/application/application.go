@@ -171,6 +171,7 @@ func (a Application) Stop() error {
 }
 
 func (a Application) safeTeardown(cfg config.Config) {
+	//TODO: Check if prior cluster had other nodes otherwise do not do this
 	a.logger.Info("application.etcd-client.member-remove", lager.Data{"node-name": cfg.NodeName()})
 	err := a.etcdClient.MemberRemove(cfg.NodeName())
 	if err != nil {
