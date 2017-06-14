@@ -337,8 +337,13 @@ var _ = Describe("Application", func() {
 							Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
 						})
 
-						By("removing the DATA_DIR", func() {
-							Expect(dataDir).NotTo(BeADirectory())
+						By("removing the contents of the data dir", func() {
+							d, err := os.Open(dataDir)
+							Expect(err).NotTo(HaveOccurred())
+							defer d.Close()
+							files, err := d.Readdirnames(-1)
+							Expect(err).NotTo(HaveOccurred())
+							Expect(len(files)).To(Equal(0))
 						})
 
 						By("killing the etcd process", func() {
@@ -679,8 +684,13 @@ var _ = Describe("Application", func() {
 				Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
 			})
 
-			By("removing the data dir", func() {
-				Expect(dataDir).NotTo(BeADirectory())
+			By("removing the contents of the data dir", func() {
+				d, err := os.Open(dataDir)
+				Expect(err).NotTo(HaveOccurred())
+				defer d.Close()
+				files, err := d.Readdirnames(-1)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(len(files)).To(Equal(0))
 			})
 
 			By("killing the etcd process", func() {

@@ -179,11 +179,30 @@ func (a Application) safeTeardown(cfg config.Config) {
 	}
 
 	a.logger.Info("application.remove-data-dir", lager.Data{"data-dir": cfg.Etcd.DataDir})
-	err = os.RemoveAll(cfg.Etcd.DataDir)
+	err = a.removeDataDir(cfg.Etcd.DataDir)
 	if err != nil {
 		//not tested
 		a.logger.Error("application.remove-data-dir", err)
 	}
+}
+
+func (a Application) removeDataDir(dataDir string) error {
+	d, err := os.Open(dataDir)
+	if err != nil {
+		return err
+	}
+	defer d.Close()
+	files, err := d.Readdirnames(-1)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		err = os.RemoveAll(filepath.Join(dataDir, file))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (a Application) killAndWait(pidPath string) error {
