@@ -114,8 +114,8 @@ func (a Application) Start() error {
 	}
 
 	a.logger.Info("application.synchronized-controller.verify-synced")
-	err = a.syncController.VerifySynced()
-	if err != nil {
+	syncErr := a.syncController.VerifySynced()
+	if syncErr != nil {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
 
 		if initialClusterState.State == "existing" {
@@ -128,7 +128,7 @@ func (a Application) Start() error {
 		if killAndWaitErr != nil {
 			return killAndWaitErr
 		}
-		return err
+		return syncErr
 	}
 
 	a.logger.Info("application.write-pid-file", lager.Data{
@@ -142,6 +142,7 @@ func (a Application) Start() error {
 	}
 
 	a.logger.Info("application.start.success")
+
 	return nil
 }
 
@@ -184,6 +185,7 @@ func (a Application) priorClusterHadOtherNodes(nodeName string) bool {
 		return false
 	}
 
+	a.logger.Info("application.etcd-client.member-list", lager.Data{"member-list": memberList})
 	if len(memberList) == 1 && memberList[0].Name == nodeName {
 		return false
 	}
@@ -200,37 +202,39 @@ func (a Application) priorClusterHadOtherNodes(nodeName string) bool {
 }
 
 func (a Application) safeTeardown(cfg config.Config) {
-	a.logger.Info("application.etcd-client.member-remove", lager.Data{"node-name": cfg.NodeName()})
-	err := a.etcdClient.MemberRemove(cfg.NodeName())
+	memberList, err := a.etcdClient.MemberList()
+	if err != nil {
+		a.logger.Error("application.etcd-client.member-list.failed", err)
+	}
+	var memberID string
+	for _, member := range memberList {
+		if member.Name == cfg.NodeName() {
+			memberID = member.ID
+		}
+
+	}
+	a.logger.Info("application.etcd-client.member-remove", lager.Data{"member-id": memberID})
+	err = a.etcdClient.MemberRemove(memberID)
 	if err != nil {
 		a.logger.Error("application.etcd-client.member-remove.failed", err)
 	}
 
 	a.logger.Info("application.remove-data-dir", lager.Data{"data-dir": cfg.Etcd.DataDir})
-	err = a.removeDataDir(cfg.Etcd.DataDir)
+	d, err := os.Open(cfg.Etcd.DataDir)
 	if err != nil {
-		//not tested
 		a.logger.Error("application.remove-data-dir", err)
-	}
-}
-
-func (a Application) removeDataDir(dataDir string) error {
-	d, err := os.Open(dataDir)
-	if err != nil {
-		return err
 	}
 	defer d.Close()
 	files, err := d.Readdirnames(-1)
 	if err != nil {
-		return err
+		a.logger.Error("application.remove-data-dir", err)
 	}
 	for _, file := range files {
-		err = os.RemoveAll(filepath.Join(dataDir, file))
-		if err != nil {
-			return err
-		}
+		err = os.RemoveAll(filepath.Join(cfg.Etcd.DataDir, file))
 	}
-	return nil
+	if err != nil {
+		a.logger.Error("application.remove-data-dir", err)
+	}
 }
 
 func (a Application) killAndWait(pidPath string) error {
