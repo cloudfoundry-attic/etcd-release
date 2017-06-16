@@ -116,7 +116,7 @@ func (a Application) Start() error {
 	a.logger.Info("application.synchronized-controller.verify-synced")
 	syncErr := a.syncController.VerifySynced()
 	if syncErr != nil {
-		a.logger.Error("application.synchronized-controller.verify-synced.failed", err)
+		a.logger.Error("application.synchronized-controller.verify-synced.failed", syncErr)
 
 		if initialClusterState.State == "existing" {
 			a.logger.Info("application.safe-teardown")
@@ -211,8 +211,8 @@ func (a Application) safeTeardown(cfg config.Config) {
 		if member.Name == cfg.NodeName() {
 			memberID = member.ID
 		}
-
 	}
+
 	a.logger.Info("application.etcd-client.member-remove", lager.Data{"member-id": memberID})
 	err = a.etcdClient.MemberRemove(memberID)
 	if err != nil {
@@ -258,8 +258,6 @@ func (a Application) killAndWait(pidPath string) error {
 		a.logger.Error("application.kill-pid.failed", err)
 		return err
 	}
-
-	//TODO: Wait
 
 	a.logger.Info("application.remove-pid-file")
 	err = os.Remove(pidPath)

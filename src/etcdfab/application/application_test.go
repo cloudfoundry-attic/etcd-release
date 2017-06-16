@@ -330,6 +330,12 @@ var _ = Describe("Application", func() {
 						fakeClusterController.GetInitialClusterStateCall.Returns.InitialClusterState = cluster.InitialClusterState{
 							State: "existing",
 						}
+						fakeEtcdClient.MemberListCall.Returns.MemberList = []client.Member{
+							{
+								ID:   "some-id",
+								Name: "some-name-3",
+							},
+						}
 					})
 
 					It("cleans up", func() {
@@ -338,7 +344,7 @@ var _ = Describe("Application", func() {
 
 						By("removing the node from the cluster", func() {
 							Expect(fakeEtcdClient.MemberRemoveCall.CallCount).To(Equal(1))
-							Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
+							Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-id"))
 						})
 
 						By("removing the contents of the data dir", func() {
@@ -355,7 +361,7 @@ var _ = Describe("Application", func() {
 							Expect(fakeCommand.KillCall.Receives.Pid).To(Equal(etcdPid))
 						})
 
-						By("not writing a pidfile", func() {
+						By("removing the pidfile", func() {
 							Expect(etcdPidPath).NotTo(BeARegularFile())
 						})
 
@@ -371,7 +377,7 @@ var _ = Describe("Application", func() {
 								{
 									Action: "application.etcd-client.member-remove",
 									Data: []lager.Data{{
-										"node-name": "some-name-3",
+										"member-id": "some-id",
 									}},
 								},
 							}))
@@ -449,7 +455,7 @@ var _ = Describe("Application", func() {
 								{
 									Action: "application.etcd-client.member-remove",
 									Data: []lager.Data{{
-										"node-name": "some-name-3",
+										"member-id": "some-id",
 									}},
 								},
 								{
@@ -633,6 +639,7 @@ var _ = Describe("Application", func() {
 
 			fakeEtcdClient.MemberListCall.Returns.MemberList = []client.Member{
 				{
+					ID:   "some-id",
 					Name: "some-name-3",
 				},
 				{
@@ -727,9 +734,9 @@ var _ = Describe("Application", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			By("removing the node from the cluster", func() {
-				Expect(fakeEtcdClient.MemberListCall.CallCount).To(Equal(1))
+				Expect(fakeEtcdClient.MemberListCall.CallCount).To(Equal(2))
 				Expect(fakeEtcdClient.MemberRemoveCall.CallCount).To(Equal(1))
-				Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-name-3"))
+				Expect(fakeEtcdClient.MemberRemoveCall.Receives.MemberID).To(Equal("some-id"))
 			})
 
 			By("removing the contents of the data dir", func() {
@@ -759,12 +766,18 @@ var _ = Describe("Application", func() {
 						Action: "application.etcd-client.member-list",
 					},
 					{
+						Action: "application.etcd-client.member-list",
+						Data: []lager.Data{{
+							"member-list": fakeEtcdClient.MemberListCall.Returns.MemberList,
+						}},
+					},
+					{
 						Action: "application.safe-teardown",
 					},
 					{
 						Action: "application.etcd-client.member-remove",
 						Data: []lager.Data{{
-							"node-name": "some-name-3",
+							"member-id": "some-id",
 						}},
 					},
 					{
@@ -891,13 +904,15 @@ var _ = Describe("Application", func() {
 		})
 
 		Context("when prior cluster had no other members", func() {
+			var memberList []client.Member
 			BeforeEach(func() {
-				fakeEtcdClient.MemberListCall.Returns.MemberList = []client.Member{
+				memberList = []client.Member{
 					{
 						Name:     "some-name-3",
 						PeerURLs: []string{"http://some-peer-url:7001"},
 					},
 				}
+				fakeEtcdClient.MemberListCall.Returns.MemberList = memberList
 			})
 
 			It("cleans up", func() {
@@ -928,6 +943,12 @@ var _ = Describe("Application", func() {
 						},
 						{
 							Action: "application.etcd-client.member-list",
+						},
+						{
+							Action: "application.etcd-client.member-list",
+							Data: []lager.Data{{
+								"member-list": memberList,
+							}},
 						},
 						{
 							Action: "application.kill-and-wait",

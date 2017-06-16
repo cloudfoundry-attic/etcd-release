@@ -339,48 +339,6 @@ var _ = Describe("EtcdFab", func() {
 				})
 			})
 
-			Context("when the config file is invalid", func() {
-				BeforeEach(func() {
-					etcdBackendServer.EnableFastFail()
-
-					err := ioutil.WriteFile(configFile.Name(), []byte("%%%"), os.ModePerm)
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				AfterEach(func() {
-					etcdBackendServer.DisableFastFail()
-				})
-
-				It("exits 1 and prints an error", func() {
-					session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
-					Expect(err).NotTo(HaveOccurred())
-					Eventually(session, 10*time.Second).Should(gexec.Exit(1))
-
-					Expect(string(session.Err.Contents())).To(ContainSubstring("Error during start: invalid character '%' looking for beginning of value"))
-				})
-			})
-
-			Context("when the link config file is invalid", func() {
-				BeforeEach(func() {
-					etcdBackendServer.EnableFastFail()
-
-					err := ioutil.WriteFile(linkConfigFile.Name(), []byte("%%%"), os.ModePerm)
-					Expect(err).NotTo(HaveOccurred())
-				})
-
-				AfterEach(func() {
-					etcdBackendServer.DisableFastFail()
-				})
-
-				It("exits 1 and prints an error", func() {
-					session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
-					Expect(err).NotTo(HaveOccurred())
-					Eventually(session, 10*time.Second).Should(gexec.Exit(1))
-
-					Expect(string(session.Err.Contents())).To(ContainSubstring("Error during start: invalid character '%' looking for beginning of value"))
-				})
-			})
-
 			Context("when the etcd process fails", func() {
 				BeforeEach(func() {
 					etcdBackendServer.EnableFastFail()
@@ -423,6 +381,7 @@ var _ = Describe("EtcdFab", func() {
 			pidFile    string
 			etcdServer *etcdserver.EtcdServer
 		)
+
 		BeforeEach(func() {
 			etcdServer = etcdserver.NewEtcdServer(!startTLS, "")
 			etcdServer.SetKeysReturn(http.StatusOK)
@@ -478,7 +437,6 @@ var _ = Describe("EtcdFab", func() {
 
 		AfterEach(func() {
 			etcdServer.Exit()
-			os.Remove(pidFile)
 		})
 
 		It("stops the etcd process", func() {
@@ -488,6 +446,7 @@ var _ = Describe("EtcdFab", func() {
 				process, _ := os.FindProcess(pid)
 				return process.Signal(syscall.Signal(0)) == nil
 			}, COMMAND_TIMEOUT, time.Millisecond*250).Should(BeFalse())
+			Expect(pidFile).NotTo(BeARegularFile())
 		})
 
 		Context("when application stop returns an error", func() {

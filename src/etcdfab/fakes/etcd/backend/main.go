@@ -10,9 +10,10 @@ import (
 )
 
 type etcdBackend struct {
-	callCount int32
-	args      []string
-	fastFail  bool
+	callCount  int32
+	args       []string
+	fastFail   bool
+	shouldExit bool
 
 	mutex sync.Mutex
 }
@@ -41,6 +42,17 @@ func (e *EtcdBackendServer) ServeHTTP(responseWriter http.ResponseWriter, reques
 	switch request.URL.Path {
 	case "/call":
 		e.call(responseWriter, request)
+	case "/exit":
+		e.exit(responseWriter, request)
+	}
+}
+
+func (e *EtcdBackendServer) exit(responseWriter http.ResponseWriter, request *http.Request) {
+	if e.backend.shouldExit {
+		responseWriter.WriteHeader(http.StatusOK)
+		e.backend.shouldExit = true
+	} else {
+		responseWriter.WriteHeader(http.StatusTeapot)
 	}
 }
 
@@ -88,6 +100,12 @@ func (e *EtcdBackendServer) FastFail() bool {
 	e.backend.mutex.Lock()
 	defer e.backend.mutex.Unlock()
 	return e.backend.fastFail
+}
+
+func (e *EtcdBackendServer) Exit() {
+	e.backend.mutex.Lock()
+	defer e.backend.mutex.Unlock()
+	e.backend.shouldExit = true
 }
 
 func (e *EtcdBackendServer) ServerURL() string {
