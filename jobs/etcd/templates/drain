@@ -2,7 +2,8 @@
 
 set -u -x
 
-source /var/vcap/jobs/etcd/bin/etcd_bosh_utils.sh
+LOG_DIR=/var/vcap/sys/log/etcd
+JOB_DIR=/var/vcap/jobs/etcd
 
 exec 3>&1
 
