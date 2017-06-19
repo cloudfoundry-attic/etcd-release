@@ -372,7 +372,7 @@ var _ = Describe("Application", func() {
 									Error:  err,
 								},
 								{
-									Action: "application.safe-teardown",
+									Action: "application.remove-self-from-cluster",
 								},
 								{
 									Action: "application.etcd-client.member-remove",
@@ -384,14 +384,14 @@ var _ = Describe("Application", func() {
 						})
 					})
 
-					Context("when the cluster state has no prior members", func() {
+					Context("when the cluster state is new", func() {
 						BeforeEach(func() {
 							fakeClusterController.GetInitialClusterStateCall.Returns.InitialClusterState = cluster.InitialClusterState{
 								State: "new",
 							}
 						})
 
-						It("skips safe teardown", func() {
+						It("skips removing self from cluster", func() {
 							err := app.Start()
 							Expect(err).To(MatchError("failed to verify synced"))
 
@@ -401,6 +401,12 @@ var _ = Describe("Application", func() {
 								{
 									Action: "application.synchronized-controller.verify-synced.failed",
 									Error:  err,
+								},
+								{
+									Action: "application.remove-data-dir",
+									Data: []lager.Data{{
+										"data-dir": dataDir,
+									}},
 								},
 								{
 									Action: "application.kill",
@@ -450,7 +456,7 @@ var _ = Describe("Application", func() {
 							Expect(etcdPidPath).NotTo(BeARegularFile())
 							Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
 								{
-									Action: "application.safe-teardown",
+									Action: "application.remove-self-from-cluster",
 								},
 								{
 									Action: "application.etcd-client.member-remove",
@@ -772,7 +778,7 @@ var _ = Describe("Application", func() {
 						}},
 					},
 					{
-						Action: "application.safe-teardown",
+						Action: "application.remove-self-from-cluster",
 					},
 					{
 						Action: "application.etcd-client.member-remove",
@@ -936,7 +942,7 @@ var _ = Describe("Application", func() {
 					Expect(etcdPidPath).NotTo(BeARegularFile())
 				})
 
-				By("logging the error and skipping safe teardown", func() {
+				By("logging the error and skipping member remove", func() {
 					Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
 						{
 							Action: "application.stop",
@@ -948,6 +954,12 @@ var _ = Describe("Application", func() {
 							Action: "application.etcd-client.member-list",
 							Data: []lager.Data{{
 								"member-list": memberList,
+							}},
+						},
+						{
+							Action: "application.remove-data-dir",
+							Data: []lager.Data{{
+								"data-dir": dataDir,
 							}},
 						},
 						{
@@ -980,7 +992,7 @@ var _ = Describe("Application", func() {
 						Expect(etcdPidPath).NotTo(BeARegularFile())
 					})
 
-					By("logging the error and skipping safe teardown", func() {
+					By("logging the error and skipping remove self from cluster", func() {
 						Expect(fakeLogger.Messages()).To(gomegamatchers.ContainSequence([]fakes.LoggerMessage{
 							{
 								Action: "application.stop",
@@ -993,12 +1005,17 @@ var _ = Describe("Application", func() {
 								Error:  err,
 							},
 							{
+								Action: "application.remove-data-dir",
+								Data: []lager.Data{{
+									"data-dir": dataDir,
+								}},
+							},
+							{
 								Action: "application.kill",
 							},
 						}))
 					})
 				})
-
 			})
 		})
 

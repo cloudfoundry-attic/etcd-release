@@ -119,9 +119,10 @@ func (a Application) Start() error {
 		a.logger.Error("application.synchronized-controller.verify-synced.failed", syncErr)
 
 		if initialClusterState.State == "existing" {
-			a.logger.Info("application.safe-teardown")
-			a.safeTeardown(cfg)
+			a.logger.Info("application.remove-self-from-cluster")
+			a.removeSelfFromCluster(cfg)
 		}
+		a.removeDataDir(cfg)
 
 		a.logger.Info("application.kill")
 		killErr := a.kill(cfg.PidFile())
@@ -163,9 +164,11 @@ func (a Application) Stop() error {
 
 	teardown := a.priorClusterHadOtherNodes(cfg.NodeName())
 	if teardown {
-		a.logger.Info("application.safe-teardown")
-		a.safeTeardown(cfg)
+		a.logger.Info("application.remove-self-from-cluster")
+		a.removeSelfFromCluster(cfg)
 	}
+
+	a.removeDataDir(cfg)
 
 	a.logger.Info("application.kill")
 	err = a.kill(cfg.PidFile())
@@ -201,7 +204,7 @@ func (a Application) priorClusterHadOtherNodes(nodeName string) bool {
 	return false
 }
 
-func (a Application) safeTeardown(cfg config.Config) {
+func (a Application) removeSelfFromCluster(cfg config.Config) {
 	memberList, err := a.etcdClient.MemberList()
 	if err != nil {
 		a.logger.Error("application.etcd-client.member-list.failed", err)
@@ -218,7 +221,9 @@ func (a Application) safeTeardown(cfg config.Config) {
 	if err != nil {
 		a.logger.Error("application.etcd-client.member-remove.failed", err)
 	}
+}
 
+func (a Application) removeDataDir(cfg config.Config) {
 	a.logger.Info("application.remove-data-dir", lager.Data{"data-dir": cfg.Etcd.DataDir})
 	d, err := os.Open(cfg.Etcd.DataDir)
 	if err != nil {
