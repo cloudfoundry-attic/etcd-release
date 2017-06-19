@@ -30,7 +30,7 @@ func main() {
 	commandWrapper := command.NewWrapper()
 	etcdClient := client.NewEtcdClient(logger)
 	clusterController := cluster.NewController(etcdClient, logger, time.Sleep)
-	syncController := sync.NewController(etcdClient, time.Sleep)
+	syncController := sync.NewController(etcdClient, logger, time.Sleep)
 
 	app := application.New(application.NewArgs{
 		Command:            commandWrapper,
