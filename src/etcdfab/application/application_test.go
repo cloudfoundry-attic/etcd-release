@@ -403,7 +403,7 @@ var _ = Describe("Application", func() {
 									Error:  err,
 								},
 								{
-									Action: "application.kill-and-wait",
+									Action: "application.kill",
 								},
 							}))
 						})
@@ -469,7 +469,7 @@ var _ = Describe("Application", func() {
 									}},
 								},
 								{
-									Action: "application.kill-and-wait",
+									Action: "application.kill",
 								},
 							}))
 						})
@@ -787,7 +787,7 @@ var _ = Describe("Application", func() {
 						}},
 					},
 					{
-						Action: "application.kill-and-wait",
+						Action: "application.kill",
 					},
 					{
 						Action: "application.read-pid-file",
@@ -951,7 +951,7 @@ var _ = Describe("Application", func() {
 							}},
 						},
 						{
-							Action: "application.kill-and-wait",
+							Action: "application.kill",
 						},
 					}))
 				})
@@ -993,7 +993,7 @@ var _ = Describe("Application", func() {
 								Error:  err,
 							},
 							{
-								Action: "application.kill-and-wait",
+								Action: "application.kill",
 							},
 						}))
 					})
@@ -1026,7 +1026,7 @@ var _ = Describe("Application", func() {
 						}},
 					},
 					{
-						Action: "application.kill-and-wait",
+						Action: "application.kill",
 					},
 					{
 						Action: "application.read-pid-file",

@@ -123,10 +123,10 @@ func (a Application) Start() error {
 			a.safeTeardown(cfg)
 		}
 
-		a.logger.Info("application.kill-and-wait")
-		killAndWaitErr := a.killAndWait(cfg.PidFile())
-		if killAndWaitErr != nil {
-			return killAndWaitErr
+		a.logger.Info("application.kill")
+		killErr := a.kill(cfg.PidFile())
+		if killErr != nil {
+			return killErr
 		}
 		return syncErr
 	}
@@ -167,8 +167,8 @@ func (a Application) Stop() error {
 		a.safeTeardown(cfg)
 	}
 
-	a.logger.Info("application.kill-and-wait")
-	err = a.killAndWait(cfg.PidFile())
+	a.logger.Info("application.kill")
+	err = a.kill(cfg.PidFile())
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (a Application) safeTeardown(cfg config.Config) {
 	}
 }
 
-func (a Application) killAndWait(pidPath string) error {
+func (a Application) kill(pidPath string) error {
 	a.logger.Info("application.read-pid-file", lager.Data{"pid-file": pidPath})
 	pidFileContents, err := ioutil.ReadFile(pidPath)
 	if err != nil {
