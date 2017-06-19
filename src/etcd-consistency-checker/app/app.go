@@ -93,7 +93,7 @@ func (a App) Run() error {
 			return err
 		}
 
-		fmt.Printf("[INFO] the leader is %v\n", leaderURLs)
+		a.logger.Printf("[INFO] the leader is %v\n", leaderURLs)
 		a.sleeper(1 * time.Second)
 	}
 
