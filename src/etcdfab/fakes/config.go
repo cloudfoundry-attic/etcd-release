@@ -1,6 +1,12 @@
 package fakes
 
 type Config struct {
+	EtcdClientSelfEndpointCall struct {
+		CallCount int
+		Returns   struct {
+			Endpoint string
+		}
+	}
 	EtcdClientEndpointsCall struct {
 		CallCount int
 		Returns   struct {
@@ -19,6 +25,12 @@ type Config struct {
 			CertDir string
 		}
 	}
+}
+
+func (c *Config) EtcdClientSelfEndpoint() string {
+	c.EtcdClientSelfEndpointCall.CallCount++
+
+	return c.EtcdClientSelfEndpointCall.Returns.Endpoint
 }
 
 func (c *Config) EtcdClientEndpoints() []string {

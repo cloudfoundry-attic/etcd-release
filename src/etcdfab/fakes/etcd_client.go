@@ -14,6 +14,13 @@ type EtcdClient struct {
 			Error error
 		}
 	}
+	SelfCall struct {
+		CallCount int
+		Returns   struct {
+			EtcdClient client.EtcdClientInterface
+			Error      error
+		}
+	}
 	MemberListCall struct {
 		CallCount int
 		Returns   struct {
@@ -54,6 +61,12 @@ func (e *EtcdClient) Configure(config client.Config) error {
 	e.ConfigureCall.Receives.Config = config
 
 	return e.ConfigureCall.Returns.Error
+}
+
+func (e *EtcdClient) Self() (client.EtcdClientInterface, error) {
+	e.SelfCall.CallCount++
+
+	return e.SelfCall.Returns.EtcdClient, e.SelfCall.Returns.Error
 }
 
 func (e *EtcdClient) MemberList() ([]client.Member, error) {

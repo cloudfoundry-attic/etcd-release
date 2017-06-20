@@ -15,6 +15,10 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
+var (
+	disableDelay string
+)
+
 type etcdfabFlags struct {
 	Command            string
 	ConfigFilePath     string
@@ -29,8 +33,8 @@ func main() {
 
 	commandWrapper := command.NewWrapper()
 	etcdClient := client.NewEtcdClient(logger)
-	clusterController := cluster.NewController(etcdClient, logger, time.Sleep)
-	syncController := sync.NewController(etcdClient, logger, time.Sleep)
+	clusterController := cluster.NewController(etcdClient, logger, sleep)
+	syncController := sync.NewController(etcdClient, logger, sleep)
 
 	app := application.New(application.NewArgs{
 		Command:            commandWrapper,
@@ -87,4 +91,12 @@ func parseFlags() etcdfabFlags {
 	}
 
 	return flags
+}
+
+func sleep(duration time.Duration) {
+	if disableDelay == "true" {
+		return
+	}
+
+	time.Sleep(duration)
 }

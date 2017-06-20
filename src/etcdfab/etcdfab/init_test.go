@@ -34,7 +34,9 @@ var _ = BeforeSuite(func() {
 		"--ldflags", fmt.Sprintf("-X main.backendURL=%s", etcdBackendServer.ServerURL()))
 	Expect(err).NotTo(HaveOccurred())
 
-	pathToEtcdFab, err = gexec.Build("github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/etcdfab")
+	pathToEtcdFab, err = gexec.Build("github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/etcdfab",
+		"--ldflags", "-X main.disableDelay=true",
+	)
 	Expect(err).NotTo(HaveOccurred())
 })
 

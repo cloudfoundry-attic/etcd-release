@@ -7,14 +7,21 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
-	coreosetcdclient "github.com/coreos/etcd/client"
 	"github.com/coreos/etcd/pkg/transport"
+
+	coreosetcdclient "github.com/coreos/etcd/client"
 )
+
+type EtcdClientInterface interface {
+	MemberList() ([]Member, error)
+	MemberAdd(string) (Member, error)
+	Keys() error
+}
 
 type EtcdClient struct {
 	coreosEtcdClient coreosetcdclient.Client
-	membersAPI       coreosetcdclient.MembersAPI
-	keysAPI          coreosetcdclient.KeysAPI
+	clientConfig     coreosetcdclient.Config
+	selfEndpoint     string
 
 	logger logger
 }
@@ -28,6 +35,7 @@ type Member struct {
 
 type Config interface {
 	EtcdClientEndpoints() []string
+	EtcdClientSelfEndpoint() string
 	RequireSSL() bool
 	CertDir() string
 }
@@ -38,6 +46,7 @@ type logger interface {
 }
 
 var newTransport = transport.NewTransport
+var coreOSEtcdClientNew = coreosetcdclient.New
 
 func NewEtcdClient(logger logger) *EtcdClient {
 	return &EtcdClient{
@@ -47,12 +56,15 @@ func NewEtcdClient(logger logger) *EtcdClient {
 
 func (e *EtcdClient) Configure(etcdfabConfig Config) error {
 	endpoints := etcdfabConfig.EtcdClientEndpoints()
+	e.selfEndpoint = etcdfabConfig.EtcdClientSelfEndpoint()
 	e.logger.Info("etcd-client.configure.config", lager.Data{
-		"endpoints": endpoints,
+		"endpoints":     endpoints,
+		"self-endpoint": e.selfEndpoint,
 	})
 
 	tns := coreosetcdclient.DefaultTransport
 
+	var err error
 	if etcdfabConfig.RequireSSL() {
 		caCertFile := filepath.Join(etcdfabConfig.CertDir(), "server-ca.crt")
 		clientCertFile := filepath.Join(etcdfabConfig.CertDir(), "client.crt")
@@ -65,35 +77,43 @@ func (e *EtcdClient) Configure(etcdfabConfig Config) error {
 			ClientCertAuth: etcdfabConfig.RequireSSL(),
 		}
 
-		var err error
 		tns, err = newTransport(tlsInfo)
 		if err != nil {
 			return err
 		}
 	}
 
-	cfg := coreosetcdclient.Config{
+	e.clientConfig = coreosetcdclient.Config{
 		Endpoints:               endpoints,
 		Transport:               tns,
 		HeaderTimeoutPerRequest: time.Second,
 	}
-	coreosEtcdClient, err := coreosetcdclient.New(cfg)
+	e.coreosEtcdClient, err = coreosetcdclient.New(e.clientConfig)
 	if err != nil {
 		return err
 	}
 
-	membersAPI := coreosetcdclient.NewMembersAPI(coreosEtcdClient)
-	keysAPI := coreosetcdclient.NewKeysAPI(coreosEtcdClient)
-
-	e.coreosEtcdClient = coreosEtcdClient
-	e.membersAPI = membersAPI
-	e.keysAPI = keysAPI
-
 	return nil
 }
 
+func (e *EtcdClient) Self() (EtcdClientInterface, error) {
+	var selfEtcdClient = &EtcdClient{}
+	*selfEtcdClient = *e
+
+	selfEtcdClient.clientConfig.Endpoints = []string{e.selfEndpoint}
+
+	var err error
+	selfEtcdClient.coreosEtcdClient, err = coreOSEtcdClientNew(selfEtcdClient.clientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return selfEtcdClient, nil
+}
+
 func (e *EtcdClient) MemberList() ([]Member, error) {
-	memberList, err := e.membersAPI.List(context.Background())
+	membersAPI := coreosetcdclient.NewMembersAPI(e.coreosEtcdClient)
+	memberList, err := membersAPI.List(context.Background())
 	if err != nil {
 		return []Member{}, err
 	}
@@ -112,7 +132,8 @@ func (e *EtcdClient) MemberList() ([]Member, error) {
 }
 
 func (e *EtcdClient) MemberAdd(peerURL string) (Member, error) {
-	m, err := e.membersAPI.Add(context.Background(), peerURL)
+	membersAPI := coreosetcdclient.NewMembersAPI(e.coreosEtcdClient)
+	m, err := membersAPI.Add(context.Background(), peerURL)
 	if err != nil {
 		return Member{}, err
 	}
@@ -125,7 +146,8 @@ func (e *EtcdClient) MemberAdd(peerURL string) (Member, error) {
 }
 
 func (e *EtcdClient) MemberRemove(memberID string) error {
-	err := e.membersAPI.Remove(context.Background(), memberID)
+	membersAPI := coreosetcdclient.NewMembersAPI(e.coreosEtcdClient)
+	err := membersAPI.Remove(context.Background(), memberID)
 	if err != nil {
 		return err
 	}
@@ -133,6 +155,7 @@ func (e *EtcdClient) MemberRemove(memberID string) error {
 }
 
 func (e *EtcdClient) Keys() error {
-	_, err := e.keysAPI.Get(context.Background(), "", &coreosetcdclient.GetOptions{})
+	keysAPI := coreosetcdclient.NewKeysAPI(e.coreosEtcdClient)
+	_, err := keysAPI.Get(context.Background(), "", &coreosetcdclient.GetOptions{})
 	return err
 }

@@ -3,12 +3,15 @@ package sync
 import (
 	"time"
 
+	"github.com/cloudfoundry-incubator/etcd-release/src/etcdfab/client"
+
 	"code.cloudfoundry.org/lager"
 )
 
 const maxSyncCalls = 20
 
 type etcdClient interface {
+	Self() (client.EtcdClientInterface, error)
 	Keys() error
 }
 
@@ -32,15 +35,20 @@ func NewController(etcdClient etcdClient, logger logger, sleep func(time.Duratio
 }
 
 func (c Controller) VerifySynced() error {
-	var err error
 	c.logger.Info("sync.verify-synced", lager.Data{
 		"max-sync-calls": maxSyncCalls,
 	})
+
+	selfEtcdClient, err := c.etcdClient.Self()
+	if err != nil {
+		return err
+	}
+
 	for i := 0; i < maxSyncCalls; i++ {
 		c.logger.Info("sync.verify-synced.check-keys", lager.Data{
 			"index": i,
 		})
-		err = c.etcdClient.Keys()
+		err = selfEtcdClient.Keys()
 		if err == nil {
 			return nil
 		} else {

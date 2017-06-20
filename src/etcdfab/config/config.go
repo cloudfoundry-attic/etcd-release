@@ -126,7 +126,7 @@ func (c Config) ListenClientURL() string {
 }
 
 func (c Config) EtcdClientEndpoints() []string {
-	if c.Etcd.RequireSSL || c.Etcd.PeerRequireSSL {
+	if c.Etcd.RequireSSL {
 		return []string{fmt.Sprintf("https://%s:%d", c.Etcd.AdvertiseURLsDNSSuffix, clientPort)}
 	} else {
 		var endpoints []string
@@ -134,5 +134,13 @@ func (c Config) EtcdClientEndpoints() []string {
 			endpoints = append(endpoints, fmt.Sprintf("http://%s:%d", machine, clientPort))
 		}
 		return endpoints
+	}
+}
+
+func (c Config) EtcdClientSelfEndpoint() string {
+	if c.Etcd.RequireSSL {
+		return fmt.Sprintf("https://%s.%s:%d", c.NodeName(), c.Etcd.AdvertiseURLsDNSSuffix, clientPort)
+	} else {
+		return fmt.Sprintf("http://%s:%d", c.Node.ExternalIP, clientPort)
 	}
 }

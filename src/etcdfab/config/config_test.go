@@ -563,9 +563,8 @@ var _ = Describe("Config", func() {
 
 			configuration := map[string]interface{}{
 				"etcd": map[string]interface{}{
-					"require_ssl":      false,
-					"peer_require_ssl": false,
-					"machines":         []string{"some-ip-1", "some-ip-2"},
+					"require_ssl": false,
+					"machines":    []string{"some-ip-1", "some-ip-2"},
 				},
 			}
 			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
@@ -580,12 +579,11 @@ var _ = Describe("Config", func() {
 			Expect(cfg.EtcdClientEndpoints()).To(Equal([]string{"http://some-ip-1:4001", "http://some-ip-2:4001"}))
 		})
 
-		Context("when RequireSSL or PeerRequireSSL is true", func() {
+		Context("when RequireSSL is true", func() {
 			BeforeEach(func() {
 				configuration := map[string]interface{}{
 					"etcd": map[string]interface{}{
 						"require_ssl":               true,
-						"peer_require_ssl":          true,
 						"advertise_urls_dns_suffix": "some-dns-suffix",
 					},
 				}
@@ -601,6 +599,68 @@ var _ = Describe("Config", func() {
 
 			It("returns the etcd client endpoints with the correct protocol based on config", func() {
 				Expect(cfg.EtcdClientEndpoints()).To(Equal([]string{"https://some-dns-suffix:4001"}))
+			})
+		})
+	})
+
+	Describe("EtcdClientSelfEndpoint", func() {
+		var (
+			cfg                config.Config
+			configFilePath     string
+			linkConfigFilePath string
+		)
+
+		BeforeEach(func() {
+			tmpDir, err := ioutil.TempDir("", "")
+			Expect(err).NotTo(HaveOccurred())
+
+			configuration := map[string]interface{}{
+				"node": map[string]interface{}{
+					"name":        "etcd",
+					"index":       0,
+					"external_ip": "my-external-ip",
+				},
+				"etcd": map[string]interface{}{
+					"require_ssl": false,
+				},
+			}
+			configFilePath = writeConfigurationFile(tmpDir, "config-file", configuration)
+
+			linkConfigFilePath = writeConfigurationFile(tmpDir, "link-config-file", map[string]interface{}{})
+
+			cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("returns endpoint for this node based on config", func() {
+			Expect(cfg.EtcdClientSelfEndpoint()).To(Equal("http://my-external-ip:4001"))
+		})
+
+		Context("when RequireSSL is true", func() {
+			BeforeEach(func() {
+				configuration := map[string]interface{}{
+					"node": map[string]interface{}{
+						"name":        "etcd",
+						"index":       0,
+						"external_ip": "my-external-ip",
+					},
+					"etcd": map[string]interface{}{
+						"require_ssl":               true,
+						"advertise_urls_dns_suffix": "some-dns-suffix",
+					},
+				}
+				configData, err := json.Marshal(configuration)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = ioutil.WriteFile(configFilePath, configData, os.ModePerm)
+				Expect(err).NotTo(HaveOccurred())
+
+				cfg, err = config.ConfigFromJSONs(configFilePath, linkConfigFilePath)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			It("returns the etcd client endpoints with the correct protocol based on config", func() {
+				Expect(cfg.EtcdClientSelfEndpoint()).To(Equal("https://etcd-0.some-dns-suffix:4001"))
 			})
 		})
 	})

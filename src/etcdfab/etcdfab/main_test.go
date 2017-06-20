@@ -49,7 +49,7 @@ var _ = Describe("EtcdFab", func() {
 			"node": map[string]interface{}{
 				"name":        "some_name",
 				"index":       3,
-				"external_ip": "some-external-ip",
+				"external_ip": "127.0.0.1",
 			},
 			"etcd": map[string]interface{}{
 				"etcd_path": pathToFakeEtcd,
@@ -169,9 +169,9 @@ var _ = Describe("EtcdFab", func() {
 						"--election-timeout", "20",
 						"--listen-peer-urls", "http://some-peer-ip:7001",
 						"--listen-client-urls", "http://some-client-ip:4001",
-						"--initial-advertise-peer-urls", "http://some-external-ip:7001",
-						"--advertise-client-urls", "http://some-external-ip:4001",
-						"--initial-cluster", "some-name-3=http://some-external-ip:7001",
+						"--initial-advertise-peer-urls", "http://127.0.0.1:7001",
+						"--advertise-client-urls", "http://127.0.0.1:4001",
+						"--initial-cluster", "some-name-3=http://127.0.0.1:7001",
 						"--initial-cluster-state", "new",
 					}))
 				})
@@ -193,7 +193,7 @@ var _ = Describe("EtcdFab", func() {
 					etcdServer.SetAddMemberReturn(`{
 						"id": "some-name-3",
 						"peerURLs": [
-							"http://some-external-ip:7001"
+							"http://127.0.0.1:7001"
 						]
 					}`, http.StatusCreated)
 				})
@@ -212,9 +212,9 @@ var _ = Describe("EtcdFab", func() {
 						"--election-timeout", "20",
 						"--listen-peer-urls", "http://some-peer-ip:7001",
 						"--listen-client-urls", "http://some-client-ip:4001",
-						"--initial-advertise-peer-urls", "http://some-external-ip:7001",
-						"--advertise-client-urls", "http://some-external-ip:4001",
-						"--initial-cluster", "some-name-1=http://some-other-external-ip:7001,some-name-3=http://some-external-ip:7001",
+						"--initial-advertise-peer-urls", "http://127.0.0.1:7001",
+						"--advertise-client-urls", "http://127.0.0.1:4001",
+						"--initial-cluster", "some-name-1=http://some-other-external-ip:7001,some-name-3=http://127.0.0.1:7001",
 						"--initial-cluster-state", "existing",
 					}))
 				})
@@ -260,7 +260,7 @@ var _ = Describe("EtcdFab", func() {
 					"peer_ip":                            "some-peer-ip",
 					"require_ssl":                        true,
 					"client_ip":                          "some-client-ip",
-					"advertise_urls_dns_suffix":          "127.0.0.1",
+					"advertise_urls_dns_suffix":          "127.0.0.1.xip.io",
 					"enable_debug_logging":               true,
 				})
 			})
@@ -283,8 +283,8 @@ var _ = Describe("EtcdFab", func() {
 					"--election-timeout", "20",
 					"--listen-peer-urls", "https://some-peer-ip:7001",
 					"--listen-client-urls", "https://some-client-ip:4001",
-					"--initial-advertise-peer-urls", "https://some-name-3.127.0.0.1:7001",
-					"--advertise-client-urls", "https://some-name-3.127.0.0.1:4001",
+					"--initial-advertise-peer-urls", "https://some-name-3.127.0.0.1.xip.io:7001",
+					"--advertise-client-urls", "https://some-name-3.127.0.0.1.xip.io:4001",
 					"--client-cert-auth",
 					"--trusted-ca-file", "../fixtures/server-ca.crt",
 					"--cert-file", "../fixtures/server.crt",
@@ -293,9 +293,10 @@ var _ = Describe("EtcdFab", func() {
 					"--peer-trusted-ca-file", "../fixtures/peer-ca.crt",
 					"--peer-cert-file", "../fixtures/peer.crt",
 					"--peer-key-file", "../fixtures/peer.key",
-					"--initial-cluster", "some-name-3=https://some-name-3.127.0.0.1:7001",
+					"--initial-cluster", "some-name-3=https://some-name-3.127.0.0.1.xip.io:7001",
 					"--initial-cluster-state", "new",
 				}))
+
 			})
 
 			It("writes etcd stdout/stderr", func() {
