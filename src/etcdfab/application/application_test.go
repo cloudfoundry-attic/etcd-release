@@ -160,6 +160,7 @@ var _ = Describe("Application", func() {
 						ClientIP:               "some-client-ip",
 						AdvertiseURLsDNSSuffix: "some-dns-suffix",
 						Machines:               []string{"some-ip-1", "some-ip-2"},
+						EnableDebugLogging:     true,
 					},
 				}
 
@@ -177,6 +178,7 @@ var _ = Describe("Application", func() {
 
 				nonTlsArgs = []string{
 					"--name", "some-name-3",
+					"--debug",
 					"--data-dir", dataDir,
 					"--heartbeat-interval", "10",
 					"--election-timeout", "20",
