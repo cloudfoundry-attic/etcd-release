@@ -20,6 +20,7 @@ type Application struct {
 	configFilePath     string
 	linkConfigFilePath string
 	etcdClient         etcdClient
+	dnsHealthChecker   dnsHealthChecker
 	clusterController  clusterController
 	syncController     syncController
 	outWriter          io.Writer
@@ -30,6 +31,10 @@ type Application struct {
 type command interface {
 	Start(string, []string, io.Writer, io.Writer) (int, error)
 	Kill(int) error
+}
+
+type dnsHealthChecker interface {
+	CheckARecord(string) error
 }
 
 type syncController interface {
@@ -56,6 +61,7 @@ type NewArgs struct {
 	ConfigFilePath     string
 	LinkConfigFilePath string
 	EtcdClient         etcdClient
+	DNSHealthChecker   dnsHealthChecker
 	ClusterController  clusterController
 	SyncController     syncController
 	OutWriter          io.Writer
@@ -69,6 +75,7 @@ func New(args NewArgs) Application {
 		configFilePath:     args.ConfigFilePath,
 		linkConfigFilePath: args.LinkConfigFilePath,
 		etcdClient:         args.EtcdClient,
+		dnsHealthChecker:   args.DNSHealthChecker,
 		clusterController:  args.ClusterController,
 		syncController:     args.SyncController,
 		outWriter:          args.OutWriter,
@@ -82,6 +89,13 @@ func (a Application) Start() error {
 	if err != nil {
 		a.logger.Error("application.read-config-file.failed", err)
 		return err
+	}
+
+	if cfg.Etcd.RequireSSL {
+		err = a.dnsHealthChecker.CheckARecord(cfg.Etcd.DNSHealthCheckHost)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	err = a.etcdClient.Configure(cfg)

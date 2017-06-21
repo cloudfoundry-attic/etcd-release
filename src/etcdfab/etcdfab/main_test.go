@@ -309,6 +309,42 @@ var _ = Describe("EtcdFab", func() {
 				Expect(string(session.Out.Contents())).To(ContainSubstring("stopping fake etcd"))
 				Expect(string(session.Err.Contents())).To(ContainSubstring("fake error in stderr"))
 			})
+
+			Context("failure cases", func() {
+				FIt("fast fails if it cannot dig etcd.dns_health_check_host", func() {
+					writeConfigurationFile(configFile.Name(), map[string]interface{}{
+						"node": map[string]interface{}{
+							"name":  "some_name",
+							"index": 3,
+						},
+						"etcd": map[string]interface{}{
+							"etcd_path":                          pathToFakeEtcd,
+							"run_dir":                            runDir,
+							"cert_dir":                           "../fixtures",
+							"heartbeat_interval_in_milliseconds": 10,
+							"election_timeout_in_milliseconds":   20,
+							"peer_require_ssl":                   true,
+							"peer_ip":                            "some-peer-ip",
+							"require_ssl":                        true,
+							"client_ip":                          "some-client-ip",
+							"dns_health_check_host":              "fake-host.internal",
+							"advertise_urls_dns_suffix":          "some-dns-suffix",
+							"ca_cert":                            "some-ca-cert",
+							"server_cert":                        "some-server-cert",
+							"server_key":                         "some-server-key",
+							"peer_ca_cert":                       "some-peer-ca-cert",
+							"peer_cert":                          "some-peer-cert",
+							"peer_key":                           "some-peer-key",
+						},
+					})
+
+					session, err := gexec.Start(etcdFabCommand, GinkgoWriter, GinkgoWriter)
+					Expect(err).NotTo(HaveOccurred())
+					Eventually(session, 30*time.Second).Should(gexec.Exit(1))
+
+					Expect(string(session.Out.Contents())).To(ContainSubstring("application.dns-health-check.failed"))
+				})
+			})
 		})
 
 		Context("failure cases", func() {

@@ -32,6 +32,7 @@ type Etcd struct {
 	PeerIP                 string `json:"peer_ip"`
 	RequireSSL             bool   `json:"require_ssl"`
 	ClientIP               string `json:"client_ip"`
+	DNSHealthCheckHost     string `json:"dns_health_check_host"`
 	AdvertiseURLsDNSSuffix string `json:"advertise_urls_dns_suffix"`
 	Machines               []string
 	EnableDebugLogging     bool `json:"enable_debug_logging"`

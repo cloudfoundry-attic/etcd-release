@@ -57,6 +57,7 @@ var _ = Describe("Application", func() {
 			etcdfabConfig config.Config
 
 			fakeCommand           *fakes.CommandWrapper
+			fakeDNSHealthChecker  *fakes.DNSHealthChecker
 			fakeClusterController *fakes.ClusterController
 			fakeSyncController    *fakes.SyncController
 			fakeEtcdClient        *fakes.EtcdClient
@@ -73,6 +74,7 @@ var _ = Describe("Application", func() {
 			fakeCommand.StartCall.Returns.Pid = etcdPid
 
 			fakeEtcdClient = &fakes.EtcdClient{}
+			fakeDNSHealthChecker = &fakes.DNSHealthChecker{}
 			fakeClusterController = &fakes.ClusterController{}
 			fakeClusterController.GetInitialClusterStateCall.Returns.InitialClusterState = cluster.InitialClusterState{
 				Members: "etcd-0=http://some-ip-1:7001",
@@ -169,6 +171,7 @@ var _ = Describe("Application", func() {
 					ConfigFilePath:     configFileName,
 					LinkConfigFilePath: linkConfigFileName,
 					EtcdClient:         fakeEtcdClient,
+					DNSHealthChecker:   fakeDNSHealthChecker,
 					ClusterController:  fakeClusterController,
 					SyncController:     fakeSyncController,
 					OutWriter:          &outWriter,
@@ -194,6 +197,10 @@ var _ = Describe("Application", func() {
 			It("starts etcd in non tls mode", func() {
 				err := app.Start()
 				Expect(err).NotTo(HaveOccurred())
+
+				By("skipping dns health check", func() {
+					Expect(fakeDNSHealthChecker.CheckARecordCall.CallCount).To(Equal(0))
+				})
 
 				By("configuring the etcd client", func() {
 					Expect(fakeEtcdClient.ConfigureCall.CallCount).To(Equal(1))
@@ -497,6 +504,7 @@ var _ = Describe("Application", func() {
 							ConfigFilePath:     configFileName,
 							LinkConfigFilePath: linkConfigFileName,
 							EtcdClient:         fakeEtcdClient,
+							DNSHealthChecker:   fakeDNSHealthChecker,
 							ClusterController:  fakeClusterController,
 							SyncController:     fakeSyncController,
 							Logger:             fakeLogger,
@@ -536,6 +544,7 @@ var _ = Describe("Application", func() {
 						"peer_ip":                            "some-peer-ip",
 						"require_ssl":                        true,
 						"client_ip":                          "some-client-ip",
+						"dns_health_check_host":              "some-dns-hostname",
 						"advertise_urls_dns_suffix":          "some-dns-suffix",
 						"ca_cert":                            "some-ca-cert",
 						"server_cert":                        "some-server-cert",
@@ -545,11 +554,7 @@ var _ = Describe("Application", func() {
 						"peer_key":                           "some-peer-key",
 					},
 				}
-				configData, err := json.Marshal(configuration)
-				Expect(err).NotTo(HaveOccurred())
-
-				err = ioutil.WriteFile(configFileName, configData, os.ModePerm)
-				Expect(err).NotTo(HaveOccurred())
+				configFileName = createConfig(tmpDir, "config-file", configuration)
 
 				linkConfigFileName = createConfig(tmpDir, "config-link-file", map[string]interface{}{})
 
@@ -558,6 +563,7 @@ var _ = Describe("Application", func() {
 					ConfigFilePath:     configFileName,
 					LinkConfigFilePath: linkConfigFileName,
 					EtcdClient:         fakeEtcdClient,
+					DNSHealthChecker:   fakeDNSHealthChecker,
 					ClusterController:  fakeClusterController,
 					SyncController:     fakeSyncController,
 					OutWriter:          &outWriter,
@@ -591,6 +597,9 @@ var _ = Describe("Application", func() {
 				By("calling Start on the command with etcd security flags", func() {
 					err := app.Start()
 					Expect(err).NotTo(HaveOccurred())
+
+					Expect(fakeDNSHealthChecker.CheckARecordCall.CallCount).To(Equal(1))
+					Expect(fakeDNSHealthChecker.CheckARecordCall.Receives.Hostname).To(Equal("some-dns-hostname"))
 
 					Expect(fakeCommand.StartCall.CallCount).To(Equal(1))
 					Expect(fakeCommand.StartCall.Receives.CommandPath).To(Equal("path-to-etcd"))
@@ -627,6 +636,7 @@ var _ = Describe("Application", func() {
 			etcdfabConfig config.Config
 
 			fakeCommand           *fakes.CommandWrapper
+			fakeDNSHealthChecker  *fakes.DNSHealthChecker
 			fakeClusterController *fakes.ClusterController
 			fakeSyncController    *fakes.SyncController
 			fakeEtcdClient        *fakes.EtcdClient
@@ -641,6 +651,7 @@ var _ = Describe("Application", func() {
 		BeforeEach(func() {
 			fakeCommand = &fakes.CommandWrapper{}
 			fakeEtcdClient = &fakes.EtcdClient{}
+			fakeDNSHealthChecker = &fakes.DNSHealthChecker{}
 			fakeClusterController = &fakes.ClusterController{}
 			fakeSyncController = &fakes.SyncController{}
 			fakeLogger = &fakes.Logger{}
@@ -719,6 +730,7 @@ var _ = Describe("Application", func() {
 				ConfigFilePath:     configFileName,
 				LinkConfigFilePath: linkConfigFileName,
 				EtcdClient:         fakeEtcdClient,
+				DNSHealthChecker:   fakeDNSHealthChecker,
 				ClusterController:  fakeClusterController,
 				SyncController:     fakeSyncController,
 				OutWriter:          &outWriter,
@@ -1085,6 +1097,7 @@ var _ = Describe("Application", func() {
 					ConfigFilePath:     configFileName,
 					LinkConfigFilePath: linkConfigFileName,
 					EtcdClient:         fakeEtcdClient,
+					DNSHealthChecker:   fakeDNSHealthChecker,
 					ClusterController:  fakeClusterController,
 					SyncController:     fakeSyncController,
 					Logger:             fakeLogger,
