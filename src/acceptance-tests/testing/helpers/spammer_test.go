@@ -96,8 +96,11 @@ var _ = Describe("Spammer", func() {
 		Context("when data is lost", func() {
 			Context("when data fails to be read", func() {
 				It("returns the failure percentages for reads/writes", func() {
+					var numErrors int
+
 					kv.GetCall.Stub = func(key string) (string, error) {
-						if kv.GetCall.CallCount < 200 {
+						for numErrors < 10 {
+							numErrors++
 							return "", errors.New("could not find key: some-prefix-some-key-0")
 						}
 
@@ -108,15 +111,18 @@ var _ = Describe("Spammer", func() {
 					spammer.Check()
 
 					read, write := spammer.FailPercentages()
-					Expect(read).To(BeNumerically("~", 35, 4))
+					Expect(read).To(BeNumerically("~", 3, 3))
 					Expect(write).To(Equal(0))
 				})
 			})
 
 			Context("when the data fails to write", func() {
 				It("returns the failure percentages for reads/writes", func() {
+					var numErrors int
+
 					kv.SetCall.Stub = func(key, value string) error {
-						if kv.SetCall.CallCount.Value() < 200 {
+						for numErrors < 10 {
+							numErrors++
 							return errors.New("could not find key: some-prefix-some-key-0")
 						}
 
@@ -128,7 +134,7 @@ var _ = Describe("Spammer", func() {
 
 					read, write := spammer.FailPercentages()
 					Expect(read).To(Equal(0))
-					Expect(write).To(BeNumerically("~", 35, 4))
+					Expect(write).To(BeNumerically("~", 3, 3))
 				})
 			})
 		})
