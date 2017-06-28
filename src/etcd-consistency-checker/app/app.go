@@ -97,7 +97,6 @@ func (a App) Run() error {
 		a.sleeper(1 * time.Second)
 	}
 
-	return nil
 }
 
 func newHttpClient(ca, cert, key string) (*http.Client, error) {
