@@ -125,7 +125,7 @@ var _ = Describe("split brain one leader", func() {
 		})
 
 		By("stopping the consul agent on the follower in the 2-member cluster", func() {
-			leaderName, err := etcdClient.LeaderByNodeURL(fmt.Sprintf("https://etcd-%s.etcd.service.cf.internal:4001", 0))
+			leaderName, err := etcdClient.LeaderByNodeURL(fmt.Sprintf("https://etcd-%d.etcd.service.cf.internal:4001", 0))
 			Expect(err).NotTo(HaveOccurred())
 
 			leaderIndex, err = strconv.Atoi(strings.Split(leaderName, "-")[1])
