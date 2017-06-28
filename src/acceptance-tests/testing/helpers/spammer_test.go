@@ -111,7 +111,7 @@ var _ = Describe("Spammer", func() {
 					spammer.Check()
 
 					read, write := spammer.FailPercentages()
-					Expect(read).To(BeNumerically("~", 3, 3))
+					Expect(read).To(BeNumerically("<=", 15))
 					Expect(write).To(Equal(0))
 				})
 			})
@@ -134,7 +134,7 @@ var _ = Describe("Spammer", func() {
 
 					read, write := spammer.FailPercentages()
 					Expect(read).To(Equal(0))
-					Expect(write).To(BeNumerically("~", 3, 3))
+					Expect(write).To(BeNumerically("<=", 15))
 				})
 			})
 		})
