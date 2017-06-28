@@ -3,9 +3,7 @@ package deploy_test
 import (
 	etcdclient "github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/etcd"
 
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/helpers"
@@ -15,11 +13,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-)
-
-const (
-	PUT_ERROR_COUNT_THRESHOLD                  = 8
-	TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT = 1
 )
 
 var _ = Describe("TLS Upgrade", func() {
@@ -214,35 +207,11 @@ var _ = Describe("TLS Upgrade", func() {
 
 		By("reading from the cluster", func() {
 			for _, spammer := range spammers {
-				spammerErrors := spammer.Check()
+				spammer.Check()
+				read, write := spammer.FailPercentages()
 
-				unexpectedHttpStatusErrorCountThreshold := 3
-				unexpectedErrCount := 0
-				errorSet := spammerErrors.(helpers.ErrorSet)
-				etcdErrorCount := 0
-				testConsumerConnectionResetErrorCount := 0
-				otherErrors := helpers.ErrorSet{}
-
-				for err, occurrences := range errorSet {
-					switch {
-					// This happens when the etcd leader is killed and a request is issued while an election is happening
-					case strings.Contains(err, "Unexpected HTTP status code"):
-						unexpectedErrCount += occurrences
-					// This happens when the etcd server is down during etcd->etcd_proxy roll
-					case strings.Contains(err, "last error: Put"):
-						etcdErrorCount += occurrences
-					// This happens when a connection is severed by the etcd server
-					case strings.Contains(err, "EOF"):
-						testConsumerConnectionResetErrorCount += occurrences
-					default:
-						otherErrors.Add(errors.New(err))
-					}
-				}
-
-				Expect(etcdErrorCount).To(BeNumerically("<=", PUT_ERROR_COUNT_THRESHOLD))
-				Expect(testConsumerConnectionResetErrorCount).To(BeNumerically("<=", TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT))
-				Expect(unexpectedErrCount).To(BeNumerically("<=", unexpectedHttpStatusErrorCountThreshold))
-				Expect(otherErrors).To(HaveLen(0))
+				Expect(read).To(BeNumerically("<=", 4))
+				Expect(write).To(BeNumerically("<=", 4))
 			}
 		})
 	})

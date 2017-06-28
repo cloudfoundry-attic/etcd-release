@@ -22,7 +22,8 @@ type Spammer struct {
 	done                               chan struct{}
 	wg                                 sync.WaitGroup
 	intervalDuration                   time.Duration
-	errors                             ErrorSet
+	readErrors                         ErrorSet
+	writeErrors                        ErrorSet
 	keyWriteAttempts                   int
 	prefix                             string
 }
@@ -36,7 +37,8 @@ func NewSpammer(kv kv, spamInterval time.Duration, prefix string) *Spammer {
 		store:            make(map[string]string),
 		done:             make(chan struct{}),
 		intervalDuration: spamInterval,
-		errors:           ErrorSet{},
+		readErrors:       ErrorSet{},
+		writeErrors:      ErrorSet{},
 		prefix:           prefix,
 	}
 }
@@ -66,7 +68,7 @@ func (s *Spammer) Spam() {
 						// this typically happens when the test-consumer vm is rolled
 						counts.attempts--
 					default:
-						s.errors.Add(err)
+						s.writeErrors.Add(err)
 					}
 					continue
 				}
@@ -85,24 +87,49 @@ func (s *Spammer) Check() error {
 	if s.keyWriteAttempts == 0 {
 		return errors.New("0 keys have been written")
 	}
+
 	for k, v := range s.store {
 		value, err := s.kv.Get(k)
 		if err != nil {
-			s.errors.Add(err)
+			s.readErrors.Add(err)
 			continue
 		}
 
 		if v != value {
-			s.errors.Add(fmt.Errorf("value for key %q does not match: expected %q, got %q", k, v, value))
+			s.readErrors.Add(fmt.Errorf("value for key %q does not match: expected %q, got %q", k, v, value))
 			continue
 		}
 	}
 
-	if len(s.errors) > 0 {
-		return s.errors
+	errorsTotal := make(ErrorSet)
+	errorsTotal.Add(s.readErrors)
+	errorsTotal.Add(s.writeErrors)
+
+	if len(errorsTotal) > 0 {
+		return errorsTotal
 	}
 
 	return nil
+}
+
+func (s *Spammer) FailPercentages() (int, int) {
+	var (
+		totalReadErrors  int
+		totalWriteErrors int
+	)
+
+	for _, value := range s.readErrors {
+		totalReadErrors += value
+	}
+
+	for _, value := range s.writeErrors {
+		totalWriteErrors += value
+	}
+
+	readFailureRate := (float64(totalReadErrors) / float64(len(s.store))) * 100
+	writeFailureRate := (float64(totalWriteErrors) / float64(s.keyWriteAttempts)) * 100
+
+	return int(readFailureRate), int(writeFailureRate)
 }
 
 func (s *Spammer) ResetStore() {
