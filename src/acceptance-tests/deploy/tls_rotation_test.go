@@ -1,7 +1,9 @@
 package deploy_test
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	etcdclient "github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/etcd"
@@ -381,11 +383,49 @@ var _ = Describe("TLS rotation", func() {
 		})
 
 		By("reading from the cluster", func() {
-			spammer.Check()
-			read, write := spammer.FailPercentages()
+			spammerErrs := spammer.Check()
 
-			Expect(read).To(BeNumerically("<=", 4))
-			Expect(write).To(BeNumerically("<=", 4))
+			var errorSet helpers.ErrorSet
+
+			switch spammerErrs.(type) {
+			case helpers.ErrorSet:
+				errorSet = spammerErrs.(helpers.ErrorSet)
+			case nil:
+				return
+			default:
+				Fail(spammerErrs.Error())
+			}
+
+			tcpErrCount := 0
+			unexpectedErrCount := 0
+			noCertErrCount := 0
+			testConsumerConnectionResetErrorCount := 0
+			otherErrors := helpers.ErrorSet{}
+
+			for err, occurrences := range errorSet {
+				switch {
+				// This happens when the consul_agent gets rolled when a request is sent to the testconsumer
+				case strings.Contains(err, "dial tcp: lookup etcd.service.cf.internal on"):
+					tcpErrCount += occurrences
+				// This happens when the etcd leader is killed and a request is issued while an election is happening
+				case strings.Contains(err, "Unexpected HTTP status code"):
+					unexpectedErrCount += occurrences
+				// This happens when a request is made right when the certificate files are getting rolled
+				case strings.Contains(err, "no such file or directory"):
+					noCertErrCount += occurrences
+				// This happens when a connection is severed by the etcd server
+				case strings.Contains(err, "EOF"):
+					testConsumerConnectionResetErrorCount += occurrences
+				default:
+					otherErrors.Add(errors.New(err))
+				}
+			}
+
+			Expect(otherErrors).To(HaveLen(0))
+			Expect(testConsumerConnectionResetErrorCount).To(BeNumerically("<=", 1))
+			Expect(tcpErrCount).To(BeNumerically("<=", TCP_ERROR_COUNT_THRESHOLD))
+			Expect(unexpectedErrCount).To(BeNumerically("<=", UNEXPECTED_HTTP_STATUS_ERROR_COUNT_THRESHOLD))
+			Expect(noCertErrCount).To(BeNumerically("<=", NO_CERT_ERR_COUNT_THRESHOLD))
 		})
 	})
 })
