@@ -312,15 +312,15 @@ func convertNonTLSEtcdToProxy(manifest, varsStore string) (string, error) {
 			Path: "/instance_groups/name=etcd/jobs/name=etcd_metrics_server",
 		},
 
-		// --- Updating diego bbs job
+		// --- Updating diego api job
 		{
 			Type:  "replace",
-			Path:  "/instance_groups/name=diego-bbs/jobs/name=bbs/properties/diego/bbs/etcd/require_ssl?",
+			Path:  "/instance_groups/name=diego-api/jobs/name=bbs/properties/diego/bbs/etcd/require_ssl?",
 			Value: false,
 		},
 		{
 			Type:  "replace",
-			Path:  "/instance_groups/name=diego-bbs/jobs/name=bbs/properties/diego/bbs/etcd/machines",
+			Path:  "/instance_groups/name=diego-api/jobs/name=bbs/properties/diego/bbs/etcd/machines",
 			Value: nil,
 		},
 
