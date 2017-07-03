@@ -22,7 +22,7 @@ const (
 	TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT = 1
 )
 
-var _ = Describe("TLS Upgrade", func() {
+var _ = PDescribe("TLS Upgrade", func() {
 	var (
 		manifest     string
 		manifestName string
