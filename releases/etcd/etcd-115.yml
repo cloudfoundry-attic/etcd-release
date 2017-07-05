@@ -1,0 +1,89 @@
+name: etcd
+version: "115"
+commit_hash: 6e109b2
+uncommitted_changes: false
+jobs:
+- name: acceptance-tests
+  version: 33fe87c9c49074f4d16948d74ca8989a128f35b4b8bfab559fd9e3d342a4354a
+  fingerprint: 33fe87c9c49074f4d16948d74ca8989a128f35b4b8bfab559fd9e3d342a4354a
+  sha1: sha256:1bd2376f86fc5a0ef2ff81ab7d60785df1afdc565cbfc733a6216d3bc2ad5ec6
+- name: etcd
+  version: bb5899c7035b3a541bc1d03cdee1641109357361e0b1b63ea7c39d5a7d7988fc
+  fingerprint: bb5899c7035b3a541bc1d03cdee1641109357361e0b1b63ea7c39d5a7d7988fc
+  sha1: sha256:112e0454fb56f7a21c092bf2dc2d8d84de3caf46dc9ed1b3b7493e978de93823
+- name: etcd_metrics_server
+  version: 8664df5208be4c599d613b1cbdf540e85aa15f5c02e882418f097d1a8e4b9a47
+  fingerprint: 8664df5208be4c599d613b1cbdf540e85aa15f5c02e882418f097d1a8e4b9a47
+  sha1: sha256:da801ed4e0699111d7dad4b0509bd95c913ced512024194bcee628cbef768721
+- name: etcd_proxy
+  version: 9d3e7d675731421707dfe882f3e252237af490576ea80f091020677902a4e321
+  fingerprint: 9d3e7d675731421707dfe882f3e252237af490576ea80f091020677902a4e321
+  sha1: sha256:c3148138e267a8193e7fd66c0f29815fb3b5b049a0c583146c6d717ba9d228e0
+- name: etcd_testconsumer
+  version: b5e9ecfd66f57b2d579b60a744425fda27bd2fe2707b81da2d1302ad1f947152
+  fingerprint: b5e9ecfd66f57b2d579b60a744425fda27bd2fe2707b81da2d1302ad1f947152
+  sha1: sha256:d0217413d0b36064e08b8e70be50f2b8187e73467cdbae3cf2db4d8a9bbbabd2
+- name: iptables_agent
+  version: 88ea912f63037fce32ab6a1a84f994a63ad5953c71939d54a0485c31a6d87846
+  fingerprint: 88ea912f63037fce32ab6a1a84f994a63ad5953c71939d54a0485c31a6d87846
+  sha1: sha256:eea40db783d63d4e4a46ff9b3d3e4a6ab62a3019af0722ccccfeed8b2c82a1d8
+- name: monit_agent
+  version: 8ad9a69c87fc39d2686ac592e9f7c5fe89971637fd8394432f610ef8bf0ae612
+  fingerprint: 8ad9a69c87fc39d2686ac592e9f7c5fe89971637fd8394432f610ef8bf0ae612
+  sha1: sha256:88d5aa10a7821d9e53490ee8ff2e463c0dd4cd5bb6a0c6e82e257736796b8f5c
+packages:
+- name: acceptance-tests
+  version: 122352d66bbcf8e332ec940c2f4c58a5a9191b94f66714e1931c3013912be962
+  fingerprint: 122352d66bbcf8e332ec940c2f4c58a5a9191b94f66714e1931c3013912be962
+  sha1: sha256:cf1ebae41b50b29119d4c0edf272d9f6bcc66cb01d35b0da58e31e668618d8e4
+  dependencies:
+  - golang1.8
+- name: etcd
+  version: dc2111a9b956a6ae5ae40b7ff6c5e9fb61e715699560d799bc6c9a7c7d21a9cb
+  fingerprint: dc2111a9b956a6ae5ae40b7ff6c5e9fb61e715699560d799bc6c9a7c7d21a9cb
+  sha1: sha256:f8aac79294ff40010f5bc5aec9763a6b03626001527b4aab12de8be511d56444
+  dependencies: []
+- name: etcd-common
+  version: 65511c194969e2adff6bd3b7f5413dac6f297363d9644881257987573e1f78c0
+  fingerprint: 65511c194969e2adff6bd3b7f5413dac6f297363d9644881257987573e1f78c0
+  sha1: sha256:f0a007c236c6f8c1ceab48be4236c294f08bb8b2f828a8277b3b70949b716d7e
+  dependencies: []
+- name: etcd-consistency-checker
+  version: fb74c0d4aeae93540316aa078750402a98c3f7afc2e836d28052de9053e6c80d
+  fingerprint: fb74c0d4aeae93540316aa078750402a98c3f7afc2e836d28052de9053e6c80d
+  sha1: sha256:a0180723aa504d674e51bb18ec966e797c7c05273378485fe996b84e34870864
+  dependencies:
+  - golang1.8
+- name: etcd-dns-checker
+  version: 3f2ef1db89d33e6c6d7cfbd5ed8e8bcf785097e3f0bf5cf663c36387e1402e13
+  fingerprint: 3f2ef1db89d33e6c6d7cfbd5ed8e8bcf785097e3f0bf5cf663c36387e1402e13
+  sha1: sha256:8a3f45bf544b4be19f6052073c6394d267ef813ca3b1de19cd074d2d2b240855
+  dependencies:
+  - golang1.8
+- name: etcd_metrics_server
+  version: a87d17b20057a8620a2e03fcb05398ca1fe6a29605a416f328fb7a968aefe429
+  fingerprint: a87d17b20057a8620a2e03fcb05398ca1fe6a29605a416f328fb7a968aefe429
+  sha1: sha256:d47e42a8f42106f3a22e8ccb8145c435f7ae88bed36523f6aec4eeb95d019517
+  dependencies:
+  - golang1.8
+- name: etcd_proxy
+  version: 4423dbe06cb052328ffa371972c34535df9bedb6c98eb4b19b0df2781a7625a8
+  fingerprint: 4423dbe06cb052328ffa371972c34535df9bedb6c98eb4b19b0df2781a7625a8
+  sha1: sha256:c75ae50c5a5d59b83fa8b8d35efc66a06e1518f0a83fbbcaf1baeb03ee3fb96a
+  dependencies:
+  - golang1.8
+- name: etcdfab
+  version: 69b3dfaa0a83c5a61660e5fc3b5128da699d77eb098dab486e678747a366ad5f
+  fingerprint: 69b3dfaa0a83c5a61660e5fc3b5128da699d77eb098dab486e678747a366ad5f
+  sha1: sha256:0e013689f7693e523cf8d013410a23a544b1fa00577c10ab0e44ccc4cd843f94
+  dependencies:
+  - golang1.8
+- name: golang1.8
+  version: 551c665a27d07b3c83dd4fdafc1d24f523186559964da44886b2591dea9ed7c2
+  fingerprint: 551c665a27d07b3c83dd4fdafc1d24f523186559964da44886b2591dea9ed7c2
+  sha1: sha256:1aac67d5cc077f842221de3c85f5071ffcbf6f7384ab843a464de524bf1fab6f
+  dependencies: []
+license:
+  version: 191018bb159e4ef86aacb7356181b8793beedbdde6e6e661818e4c3fdff51612
+  fingerprint: 191018bb159e4ef86aacb7356181b8793beedbdde6e6e661818e4c3fdff51612
+  sha1: sha256:98cca3af3fc748a4ba2238acb71132924073ca9c3a64c6c0fbad92e3a6797c48
