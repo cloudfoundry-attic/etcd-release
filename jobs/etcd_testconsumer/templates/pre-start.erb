@@ -16,8 +16,25 @@ function create_directories_and_chown_to_vcap() {
   chown -R vcap:vcap ${CERT_DIR}
 }
 
+function emit_event_to_datadog() {
+ <%=
+   if_p("etcd_testconsumer.datadog_api_key") do |key|
+    "curl -X POST -H 'Content-type: application/json' \
+    -d '{
+      \"title\": \"testconsumer start\",
+      \"text\": \"starting etcd testconsumer now\",
+      \"priority\": \"normal\",
+      \"tags\": [\"eats:testconsumer\"],
+      \"alert_type\": \"info\"
+      }' \
+      'https://app.datadoghq.com/api/v1/events?api_key=#{key}'"
+   end
+  %>
+}
+
 function main() {
   create_directories_and_chown_to_vcap
+  emit_event_to_datadog
 }
 
 main

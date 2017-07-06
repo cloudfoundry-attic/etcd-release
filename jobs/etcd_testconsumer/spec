@@ -3,6 +3,7 @@ name: etcd_testconsumer
 templates:
   etcd_testconsumer_ctl.sh.erb: bin/etcd_testconsumer_ctl
   pre-start.erb: bin/pre-start
+  drain.erb: bin/drain
   ca.crt.erb: config/certs/ca.crt
   client.crt.erb: config/certs/client.crt
   client.key.erb: config/certs/client.key
@@ -17,13 +18,6 @@ consumes:
   optional: true
 
 properties:
-  etcd_testconsumer.etcd.require_ssl:
-    description: "enable ssl for all communication with etcd"
-    default: false
-
-  etcd_testconsumer.etcd.machines:
-    description: "Addresses of etcd machines"
-
   etcd_testconsumer.etcd.ca_cert:
     description: "PEM-encoded CA certificate"
     default: ""
@@ -36,6 +30,25 @@ properties:
     description: "PEM-encoded client key"
     default: ""
 
+  etcd_testconsumer.datadog_api_key:
+    description: "the api key for emmitting datadog metrics"
+    /* default: "" */
+
+  etcd_testconsumer.datadog_app_key:
+    description: "the application key for datadog metrics"
+    /* default: "" */
+
+  etcd_testconsumer.datadog_metric_prefix:
+    description: "the datadog metric prefix"
+    /* default: "" */
+
   etcd_testconsumer.etcd.dns_health_check_host:
     description: "Host to ping for confirmation of DNS resolution"
     default: "consul.service.cf.internal"
+
+  etcd_testconsumer.etcd.require_ssl:
+    description: "enable ssl for all communication with etcd"
+    default: false
+
+  etcd_testconsumer.etcd.machines:
+    description: "Addresses of etcd machines"
