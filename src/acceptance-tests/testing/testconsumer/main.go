@@ -92,29 +92,29 @@ func setupStackdriver() error {
 	fmt.Println("********************************************************************************")
 
 	// sha256sum install-logging-agent.sh == "8db836510cf65f3fba44a3d49265ed7932e731e7747c6163da1c06bf2063c301  install-logging-agent.sh"
-	cmd := exec.Command("sha256sum", "install-logging-agent.sh")
-	cmd.Stdout = &buf
-	err := cmd.Start()
-	if err != nil {
-		fmt.Println("********************************************************************************")
-		fmt.Printf("sha256 error:\n%s", err)
-		fmt.Println("********************************************************************************")
-		return err
-	}
-	sha := string(buf.Bytes())
-	expectedSHA := "8db836510cf65f3fba44a3d49265ed7932e731e7747c6163da1c06bf2063c301  install-logging-agent.sh"
-	if sha != expectedSHA {
-		fmt.Println("********************************************************************************")
-		fmt.Printf("sha256 for stackdriver logging agent did not match\nGot %s\nExpected %s\n", sha, expectedSHA)
-		fmt.Println("********************************************************************************")
-		return fmt.Errorf("sha256 for stackdriver logging agent did not match\nGot %s\nExpected %s\n", sha, expectedSHA)
-	}
-	fmt.Println("********************************************************************************")
-	fmt.Printf("sha256 output:\n%s", sha)
-	fmt.Println("********************************************************************************")
+	// cmd = exec.Command("sha256sum", "install-logging-agent.sh")
+	// cmd.Stdout = &buf
+	// err = cmd.Start()
+	// if err != nil {
+	// 	fmt.Println("********************************************************************************")
+	// 	fmt.Printf("sha256 error:\n%s", err)
+	// 	fmt.Println("********************************************************************************")
+	// 	return err
+	// }
+	// sha := string(buf.Bytes())
+	// expectedSHA := "8db836510cf65f3fba44a3d49265ed7932e731e7747c6163da1c06bf2063c301  install-logging-agent.sh"
+	// if sha != expectedSHA {
+	// 	fmt.Println("********************************************************************************")
+	// 	fmt.Printf("sha256 for stackdriver logging agent did not match\nGot %s\nExpected %s\n", sha, expectedSHA)
+	// 	fmt.Println("********************************************************************************")
+	// 	return fmt.Errorf("sha256 for stackdriver logging agent did not match\nGot %s\nExpected %s\n", sha, expectedSHA)
+	// }
+	// fmt.Println("********************************************************************************")
+	// fmt.Printf("sha256 output:\n%s", sha)
+	// fmt.Println("********************************************************************************")
 
 	// sudo bash install-logging-agent.sh
-	cmd := exec.Command("sudo", "bash", "install-logging-agent.sh")
+	cmd = exec.Command("bash", "install-logging-agent.sh")
 	cmd.Stdout = &buf
 	err = cmd.Start()
 	if err != nil {
@@ -126,4 +126,6 @@ func setupStackdriver() error {
 	fmt.Println("********************************************************************************")
 	fmt.Printf("install-logging-agent output:\n%s", string(buf.Bytes()))
 	fmt.Println("********************************************************************************")
+
+	return nil
 }
