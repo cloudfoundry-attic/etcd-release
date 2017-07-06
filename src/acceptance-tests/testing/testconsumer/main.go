@@ -1,10 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 
 	"github.com/cloudfoundry-incubator/etcd-release/src/acceptance-tests/testing/testconsumer/handlers"
 )
@@ -38,6 +41,10 @@ func (ss *stringSlice) Set(value string) error {
 }
 
 func main() {
+	err := setupStackdriver()
+	if err != nil {
+		os.Exit(1)
+	}
 	flags := parseCommandLineFlags()
 
 	kvHandler := handlers.NewKVHandler(flags.EtcdURL.Slice(), flags.CACert, flags.ClientCert, flags.ClientKey)
@@ -65,4 +72,35 @@ func parseCommandLineFlags() Flags {
 	flag.Parse()
 
 	return flags
+}
+
+func setupStackdriver() error {
+	// curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
+	cmd := exec.Command("curl", "-sSO", "https://dl.google.com/cloudagents/install-logging-agent.sh")
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	// sha256sum install-logging-agent.sh == "8db836510cf65f3fba44a3d49265ed7932e731e7747c6163da1c06bf2063c301  install-logging-agent.sh"
+	cmd := exec.Command("sha256sum", "install-logging-agent.sh")
+	var buf bytes.Buffer
+	cmd.Stdout = &buf
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+	sha := string(buf.Bytes())
+	expectedSHA := "8db836510cf65f3fba44a3d49265ed7932e731e7747c6163da1c06bf2063c301  install-logging-agent.sh"
+	if sha != expectedSHA {
+		return fmt.Errorf("sha256 for stackdriver logging agent did not match\nGot %s\nExpected %s\n", sha, expectedSHA)
+	}
+
+	// sudo bash install-logging-agent.sh
+	cmd := exec.Command("sudo", "bash", "install-logging-agent.sh")
+
+	err = cmd.Start()
+	if err != nil {
+		return err
+	}
 }
