@@ -22,7 +22,7 @@ const (
 	TEST_CONSUMER_CONNECTION_RESET_ERROR_COUNT = 1
 )
 
-var _ = Describe("TLS Upgrade", func() {
+var _ = PDescribe("TLS Upgrade", func() {
 	var (
 		manifest     string
 		manifestName string
@@ -38,7 +38,7 @@ var _ = Describe("TLS Upgrade", func() {
 		}
 	})
 
-	FIt("keeps writing to an etcd cluster without interruption", func() {
+	It("keeps writing to an etcd cluster without interruption", func() {
 		By("deploy non tls etcd", func() {
 			var err error
 			manifest, err = helpers.NewEtcdManifestWithInstanceCount("tls-upgrade", 3, false, boshClient)
