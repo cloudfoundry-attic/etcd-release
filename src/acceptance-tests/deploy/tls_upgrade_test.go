@@ -47,13 +47,6 @@ var _ = PDescribe("TLS Upgrade", func() {
 			manifestName, err = ops.ManifestName(manifest)
 			Expect(err).NotTo(HaveOccurred())
 
-			manifest, err = ops.ApplyOp(manifest, ops.Op{
-				Type:  "replace",
-				Path:  "/instance_groups/name=testconsumer/instances",
-				Value: 5,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
 			_, err = boshClient.Deploy([]byte(manifest))
 			Expect(err).NotTo(HaveOccurred())
 
@@ -159,11 +152,6 @@ var _ = PDescribe("TLS Upgrade", func() {
 					Type:  "replace",
 					Path:  "/instance_groups/-",
 					Value: testConsumer,
-				},
-				{
-					Type:  "replace",
-					Path:  "/instance_groups/name=testconsumer/instances",
-					Value: 5,
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
