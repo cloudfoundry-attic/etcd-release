@@ -5,7 +5,7 @@ export LATEST_ETCD_RELEASE_VERSION="$(curl http://bosh.io/api/v1/releases/github
 
 consul_release_version="0"
 warden_cpi_version="29"
-turbulence_version="0.6.1"
+turbulence_version="0.8"
 
 function check_dependencies() {
   test -n "${EATS_CONFIG?"EATS_CONFIG is a required environment variable"}"
@@ -71,7 +71,7 @@ function upload_releases() {
 
   upload_release "${releases_dir}/bosh-warden-cpi-release.tgz" "http://bosh.io/d/github.com/cppforlife/bosh-warden-cpi-release?v=${warden_cpi_version}"
   upload_release "${releases_dir}/consul-release-${consul_release_version}.tgz" "${consul_release_url}"
-  upload_release "${releases_dir}/release.tgz" "https://github.com/christianang/turbulence-release/releases/download/v0.6.1/release.tgz"
+  upload_release "${releases_dir}/turbulence-release.tgz" "http://bosh.io/github.com/cppforlife/turbulence-release?v=${turbulence_version}"
 
   wget -nc -O "${releases_dir}/etcd-release-${LATEST_ETCD_RELEASE_VERSION}.tgz" "http://bosh.io/d/github.com/cloudfoundry-incubator/etcd-release?v=${LATEST_ETCD_RELEASE_VERSION}" || echo "File Exists"
   bosh upload-release "${releases_dir}/etcd-release-${LATEST_ETCD_RELEASE_VERSION}.tgz"
