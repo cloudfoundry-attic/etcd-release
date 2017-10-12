@@ -485,8 +485,3 @@ your etcd cluster does not contain critical data that cannot be repopulated,
 this option is safe and will probably get you unstuck. If you are debugging
 an etcd server cluster in the context of a Cloud Foundry and/or Diego
 deployment, it should be safe to follow the above steps.
-
-CAVEAT: There is currently a known issue with the new TCP Routing feature in
-Cloud Foundry where the Routing API stores non-ephemeral data pertaining to
-Router Groups in etcd.  At the time of this writing, there is work in progress
-for the Routing API to store such data outside of etcd.
